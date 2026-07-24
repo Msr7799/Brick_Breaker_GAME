@@ -1,0 +1,32 @@
+*.iml
+/.gradle/
+/.kotlin/
+/.idea/
+/local.properties
+.DS_Store
+**/build/
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+keystore.properties
+*.jks
+*.keystore
+/app/libs/
+*.apk
+*.aab
+
+# Generated visual evidence and downloadable/extracted source packs.
+/docs/screenshots/
+/docs/reference_frames/
+/docs/reference_contact_sheet_*.jpg
+/tools/assets_staging/downloads/
+/tools/assets_staging/extracted/
+/tools/assets_staging/rejected/
+
+# Locally generated repository inventory.
+/project-tree.txt
+AGENTS.md
+/docs/codex/*
+.agents/*
+.agents/skills/*

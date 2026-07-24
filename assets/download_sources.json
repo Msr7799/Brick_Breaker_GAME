@@ -1,0 +1,11 @@
+{
+  "kenney": "https://kenney.nl/",
+  "packs": ["ui-pack-sci-fi", "particle-pack", "light-masks", "smoke-particles", "simple-space", "impact-sounds", "sci-fi-sounds", "ui-audio"],
+  "font": "https://github.com/google/fonts/tree/main/ofl/oxanium",
+  "githubLogo": {
+    "source": "https://brand.github.com/foundations/logo",
+    "archive": "https://brand.github.com/GitHub_Logos.zip",
+    "sha256": "E2A67D6CC51D990A52C46C1CF6BCAB688DB4830982174BCA50E0BE7A5C2F3194",
+    "runtime": "ui.atlas/github_mark"
+  }
+}

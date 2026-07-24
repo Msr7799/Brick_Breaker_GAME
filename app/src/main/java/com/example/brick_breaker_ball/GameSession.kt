@@ -1,0 +1,739 @@
+package com.example.brick_breaker_ball
+
+import com.badlogic.gdx.math.MathUtils
+import com.badlogic.gdx.math.Rectangle
+import com.badlogic.gdx.math.Vector2
+import java.util.Random
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.sqrt
+
+sealed interface BoosterUseResult { data object Applied:BoosterUseResult; data class Rejected(val reason:String):BoosterUseResult }
+
+class GameSession(
+    val seed: Long = 0xB12C_BA11L,
+    val level: LevelDefinition = LevelRepository.level(1),
+    var baseBallSize: BallSize = BallSize.DEFAULT,
+    var selectedBallGroupName: String = CosmeticDefaults.BALL_GROUP,
+    var selectedBallSpriteName: String = CosmeticDefaults.BALL_SPRITE,
+) {
+    companion object {
+        const val WIDTH = 900f; const val HEIGHT = 1600f
+        const val MIN_SPEED = 520f; const val MAX_SPEED = 980f
+        const val MIN_HORIZONTAL = 90f; const val MIN_VERTICAL = 180f
+        const val MAX_BALLS = 8; const val ABSOLUTE_MAX_BALLS = 15; const val MAX_LASER_SHOTS = 8
+        const val BASE_PADDLE_WIDTH = 244f; const val PADDLE_EXPAND_STEP = 36f; const val MAX_EXPAND_STACKS = 4
+        val PADDLE_SIZE_LEVELS = floatArrayOf(110f, 145f, 208f, 244f, 280f)
+    }
+
+    var phase = GamePhase.SERVING
+    val paddle = Paddle()
+    val balls = mutableListOf<Ball>()
+    val ball get() = balls.first()
+    val bricks = mutableListOf<Brick>()
+    val fallingPowerUps = mutableListOf<FallingPowerUp>()
+    val laserShots = mutableListOf<LaserShot>()
+    val powerUps = PowerUpManager()
+    val replay = ReplayRecorder(seed, 1)
+    private val dropDirector = PowerUpDropDirector(seed)
+    private val effectRandom = Random(seed xor 0x50A3_E77L)
+    private val events = ArrayDeque<GameplayEvent>()
+    internal var nextBallId = 1
+    internal var nextPowerUpId = 1
+    private var elapsed = 0f
+    internal var laserCooldown = 0f
+    private var pendingBrickCrush = false
+    var lives = level.lives
+    var score = 0
+    var bottomShield = false
+    var explosionExpansion = 1
+    var fallingBricksMode = false
+    var expandPaddleStacks = 0
+    var deathRailTop = 0f
+    var levelCompletionCount = 0; private set
+    private var pendingDeathRailZapX: Float? = null
+    var itemRewardSink: (PowerUpType) -> Unit = {}
+
+    init { newLevel() }
+
+    fun newLevel() {
+        bricks.clear(); fallingPowerUps.clear(); laserShots.clear(); events.clear()
+        powerUps.clear(); bottomShield = false; explosionExpansion = 1; fallingBricksMode = false
+        expandPaddleStacks = 0
+        paddle.targetWidth = BASE_PADDLE_WIDTH; paddle.width = BASE_PADDLE_WIDTH; paddle.mode = PaddleMode.NORMAL
+        var id = 1
+        val gapX = 4f; val gapY = 8f
+        val brickWidth = (WIDTH - 40f - (level.columns - 1) * gapX) / level.columns
+        val brickHeight = 58f
+        val boardWidth = level.columns * brickWidth + (level.columns - 1) * gapX
+        val boardLeft = (WIDTH - boardWidth) / 2f
+        val boardBottom = 620f
+        level.layout.forEachIndexed { sourceRow, row ->
+            row.forEachIndexed { sourceCol, symbol ->
+                val key = BrickCodec.key(sourceRow, sourceCol)
+                val type = level.brickIds[key]?.let { runCatching { BrickType.valueOf(it) }.getOrNull() }
+                    ?: BrickCodec.type(symbol) ?: return@forEachIndexed
+                val visualRow = level.rows - 1 - sourceRow
+                val brickId = id++
+                bricks += Brick(brickId, Rectangle(
+                    boardLeft + sourceCol * (brickWidth + gapX),
+                    boardBottom + visualRow * (brickHeight + gapY),
+                    brickWidth, brickHeight,
+                ), type, if (type == BrickType.BOSS_CORE) level.bossHealth else type.maxHealth,
+                    (sourceRow * .1f + sourceCol * .018f) % 1f,
+                    groupId = level.brickGroups[key] ?: 0)
+            }
+        }
+        serve()
+    }
+
+    fun serve() {
+        phase = GamePhase.SERVING; balls.clear()
+        val newBall = createBall(Vector2(paddle.x, 0f), Vector2())
+        newBall.position.y = paddle.y + paddle.height / 2f + newBall.radius + 2f
+        newBall.previousPosition.set(newBall.position)
+        balls += newBall
+    }
+
+    private fun createBall(position: Vector2, velocity: Vector2, source: Ball? = null): Ball {
+        val initialSize = source?.size ?: when {
+            PowerUpType.SHRINK_BALL in powerUps -> baseBallSize.smaller()
+            PowerUpType.MEGA_BALL in powerUps -> baseBallSize.larger()
+            else -> baseBallSize
+        }
+        val ball = Ball(
+            id = nextBallId++, position = position, previousPosition = Vector2(position), velocity = velocity,
+            size = initialSize,
+            baseSize = source?.baseSize ?: baseBallSize,
+            cosmeticGroupName = source?.cosmeticGroupName ?: selectedBallGroupName,
+            cosmeticSpriteName = source?.cosmeticSpriteName ?: selectedBallSpriteName,
+            element = source?.element ?: activeElement(),
+            collisionMode = source?.collisionMode ?: when {
+                PowerUpType.GHOST_BALL in powerUps -> BallCollisionMode.GHOST
+                PowerUpType.PIERCING_BALL in powerUps -> BallCollisionMode.PIERCING
+                else -> BallCollisionMode.NORMAL
+            },
+            baseSpeed = source?.baseSpeed ?: velocity.len(),
+        )
+        return ball
+    }
+
+    private fun activeElement() = when {
+        PowerUpType.FIRE_BALL in powerUps -> BallElement.FIRE
+        PowerUpType.EXPLOSIVE_BALL in powerUps -> BallElement.EXPLOSIVE
+        else -> BallElement.NORMAL
+    }
+
+    fun applyCustomization(settings: GameSettings) {
+        baseBallSize = settings.selectedBallBaseSize
+        selectedBallGroupName = settings.selectedBallGroupName
+        selectedBallSpriteName = settings.selectedBallSpriteName
+        balls.forEach { ball ->
+            ball.baseSize = baseBallSize
+            ball.cosmeticGroupName = selectedBallGroupName
+            ball.cosmeticSpriteName = selectedBallSpriteName
+            ball.size = when {
+                PowerUpType.SHRINK_BALL in powerUps -> baseBallSize.smaller()
+                PowerUpType.MEGA_BALL in powerUps -> baseBallSize.larger()
+                else -> baseBallSize
+            }
+        }
+        clampPaddleForActiveLayout()
+    }
+
+    fun clampPaddleForActiveLayout() {
+        val halfExtent = if (PowerUpType.DUAL_PADDLE in powerUps) paddle.width + 3f else paddle.width / 2f
+        paddle.x = paddle.x.coerceIn(halfExtent, WIDTH - halfExtent)
+    }
+
+    fun action() {
+        when (phase) {
+            GamePhase.SERVING -> launchBall(ball, 280f)
+            GamePhase.PLAYING -> {
+                val stuck = balls.filter { it.stuckOffset != null }
+                if (stuck.isNotEmpty()) launchAttachedBalls(0f)
+                else if (PowerUpType.LASER_PADDLE in powerUps || PowerUpType.LASER_AUTO_CHARGE in powerUps) fireLasers()
+            }
+            GamePhase.LEVEL_COMPLETE, GamePhase.GAME_OVER -> { lives = level.lives; score = 0; levelCompletionCount = 0; newLevel() }
+            GamePhase.LOADING, GamePhase.READY, GamePhase.RESOLVING, GamePhase.PAUSED -> Unit
+        }
+        replay.record(elapsed, paddle.x, "ACTION")
+    }
+
+    fun hasAttachedBalls(): Boolean = phase == GamePhase.SERVING || balls.any { it.stuckOffset != null }
+
+    fun launchAttachedBalls(horizontalIntent: Float) {
+        val intent = horizontalIntent.coerceIn(-1f, 1f)
+        when (phase) {
+            GamePhase.SERVING -> balls.toList().forEachIndexed { index, attachedBall ->
+                val spread = (index - balls.lastIndex / 2f) * 70f
+                launchBall(attachedBall, intent * 760f + spread)
+            }
+            GamePhase.PLAYING -> {
+                val stuck = balls.filter { it.stuckOffset != null }
+                if (stuck.isEmpty()) return
+                stuck.forEachIndexed { index, attachedBall ->
+                    attachedBall.stuckOffset = null
+                    val spread = (index - stuck.lastIndex / 2f) * 80f
+                    launchBall(attachedBall, intent * 760f + spread)
+                }
+            }
+            else -> return
+        }
+        replay.record(elapsed, paddle.x, "ACTION")
+    }
+
+    fun launchServe(horizontalIntent: Float) { if (phase == GamePhase.SERVING) launchAttachedBalls(horizontalIntent) }
+
+    private fun launchBall(ball: Ball, xSpeed: Float) {
+        phase = GamePhase.PLAYING
+        ball.baseSpeed = (level.ballSpeed * 1.08f).coerceIn(MIN_SPEED, MAX_SPEED)
+        ball.velocity.set(xSpeed, 560f).nor()
+        syncBallSpeed(ball)
+    }
+
+    fun movePaddle(rawTargetX: Float, dt: Float) {
+        val targetX = if (PowerUpType.INVERT_CONTROLS in powerUps) WIDTH - rawTargetX else rawTargetX
+        val oldX = paddle.x
+        val response = if (PowerUpType.SLIPPERY_PADDLE in powerUps) 5f else 18f
+        val halfExtent = if (PowerUpType.DUAL_PADDLE in powerUps) paddle.width + 3f else paddle.width / 2f
+        val wanted = targetX.coerceIn(halfExtent, WIDTH - halfExtent)
+        paddle.x += (wanted - paddle.x) * (dt * response).coerceAtMost(1f)
+        paddle.animate(dt)
+        val animatedHalfExtent = if (PowerUpType.DUAL_PADDLE in powerUps) paddle.width + 3f else paddle.width / 2f
+        paddle.x = paddle.x.coerceIn(animatedHalfExtent, WIDTH - animatedHalfExtent)
+        paddle.velocityX = (paddle.x - oldX) / max(dt, .0001f)
+        balls.filter { it.stuckOffset != null || phase == GamePhase.SERVING }.forEach {
+            it.position.x = (paddle.x + (it.stuckOffset ?: 0f)).coerceIn(it.radius, WIDTH - it.radius)
+            it.position.y = paddle.y + paddle.height / 2f + it.radius + 1f
+        }
+        replay.record(elapsed, paddle.x)
+    }
+
+    fun update(dt: Float) {
+        if (phase == GamePhase.PAUSED) return
+        elapsed += dt; laserCooldown = (laserCooldown - dt).coerceAtLeast(0f)
+        if (phase == GamePhase.PLAYING && PowerUpType.LASER_AUTO_CHARGE in powerUps) fireLasers()
+        dropDirector.update(dt); updateBricks(dt)
+        powerUps.update(dt).forEach(::onExpired)
+        if (phase != GamePhase.PLAYING) return
+        balls.toList().forEach { ball ->
+            ball.previousPosition.set(ball.position)
+            if (ball.stuckOffset == null) {
+                if (ball.baseSpeed <= 0f) ball.baseSpeed = ball.velocity.len().coerceIn(MIN_SPEED, MAX_SPEED)
+                val expectedSpeed = (ball.baseSpeed * speedMultiplier()).coerceIn(MIN_SPEED, MAX_SPEED)
+                if (abs(ball.velocity.len() - expectedSpeed) > 2f)
+                    ball.baseSpeed = (ball.velocity.len() / speedMultiplier()).coerceIn(MIN_SPEED, MAX_SPEED)
+                ball.baseSpeed = (ball.baseSpeed * (1f + dt * .008f)).coerceIn(MIN_SPEED, MAX_SPEED)
+                syncBallSpeed(ball)
+                if (PowerUpType.MAGNETIC_PADDLE in powerUps && ball.velocity.y < 0f && ball.position.y < GameplayTuning.MAGNET_RANGE)
+                    ball.velocity.x += (paddle.x - ball.position.x) * dt * GameplayTuning.MAGNET_STRENGTH
+                simulateBall(ball, dt)
+            }
+        }
+        if (pendingBrickCrush) { pendingBrickCrush = false; loseLife(force = true, feedback = "BRICKS CRUSHED THE PADDLE"); return }
+        updateCapsules(dt); updateLasers(dt)
+        val lost = balls.filter { it.position.y - it.radius <= deathRailTop }
+        if (lost.isNotEmpty()) pendingDeathRailZapX = lost.last().position.x
+        balls.removeAll(lost.toSet())
+        if (balls.isEmpty()) loseLife(force = false)
+        if (phase == GamePhase.PLAYING && bricks.none {
+                it.type.breakable && it.type !in setOf(BrickType.KEY_BRICK, BrickType.SWITCH) &&
+                    !(it.type == BrickType.GHOST && !it.ghostVisible)
+            }) completeLevel()
+    }
+
+    fun consumeDeathRailZapX(): Float? = pendingDeathRailZapX.also { pendingDeathRailZapX = null }
+    fun consumeEvents(): List<GameplayEvent> = buildList { while (events.isNotEmpty()) add(events.removeFirst()) }
+
+    private fun simulateBall(ball: Ball, dt: Float) {
+        val visitedBrickIds = mutableSetOf<Int>()
+        var remaining = dt
+        repeat(8) {
+            if (remaining <= .000001f) return
+            val delta = Vector2(ball.velocity).scl(remaining)
+            var best: CollisionResult? = null
+            fun consider(hit: CollisionResult?) { if (hit != null && (best == null || hit.time < best!!.time)) best = hit }
+            consider(SweptCollision.circleVsAabb(ball.position, delta, ball.radius, Rectangle(0f, 0f, 18f, HEIGHT), -10))
+            consider(SweptCollision.circleVsAabb(ball.position, delta, ball.radius, Rectangle(WIDTH - 18f, 0f, 18f, HEIGHT), -11))
+            consider(SweptCollision.circleVsAabb(ball.position, delta, ball.radius, Rectangle(0f, HEIGHT - 18f, WIDTH, 18f), -12))
+            if (ball.velocity.y < 0f) paddleCollisionBounds().forEachIndexed { index, bounds ->
+                consider(SweptCollision.circleVsAabb(ball.position, delta, ball.radius, bounds, -20 - index))
+            }
+            bricks.asSequence().filter { it.id !in visitedBrickIds && (it.type != BrickType.GHOST || it.ghostVisible) }.forEach {
+                consider(SweptCollision.circleVsAabb(ball.position, delta, ball.radius, it.bounds, it.id))
+            }
+            val hit = best
+            if (hit == null) { ball.position.mulAdd(ball.velocity, remaining); return }
+            ball.position.mulAdd(delta, (hit.time - .0001f).coerceAtLeast(0f))
+            remaining *= (1f - hit.time).coerceAtLeast(0f)
+            when {
+                hit.targetId == -20 || hit.targetId == -21 -> paddleBounce(ball)
+                hit.targetId > 0 -> {
+                    val brick = bricks.firstOrNull { it.id == hit.targetId }
+                    if (brick != null) {
+                        visitedBrickIds += brick.id
+                        when {
+                            brick.type == BrickType.BLACK_HOLE_TELEPORTER -> {
+                                teleportBall(ball, brick); remaining = 0f
+                            }
+                            ball.collisionMode == BallCollisionMode.GHOST -> ball.position.mulAdd(ball.velocity, .002f)
+                            brick.type == BrickType.LIGHTNING_SPEED_PASS_THROUGH -> {
+                                damageBrick(brick, ball); ball.baseSpeed = (ball.baseSpeed * GameplayTuning.LIGHTNING_SPEED_MULTIPLIER).coerceAtMost(MAX_SPEED)
+                                syncBallSpeed(ball); ball.position.mulAdd(ball.velocity, .002f)
+                            }
+                            brick.type == BrickType.TRANSPARENT_SLOW_PASS_THROUGH -> {
+                                damageBrick(brick, ball); ball.baseSpeed = (ball.baseSpeed * GameplayTuning.TRANSPARENT_SLOW_MULTIPLIER).coerceAtLeast(MIN_SPEED)
+                                syncBallSpeed(ball); ball.position.mulAdd(ball.velocity, .002f)
+                            }
+                            brick.type == BrickType.ROUGH_STONE -> {
+                                damageBrick(brick, ball); randomizeBallDirection(ball)
+                            }
+                            brick.type == BrickType.SPIKED_HAZARD && GameplayTuning.SPIKED_HAZARD_KILLS_BALL -> {
+                                killSpecificBall(ball); remaining = 0f
+                            }
+                            else -> {
+                                val passThrough = ball.collisionMode == BallCollisionMode.PIERCING && brick.type.breakable
+                                damageBrick(brick, ball)
+                                if (!passThrough) reflect(ball, hit) else ball.position.mulAdd(ball.velocity, .002f)
+                            }
+                        }
+                    }
+                }
+                else -> reflect(ball, hit)
+            }
+            ball.position.add(hit.normalX * .08f, hit.normalY * .08f)
+        }
+        ensureVelocityBounds(ball)
+    }
+
+    private fun randomizeBallDirection(ball: Ball) {
+        val speed = ball.velocity.len().coerceIn(MIN_SPEED, MAX_SPEED)
+        val angle = 20f + effectRandom.nextFloat() * 140f
+        ball.velocity.set(MathUtils.cosDeg(angle), MathUtils.sinDeg(angle)).scl(speed)
+        ensureVelocityBounds(ball)
+    }
+
+    private fun teleportBall(ball: Ball, source: Brick) {
+        val safeTop = HEIGHT - ball.radius - 40f
+        repeat(GameplayTuning.TELEPORT_ATTEMPTS) {
+            val candidate = Vector2(
+                ball.radius + 24f + effectRandom.nextFloat() * (WIDTH - 2f * ball.radius - 48f),
+                260f + effectRandom.nextFloat() * (safeTop - 260f),
+            )
+            val blocked = bricks.any { it !== source && it.bounds.contains(candidate) }
+            if (!blocked) {
+                ball.position.set(candidate); ball.previousPosition.set(candidate)
+                val speed = ball.velocity.len().coerceIn(MIN_SPEED, MAX_SPEED)
+                val angle = effectRandom.nextFloat() * 360f
+                ball.velocity.set(MathUtils.cosDeg(angle), MathUtils.sinDeg(angle)).scl(speed)
+                ensureVelocityBounds(ball); events += GameplayEvent.Feedback("BLACK HOLE TELEPORT")
+                return
+            }
+        }
+        ball.position.set(WIDTH / 2f, 360f); ball.previousPosition.set(ball.position)
+    }
+
+    private fun reflect(ball: Ball, hit: CollisionResult) {
+        val dot = ball.velocity.x * hit.normalX + ball.velocity.y * hit.normalY
+        ball.velocity.add(-2f * dot * hit.normalX, -2f * dot * hit.normalY)
+    }
+
+    private fun paddleBounce(ball: Ball) {
+        if (PowerUpType.STICKY_PADDLE in powerUps) {
+            val stickyHalfWidth = if (PowerUpType.DUAL_PADDLE in powerUps) paddle.width else paddle.width * .42f
+            ball.stuckOffset = (ball.position.x - paddle.x).coerceIn(-stickyHalfWidth, stickyHalfWidth)
+            ball.velocity.setZero(); return
+        }
+        val bounceHalfWidth = if (PowerUpType.DUAL_PADDLE in powerUps) paddle.width + 3f else paddle.width / 2f
+        val offset = ((ball.position.x - paddle.x) / bounceHalfWidth).coerceIn(-1f, 1f)
+        val speed = ball.velocity.len().coerceIn(MIN_SPEED, MAX_SPEED)
+        val angle = MathUtils.lerp(150f, 30f, (offset + 1f) / 2f)
+        ball.velocity.set(MathUtils.cosDeg(angle), MathUtils.sinDeg(angle)).scl(speed)
+        ball.velocity.x += paddle.velocityX.coerceIn(-500f, 500f) * .12f
+        ensureVelocityBounds(ball)
+        if (fallingBricksMode) applyFallingBricksStep()
+    }
+
+    fun clampSpeed(ball: Ball) {
+        if (ball.velocity.isZero(.001f)) return
+        ball.baseSpeed = ball.velocity.len().coerceIn(MIN_SPEED, MAX_SPEED)
+        syncBallSpeed(ball); ensureVelocityBounds(ball)
+    }
+
+    private fun speedMultiplier() = when {
+        PowerUpType.FAST_BALL in powerUps -> 1.25f
+        PowerUpType.SLOW_BALL in powerUps -> .75f
+        else -> 1f
+    }
+
+    private fun syncBallSpeed(ball: Ball) {
+        if (ball.velocity.isZero(.001f)) return
+        ball.velocity.setLength((ball.baseSpeed * speedMultiplier()).coerceIn(MIN_SPEED, MAX_SPEED))
+        ensureVelocityBounds(ball)
+    }
+
+    private fun ensureVelocityBounds(ball: Ball) {
+        var speed = ball.velocity.len()
+        if (speed < .001f) return
+        speed = speed.coerceIn(MIN_SPEED, MAX_SPEED)
+        ball.velocity.setLength(speed)
+        if (abs(ball.velocity.x) < MIN_HORIZONTAL) {
+            ball.velocity.x = if (ball.velocity.x < 0f) -MIN_HORIZONTAL else MIN_HORIZONTAL
+            ball.velocity.y = (if (ball.velocity.y < 0f) -1f else 1f) * sqrt(speed * speed - MIN_HORIZONTAL * MIN_HORIZONTAL)
+        }
+        if (abs(ball.velocity.y) < MIN_VERTICAL) {
+            ball.velocity.y = if (ball.velocity.y < 0f) -MIN_VERTICAL else MIN_VERTICAL
+            ball.velocity.x = (if (ball.velocity.x < 0f) -1f else 1f) * sqrt(speed * speed - MIN_VERTICAL * MIN_VERTICAL)
+        }
+    }
+
+    private fun damageBrick(brick: Brick, ball: Ball? = null, chain: MutableSet<Int> = mutableSetOf()): Boolean {
+        if (!chain.add(brick.id) || brick !in bricks || !brick.type.breakable || brick.locked ||
+            (brick.type == BrickType.GHOST && !brick.ghostVisible)) return false
+        if (brick.type == BrickType.SPIKED_HAZARD) return false
+        if (ball != null && PowerUpType.TIMED_BOMB_BRICKS in powerUps && brick.timedBombSeconds == null) {
+            brick.timedBombSeconds = GameplayTuning.TIMED_BOMB_DURATION
+            events += GameplayEvent.Feedback("TIMED BOMB ARMED")
+            return true
+        }
+        val sourceType = brick.type
+        val directFire = ball?.element == BallElement.FIRE
+        val oneHit = ball != null && PowerUpType.ONE_HIT_ANY_BRICK in powerUps
+        brick.health -= if (directFire || oneHit) brick.health else 1
+        if (brick.health > 0) return true
+        val cx = brick.bounds.x + brick.bounds.width / 2f; val cy = brick.bounds.y + brick.bounds.height / 2f
+        bricks.remove(brick); score += 100 * scoreMultiplier()
+        val forced = sourceType == BrickType.POWERUP_CARRIER
+        dropDirector.choose(lives, fallingPowerUps.size, forced, level.dropRate)?.let {
+            fallingPowerUps += FallingPowerUp(nextPowerUpId++, it, Vector2(cx, brick.bounds.y))
+        }
+        if (sourceType == BrickType.KEY_BRICK || sourceType == BrickType.SWITCH) activatePuzzleGroup(brick.groupId, sourceType)
+        if (sourceType == BrickType.CHAIN_BRICK) {
+            bricks.toList().filter { candidate -> candidate.type == BrickType.CHAIN_BRICK && candidate.groupId == brick.groupId }
+                .forEach { damageBrick(it, null, chain) }
+        }
+        if (sourceType == BrickType.RANDOM_INVENTORY_POWERUP) {
+            val rewards = SHOP_ELIGIBLE_TYPES.filter { PowerUpCatalog.definitions.getValue(it).category == PowerUpCategory.GOOD }
+            if (rewards.isNotEmpty()) {
+                val reward = rewards[effectRandom.nextInt(rewards.size)]; itemRewardSink(reward)
+                events += GameplayEvent.Feedback("${PowerUpInfoRepository.info(reward).shortName} ADDED TO ITEMS")
+            }
+        }
+        val explosion = sourceType == BrickType.EXPLOSIVE || ball?.element == BallElement.EXPLOSIVE
+        val fireSplash = directFire
+        if (explosion || fireSplash) {
+            events += GameplayEvent.Explosion
+            val normalRadius = when {
+                fireSplash && ball?.size == BallSize.LARGE -> GameplayTuning.LARGE_FIRE_BLAST_RADIUS
+                fireSplash -> GameplayTuning.FIRE_BLAST_RADIUS
+                else -> GameplayTuning.TIMED_BOMB_RADIUS
+            }
+            val blastRadius = if (explosionExpansion > 1) normalRadius * 1.57f else normalRadius
+            var targets = bricks.toList().filter { candidate ->
+                candidate.type.breakable && Vector2.dst(cx, cy, candidate.bounds.x + candidate.bounds.width / 2f, candidate.bounds.y + candidate.bounds.height / 2f) < blastRadius
+            }.sortedBy { candidate -> Vector2.dst(cx, cy, candidate.bounds.x + candidate.bounds.width / 2f, candidate.bounds.y + candidate.bounds.height / 2f) }
+            if (fireSplash && ball?.size == BallSize.LARGE) targets = targets.take(GameplayTuning.LARGE_FIRE_MAX_TARGETS - 1)
+            targets.forEach { damageBrick(it, null, chain) }
+        }
+        return true
+    }
+
+    private fun activatePuzzleGroup(groupId: Int, source: BrickType) {
+        fun matches(brick: Brick) = groupId == 0 || brick.groupId == groupId
+        var changed = false
+        bricks.filter { matches(it) && it.type == BrickType.LOCKED && it.locked }.forEach { it.locked = false; changed = true }
+        if (source == BrickType.SWITCH) bricks.filter { matches(it) && it.type == BrickType.GHOST }.forEach {
+            it.ghostVisible = !it.ghostVisible; changed = true
+        }
+        if (changed) events += GameplayEvent.Feedback(
+            if (source == BrickType.KEY_BRICK) "LOCKED BRICKS UNLOCKED" else "SWITCH GROUP CHANGED"
+        )
+    }
+
+    private fun updateBricks(dt: Float) {
+        bricks.forEach { brick ->
+            brick.age += dt
+            brick.timedBombSeconds = brick.timedBombSeconds?.minus(dt)
+            when (brick.type) {
+                BrickType.MOVING_HORIZONTAL -> brick.bounds.x =
+                    (brick.originX + MathUtils.sin(brick.age * 1.4f) * 42f).coerceIn(18f, WIDTH - 18f - brick.bounds.width)
+                BrickType.MOVING_VERTICAL -> brick.bounds.y = brick.originY + MathUtils.sin(brick.age * 1.2f) * 30f
+                BrickType.REGENERATING -> if (brick.health < brick.type.maxHealth && brick.age > 8f) { brick.health++; brick.age = 0f }
+                else -> Unit
+            }
+        }
+        bricks.filter { (it.timedBombSeconds ?: Float.MAX_VALUE) <= 0f }.toList().forEach { bomb ->
+            bomb.timedBombSeconds = null
+            val chain = mutableSetOf<Int>()
+            // An armed brick is consumed by its own detonation even when it originally had multiple HP.
+            bomb.health = 1
+            damageBrick(bomb, null, chain)
+            val cx = bomb.bounds.x + bomb.bounds.width / 2f; val cy = bomb.bounds.y + bomb.bounds.height / 2f
+            bricks.toList().filter { candidate -> candidate.type.breakable &&
+                Vector2.dst(cx, cy, candidate.bounds.x + candidate.bounds.width / 2f, candidate.bounds.y + candidate.bounds.height / 2f) < GameplayTuning.TIMED_BOMB_RADIUS }
+                .forEach { damageBrick(it, null, chain) }
+            events += GameplayEvent.Explosion
+        }
+    }
+
+    private fun applyFallingBricksStep() {
+        bricks.filter { it.type.breakable }.forEach { brick -> brick.bounds.y -= 42f; brick.originY -= 42f }
+        events += GameplayEvent.FallingWarning
+        val dangerTop = maxOf(deathRailTop, paddle.bounds.y + paddle.bounds.height + 8f)
+        if (bricks.any { it.type.breakable && it.bounds.y <= dangerTop }) pendingBrickCrush = true
+    }
+
+    private fun updateCapsules(dt: Float) {
+        val iterator = fallingPowerUps.iterator()
+        while (iterator.hasNext()) {
+            val capsule = iterator.next()
+            if (PowerUpType.POWERUP_MAGNET in powerUps) capsule.velocity.x += (paddle.x - capsule.position.x) * dt * 2f
+            capsule.position.mulAdd(capsule.velocity, dt)
+            val bounds = Rectangle(capsule.position.x - 24f, capsule.position.y - 15f, 48f, 30f)
+            if (paddleCollisionBounds().any(bounds::overlaps)) { activatePowerUp(capsule.type); iterator.remove() }
+            else if (capsule.position.y < -30f) iterator.remove()
+        }
+    }
+
+    fun canActivatePowerUp(requested: PowerUpType): Boolean {
+        if (phase == GamePhase.LEVEL_COMPLETE || phase == GamePhase.GAME_OVER) return false
+        if (requested == PowerUpType.RANDOM_GOOD || requested == PowerUpType.RANDOM_BAD) return randomCandidates(requested).isNotEmpty()
+        val definition = PowerUpCatalog.definitions.getValue(requested)
+        if (PowerUpType.POWERUP_JAM in powerUps && definition.category == PowerUpCategory.GOOD) return false
+        return when (requested) {
+            PowerUpType.EXTRA_LIFE -> lives < 9
+            PowerUpType.SET_OFF_EXPLODING -> bricks.any { it.type == BrickType.EXPLOSIVE }
+            PowerUpType.LEVEL_WARP -> !level.modifiers.contains("BOSS") && bricks.none { it.type == BrickType.BOSS_CORE }
+            PowerUpType.ZAP_BRICKS -> bricks.any(::isZapTarget)
+            PowerUpType.EIGHT_BALL, PowerUpType.MULTI_BALL, PowerUpType.TRIPLE_BALL -> balls.size < MAX_BALLS
+            PowerUpType.MULTIBALL_PLUS_4, PowerUpType.MULTIBALL_15 -> balls.size < ABSOLUTE_MAX_BALLS
+            PowerUpType.INSTANT_KILL_BALL -> PowerUpType.INSTANT_KILL_BALL !in powerUps && bricks.count(::isHazardCandidate) >= 4
+            PowerUpType.EXPAND_PADDLE -> expandPaddleStacks < MAX_EXPAND_STACKS
+            PowerUpType.SHRINK_PADDLE -> paddle.targetWidth > PADDLE_SIZE_LEVELS.first()
+            PowerUpType.SUPER_SHRINK -> paddle.targetWidth > PADDLE_SIZE_LEVELS.first()
+            PowerUpType.SHRINK_BALL -> PowerUpType.SHRINK_BALL !in powerUps && balls.any { it.size != BallSize.SMALL }
+            PowerUpType.MEGA_BALL -> PowerUpType.MEGA_BALL !in powerUps && balls.any { it.size != BallSize.LARGE }
+            PowerUpType.FAST_BALL -> PowerUpType.SLOW_BALL in powerUps || balls.any { it.velocity.isZero(.001f) || it.velocity.len() < MAX_SPEED - 1f }
+            PowerUpType.SLOW_BALL -> PowerUpType.FAST_BALL in powerUps || balls.any { it.velocity.isZero(.001f) || it.velocity.len() > MIN_SPEED + 1f }
+            PowerUpType.EXPAND_EXPLODING -> explosionExpansion == 1
+            PowerUpType.FALLING_BRICKS -> !fallingBricksMode
+            PowerUpType.KILL_PADDLE -> lives > 0
+            PowerUpType.BOTTOM_SHIELD, PowerUpType.PADDLE_SHIELD -> !bottomShield
+            PowerUpType.POWERUP_JAM -> PowerUpType.POWERUP_JAM !in powerUps
+            PowerUpType.RANDOM_GOOD, PowerUpType.RANDOM_BAD -> false
+            PowerUpType.STICKY_PADDLE, PowerUpType.LASER_PADDLE, PowerUpType.LASER_AUTO_CHARGE,
+            PowerUpType.MAGNETIC_PADDLE, PowerUpType.DUAL_PADDLE,
+            PowerUpType.ONE_HIT_ANY_BRICK, PowerUpType.GHOST_BALL,
+            PowerUpType.FIRE_BALL, PowerUpType.PIERCING_BALL, PowerUpType.EXPLOSIVE_BALL,
+            PowerUpType.SCORE_X2, PowerUpType.SCORE_X3, PowerUpType.INVERT_CONTROLS,
+            PowerUpType.SLIPPERY_PADDLE, PowerUpType.POWERUP_MAGNET -> true
+            PowerUpType.TIMED_BOMB_BRICKS -> bricks.any { it.type.breakable && !it.locked && it.type != BrickType.SPIKED_HAZARD }
+        }
+    }
+
+    private fun randomCandidates(randomType: PowerUpType): List<PowerUpType> {
+        val category = if (randomType == PowerUpType.RANDOM_GOOD) PowerUpCategory.GOOD else PowerUpCategory.BAD
+        return PowerUpCatalog.definitions.values.asSequence()
+            .filter { it.category == category && it.type !in setOf(PowerUpType.RANDOM_GOOD, PowerUpType.RANDOM_BAD) }
+            .map { it.type }.filter(::canActivatePowerUp).toList()
+    }
+
+    fun activatePowerUp(requested: PowerUpType): Boolean {
+        val type = if (requested == PowerUpType.RANDOM_GOOD || requested == PowerUpType.RANDOM_BAD) {
+            val candidates = randomCandidates(requested); if (candidates.isEmpty()) return false
+            candidates[effectRandom.nextInt(candidates.size)]
+        } else requested
+        if (!canActivatePowerUp(type)) return false
+        powerUps.activate(type)
+        when (type) {
+            PowerUpType.EXPAND_PADDLE -> {
+                expandPaddleStacks = (expandPaddleStacks + 1).coerceAtMost(MAX_EXPAND_STACKS)
+                paddle.targetWidth = BASE_PADDLE_WIDTH + PADDLE_EXPAND_STEP * expandPaddleStacks
+            }
+            PowerUpType.SHRINK_PADDLE -> { expandPaddleStacks = 0; stepPaddleSize(-1) }
+            PowerUpType.SUPER_SHRINK -> { expandPaddleStacks = 0; paddle.targetWidth = PADDLE_SIZE_LEVELS.first() }
+            PowerUpType.STICKY_PADDLE, PowerUpType.LASER_PADDLE, PowerUpType.LASER_AUTO_CHARGE,
+            PowerUpType.MAGNETIC_PADDLE, PowerUpType.DUAL_PADDLE -> refreshPaddleMode()
+            PowerUpType.MULTI_BALL -> fillBallsTo((balls.size * 2).coerceAtMost(MAX_BALLS))
+            PowerUpType.TRIPLE_BALL -> fillBallsTo((balls.size * 3).coerceAtMost(MAX_BALLS))
+            PowerUpType.EIGHT_BALL -> fillBallsTo(MAX_BALLS)
+            PowerUpType.MULTIBALL_PLUS_4 -> fillBallsTo((balls.size + 4).coerceAtMost(ABSOLUTE_MAX_BALLS))
+            PowerUpType.MULTIBALL_15 -> fillBallsTo(ABSOLUTE_MAX_BALLS)
+            PowerUpType.EXTRA_LIFE -> lives++
+            PowerUpType.SLOW_BALL, PowerUpType.FAST_BALL -> balls.forEach(::syncBallSpeed)
+            PowerUpType.FIRE_BALL -> balls.forEach { it.element = BallElement.FIRE }
+            PowerUpType.PIERCING_BALL -> balls.forEach { it.collisionMode = BallCollisionMode.PIERCING }
+            PowerUpType.GHOST_BALL -> balls.forEach { it.collisionMode = BallCollisionMode.GHOST }
+            PowerUpType.EXPLOSIVE_BALL -> balls.forEach { it.element = BallElement.EXPLOSIVE }
+            PowerUpType.KILL_PADDLE -> loseLife(force = true, feedback = "PLAYER KILLED")
+            PowerUpType.INSTANT_KILL_BALL -> bricks.filter(::isHazardCandidate).sortedBy { effectRandom.nextInt() }.take(4).forEach { brick ->
+                brick.temporaryOriginalType = brick.type
+                brick.temporaryOriginalHealth = brick.health
+                brick.temporaryOriginalInitialHealth = brick.initialHealth
+                brick.type = BrickType.SPIKED_HAZARD; brick.health = 1; brick.initialHealth = 1
+            }
+            PowerUpType.SET_OFF_EXPLODING -> {
+                val chain = mutableSetOf<Int>()
+                bricks.toList().filter { it.type == BrickType.EXPLOSIVE }.forEach { damageBrick(it, null, chain) }
+            }
+            PowerUpType.LEVEL_WARP -> completeLevel()
+            PowerUpType.SHRINK_BALL -> balls.forEach { it.size = it.baseSize.smaller() }
+            PowerUpType.ZAP_BRICKS -> bricks.filter(::isZapTarget).forEach { it.type = BrickType.NORMAL_ONE_HIT; it.health = 1 }
+            PowerUpType.MEGA_BALL -> balls.forEach { it.size = it.baseSize.larger() }
+            PowerUpType.EXPAND_EXPLODING -> explosionExpansion = 2
+            PowerUpType.FALLING_BRICKS -> fallingBricksMode = true
+            PowerUpType.TIMED_BOMB_BRICKS -> Unit
+            PowerUpType.ONE_HIT_ANY_BRICK -> Unit
+            PowerUpType.BOTTOM_SHIELD, PowerUpType.PADDLE_SHIELD -> bottomShield = true
+            PowerUpType.SCORE_X2, PowerUpType.SCORE_X3, PowerUpType.INVERT_CONTROLS,
+            PowerUpType.SLIPPERY_PADDLE, PowerUpType.POWERUP_MAGNET, PowerUpType.POWERUP_JAM -> Unit
+            PowerUpType.RANDOM_GOOD, PowerUpType.RANDOM_BAD -> error("Random effects must resolve before dispatch")
+        }
+        refreshPaddleMode()
+        events += GameplayEvent.Feedback("${PowerUpInfoRepository.info(type).shortName} ACTIVATED")
+        return true
+    }
+
+    private fun isZapTarget(brick: Brick) = brick.type in setOf(
+        BrickType.INDESTRUCTIBLE, BrickType.ARMORED_TWO_HIT, BrickType.ARMORED_THREE_HIT,
+        BrickType.REGENERATING, BrickType.GHOST,
+    )
+
+    fun tryUseInventoryBooster(type: PowerUpType): BoosterUseResult {
+        if (type !in SHOP_ELIGIBLE_TYPES) return BoosterUseResult.Rejected("NOT AVAILABLE")
+        if (!canActivatePowerUp(type)) return BoosterUseResult.Rejected("BOOSTER HAS NO EFFECT NOW")
+        return if (activatePowerUp(type)) BoosterUseResult.Applied else BoosterUseResult.Rejected("BOOSTER COULD NOT START")
+    }
+
+    fun useItem(type: PowerUpType, items: BoosterInventoryStore): BoosterUseResult {
+        if (items.count(type) <= 0) return BoosterUseResult.Rejected("NO ITEMS OWNED")
+        val result = tryUseInventoryBooster(type)
+        if (result is BoosterUseResult.Applied) check(items.consume(type)) { "Items count changed during activation" }
+        return result
+    }
+
+    private fun stepPaddleSize(direction: Int) {
+        val index = PADDLE_SIZE_LEVELS.indices.minBy { abs(PADDLE_SIZE_LEVELS[it] - paddle.targetWidth) }
+        paddle.targetWidth = PADDLE_SIZE_LEVELS[(index + direction).coerceIn(PADDLE_SIZE_LEVELS.indices)]
+    }
+
+    internal fun paddleCollisionBounds(): List<Rectangle> = PaddleVisualLayout
+        .slots(paddle.x, paddle.width, PowerUpType.DUAL_PADDLE in powerUps)
+        .map { slot -> Rectangle(slot.centerX - slot.width / 2f, paddle.y - paddle.height / 2f, slot.width, paddle.height) }
+
+    private fun onExpired(type: PowerUpType) {
+        when (type) {
+            PowerUpType.STICKY_PADDLE, PowerUpType.LASER_PADDLE, PowerUpType.LASER_AUTO_CHARGE,
+            PowerUpType.MAGNETIC_PADDLE, PowerUpType.DUAL_PADDLE -> refreshPaddleMode()
+            PowerUpType.FIRE_BALL -> balls.forEach { if (it.element == BallElement.FIRE) it.element = activeElement() }
+            PowerUpType.EXPLOSIVE_BALL -> balls.forEach { if (it.element == BallElement.EXPLOSIVE) it.element = activeElement() }
+            PowerUpType.PIERCING_BALL -> balls.forEach { it.collisionMode = BallCollisionMode.NORMAL }
+            PowerUpType.GHOST_BALL -> balls.forEach { if (it.collisionMode == BallCollisionMode.GHOST) it.collisionMode = BallCollisionMode.NORMAL }
+            PowerUpType.FAST_BALL, PowerUpType.SLOW_BALL -> balls.forEach(::syncBallSpeed)
+            PowerUpType.MEGA_BALL -> balls.forEach { it.size = it.baseSize }
+            PowerUpType.MULTIBALL_PLUS_4, PowerUpType.MULTIBALL_15 -> if (balls.size > 1) {
+                val survivor = balls.first(); balls.clear(); balls += survivor
+            }
+            PowerUpType.INSTANT_KILL_BALL -> bricks.filter { it.temporaryOriginalType != null }.forEach { brick ->
+                brick.type = requireNotNull(brick.temporaryOriginalType)
+                brick.health = brick.temporaryOriginalHealth
+                brick.initialHealth = brick.temporaryOriginalInitialHealth
+                brick.temporaryOriginalType = null
+            }
+            PowerUpType.SCORE_X2, PowerUpType.SCORE_X3, PowerUpType.INVERT_CONTROLS,
+            PowerUpType.SLIPPERY_PADDLE, PowerUpType.POWERUP_MAGNET, PowerUpType.POWERUP_JAM -> Unit
+            PowerUpType.ONE_HIT_ANY_BRICK, PowerUpType.TIMED_BOMB_BRICKS -> Unit
+            PowerUpType.EXPAND_PADDLE, PowerUpType.SHRINK_PADDLE, PowerUpType.SUPER_SHRINK, PowerUpType.SHRINK_BALL,
+            PowerUpType.EXPAND_EXPLODING, PowerUpType.FALLING_BRICKS, PowerUpType.MULTI_BALL,
+            PowerUpType.TRIPLE_BALL, PowerUpType.EXTRA_LIFE, PowerUpType.RANDOM_GOOD,
+            PowerUpType.RANDOM_BAD, PowerUpType.KILL_PADDLE, PowerUpType.SET_OFF_EXPLODING,
+            PowerUpType.LEVEL_WARP, PowerUpType.ZAP_BRICKS,
+            PowerUpType.EIGHT_BALL, PowerUpType.BOTTOM_SHIELD,
+            PowerUpType.PADDLE_SHIELD -> error("Non-timed power-up expired: $type")
+        }
+    }
+
+    private fun refreshPaddleMode() {
+        paddle.mode = when {
+            PowerUpType.LASER_PADDLE in powerUps || PowerUpType.LASER_AUTO_CHARGE in powerUps -> PaddleMode.LASER
+            PowerUpType.STICKY_PADDLE in powerUps -> PaddleMode.STICKY
+            PowerUpType.MAGNETIC_PADDLE in powerUps -> PaddleMode.MAGNETIC
+            PowerUpType.EXPAND_PADDLE in powerUps -> PaddleMode.EXPANDED
+            PowerUpType.SHRINK_PADDLE in powerUps || PowerUpType.SUPER_SHRINK in powerUps -> PaddleMode.SHRUNK
+            else -> PaddleMode.NORMAL
+        }
+    }
+
+    private fun fillBallsTo(targetTotal: Int) {
+        if (balls.isEmpty()) return
+        val originals = balls.toList()
+        val angleOffsets = floatArrayOf(-42f, 42f, -28f, 28f, -14f, 14f, 56f, -56f)
+        var cloneIndex = 0
+        while (balls.size < targetTotal.coerceAtMost(ABSOLUTE_MAX_BALLS)) {
+            val source = originals[cloneIndex % originals.size]
+            val velocity = Vector2(source.velocity)
+            if (velocity.isZero(.001f)) velocity.set(0f, 1f)
+            velocity.rotateDeg(angleOffsets[cloneIndex % angleOffsets.size])
+            val clone = createBall(Vector2(source.position), velocity, source)
+            clone.position.x = (clone.position.x + (if (cloneIndex % 2 == 0) -1f else 1f) * source.radius * .45f)
+                .coerceIn(clone.radius, WIDTH - clone.radius)
+            syncBallSpeed(clone); balls += clone; cloneIndex++
+        }
+    }
+
+    private fun fireLasers() {
+        if (laserCooldown > 0f || laserShots.size > MAX_LASER_SHOTS - 2) return
+        val cannonTipY = paddle.y + 50f
+        laserShots += LaserShot(Vector2(paddle.x - paddle.width * .36f, cannonTipY))
+        laserShots += LaserShot(Vector2(paddle.x + paddle.width * .36f, cannonTipY))
+        laserCooldown = if (PowerUpType.LASER_AUTO_CHARGE in powerUps) GameplayTuning.LASER_AUTO_CHARGE_COOLDOWN else GameplayTuning.LASER_COOLDOWN
+        events += GameplayEvent.LaserFired
+    }
+
+    private fun killSpecificBall(ball: Ball) {
+        if (balls.size > 1) { balls.remove(ball); events += GameplayEvent.Feedback("BALL DESTROYED", "explosion") }
+        else loseLife(force = true, feedback = "BALL DESTROYED")
+    }
+
+    private fun isHazardCandidate(brick: Brick) = brick.type.breakable && !brick.locked &&
+        brick.type !in setOf(BrickType.SPIKED_HAZARD, BrickType.BOSS_CORE, BrickType.KEY_BRICK,
+            BrickType.SWITCH, BrickType.CHAIN_BRICK, BrickType.POWERUP_CARRIER, BrickType.RANDOM_INVENTORY_POWERUP)
+
+    private fun updateLasers(dt: Float) {
+        laserShots.forEach { shot ->
+            shot.previousPosition.set(shot.position)
+            val delta = Vector2(0f, 820f * dt)
+            val hit = bricks.mapNotNull { brick -> SweptCollision.circleVsAabb(shot.position, delta, 4f, brick.bounds, brick.id) }
+                .minByOrNull { it.time }
+            if (hit != null) {
+                shot.position.mulAdd(delta, hit.time)
+                bricks.firstOrNull { it.id == hit.targetId }?.let { damageBrick(it) }
+                shot.alive = false; events += GameplayEvent.LaserHit
+            } else shot.position.add(delta)
+            if (shot.position.y > HEIGHT) shot.alive = false
+        }
+        laserShots.removeAll { !it.alive }
+    }
+
+    private fun loseLife(force: Boolean, feedback: String = "BALL LOST") {
+        if (!force && bottomShield) {
+            bottomShield = false; powerUps.deactivate(PowerUpType.BOTTOM_SHIELD); powerUps.deactivate(PowerUpType.PADDLE_SHIELD)
+            events += GameplayEvent.Feedback("BOTTOM SHIELD SAVED THE BALL"); serve(); return
+        }
+        balls.clear(); lives = (lives - 1).coerceAtLeast(0); powerUps.clearLifeScoped(); bottomShield = false
+        events += GameplayEvent.Feedback(feedback, if (force) "explosion" else "wall_hit")
+        if (lives <= 0) phase = GamePhase.GAME_OVER else serve()
+    }
+
+    private fun completeLevel() {
+        if (phase == GamePhase.LEVEL_COMPLETE) return
+        phase = GamePhase.LEVEL_COMPLETE; levelCompletionCount++
+    }
+
+    private fun scoreMultiplier() = when {
+        PowerUpType.SCORE_X3 in powerUps -> 3
+        PowerUpType.SCORE_X2 in powerUps -> 2
+        else -> 1
+    }
+}

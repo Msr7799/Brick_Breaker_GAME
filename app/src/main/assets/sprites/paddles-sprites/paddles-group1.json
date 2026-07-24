@@ -1,0 +1,368 @@
+[
+  {
+    "spriteNumber": 1,
+    "name": "paddle_weapon_twin_railgun",
+    "displayName": { "en": "Twin Railgun", "ar": "مدفع السكك المزدوج" },
+    "group": { "id": "weapon", "en": "Weapon Paddle", "ar": "المضرب المسلح" },
+    "description": {
+      "en": "A connected gunmetal paddle with two precision railguns that fire straight upward.",
+      "ar": "مضرب معدني متصل مزود بمدفعي سكك دقيقين يطلقان مباشرة إلى الأعلى."
+    },
+    "specifications": {
+      "rangeRating": 5,
+      "weapon": { "en": "Dual railguns", "ar": "مدفعا سكك مزدوجان" },
+      "firingDirection": { "en": "Upward", "ar": "إلى الأعلى" },
+      "surface": { "en": "Flat brushed gunmetal", "ar": "سطح معدني مصقول ومسطح" },
+      "accentColor": { "en": "Cyan", "ar": "سماوي" }
+    },
+    "x": 341,
+    "y": 144,
+    "width": 312,
+    "height": 97
+  },
+  {
+    "spriteNumber": 4,
+    "name": "paddle_normal_solar_ceramic",
+    "displayName": { "en": "Solar Ceramic", "ar": "السيراميك الشمسي" },
+    "group": { "id": "normal", "en": "Normal Paddle", "ar": "المضرب العادي" },
+    "description": {
+      "en": "A heat-resistant ceramic paddle with a wide flat contact surface and refined gold trim.",
+      "ar": "مضرب سيراميكي مقاوم للحرارة بسطح ارتداد عريض ومسطح وحواف ذهبية أنيقة."
+    },
+    "specifications": {
+      "speedRating": 5,
+      "material": { "en": "Solar ceramic", "ar": "سيراميك شمسي" },
+      "surface": { "en": "Smooth flat ceramic", "ar": "سيراميك أملس ومسطح" },
+      "accentColor": { "en": "Gold", "ar": "ذهبي" }
+    },
+    "x": 15,
+    "y": 175,
+    "width": 300,
+    "height": 65
+  },
+  {
+    "spriteNumber": 5,
+    "name": "paddle_sticky_liquid_metal_bond",
+    "displayName": { "en": "Liquid Metal Bond", "ar": "اللاصق المعدني السائل" },
+    "group": { "id": "sticky", "en": "Sticky Paddle", "ar": "مضرب اللصق" },
+    "description": {
+      "en": "A mirror-silver paddle whose level metallic bonding film catches and holds the ball.",
+      "ar": "مضرب فضي عاكس بطبقة ترابط معدنية مستوية تلتقط الكرة وتثبتها."
+    },
+    "specifications": {
+      "rangeRating": 3,
+      "adhesiveTechnology": { "en": "Liquid-metal bonding film", "ar": "غشاء التصاق معدني سائل" },
+      "surface": { "en": "Solid, level and mirror-smooth", "ar": "صلب ومستوي وناعم كالمرآة" },
+      "accentColor": { "en": "Silver", "ar": "فضي" }
+    },
+    "x": 690,
+    "y": 175,
+    "width": 319,
+    "height": 66
+  },
+  {
+    "spriteNumber": 7,
+    "name": "paddle_weapon_photon_lance",
+    "displayName": { "en": "Photon Lance", "ar": "رمح الفوتون" },
+    "group": { "id": "weapon", "en": "Weapon Paddle", "ar": "المضرب المسلح" },
+    "description": {
+      "en": "A bright alloy paddle fitted with twin photon emitters for accurate upward shots.",
+      "ar": "مضرب من سبيكة مضيئة مزود بباعثي فوتون لإطلاقات دقيقة نحو الأعلى."
+    },
+    "specifications": {
+      "rangeRating": 4,
+      "weapon": { "en": "Dual photon emitters", "ar": "باعثا فوتون مزدوجان" },
+      "firingDirection": { "en": "Upward", "ar": "إلى الأعلى" },
+      "surface": { "en": "Flat satin alloy", "ar": "سطح سبيكة ساتاني مسطح" },
+      "accentColor": { "en": "Ice blue", "ar": "أزرق جليدي" }
+    },
+    "x": 343,
+    "y": 295,
+    "width": 309,
+    "height": 87
+  },
+  {
+    "spriteNumber": 8,
+    "name": "paddle_sticky_polar_gel",
+    "displayName": { "en": "Polar Gel", "ar": "الهلام القطبي" },
+    "group": { "id": "sticky", "en": "Sticky Paddle", "ar": "مضرب اللصق" },
+    "description": {
+      "en": "A chilled adhesive polymer paddle that grips the ball with a smooth frozen surface.",
+      "ar": "مضرب بوليمري لاصق ومبرد يمسك الكرة بسطح جليدي أملس."
+    },
+    "specifications": {
+      "rangeRating": 4,
+      "adhesiveTechnology": { "en": "Polar adhesive gel", "ar": "هلام لاصق قطبي" },
+      "surface": { "en": "Flat frozen polymer", "ar": "بوليمر جليدي مسطح" },
+      "accentColor": { "en": "Frost blue", "ar": "أزرق صقيعي" }
+    },
+    "x": 688,
+    "y": 315,
+    "width": 323,
+    "height": 67
+  },
+  {
+    "spriteNumber": 9,
+    "name": "paddle_normal_frost_alloy",
+    "displayName": { "en": "Frost Alloy", "ar": "سبيكة الصقيع" },
+    "group": { "id": "normal", "en": "Normal Paddle", "ar": "المضرب العادي" },
+    "description": {
+      "en": "A lightweight frost-treated alloy paddle with a cool, low-friction contact plane.",
+      "ar": "مضرب خفيف من سبيكة معالجة بالصقيع بسطح ارتداد بارد ومنخفض الاحتكاك."
+    },
+    "specifications": {
+      "speedRating": 4,
+      "material": { "en": "Frost-treated alloy", "ar": "سبيكة معالجة بالصقيع" },
+      "surface": { "en": "Smooth flat frozen metal", "ar": "معدن جليدي أملس ومسطح" },
+      "accentColor": { "en": "Pale blue", "ar": "أزرق فاتح" }
+    },
+    "x": 11,
+    "y": 316,
+    "width": 306,
+    "height": 66
+  },
+  {
+    "spriteNumber": 18,
+    "name": "paddle_weapon_sonic_cannon",
+    "displayName": { "en": "Sonic Cannon", "ar": "المدفع الصوتي" },
+    "group": { "id": "weapon", "en": "Weapon Paddle", "ar": "المضرب المسلح" },
+    "description": {
+      "en": "A navy combat paddle that projects concentrated sonic pulses from two vertical cannons.",
+      "ar": "مضرب قتالي كحلي يطلق نبضات صوتية مركزة من مدفعين رأسيين."
+    },
+    "specifications": {
+      "rangeRating": 3,
+      "weapon": { "en": "Dual sonic cannons", "ar": "مدفعان صوتيان" },
+      "firingDirection": { "en": "Upward", "ar": "إلى الأعلى" },
+      "surface": { "en": "Flat navy composite", "ar": "سطح مركب كحلي مسطح" },
+      "accentColor": { "en": "Electric blue", "ar": "أزرق كهربائي" }
+    },
+    "x": 340,
+    "y": 431,
+    "width": 313,
+    "height": 92
+  },
+  {
+    "spriteNumber": 19,
+    "name": "paddle_normal_sapphire_monolith",
+    "displayName": { "en": "Sapphire Monolith", "ar": "كتلة الياقوت" },
+    "group": { "id": "normal", "en": "Normal Paddle", "ar": "المضرب العادي" },
+    "description": {
+      "en": "A single-piece sapphire-blue paddle built for stable, predictable ball rebounds.",
+      "ar": "مضرب أزرق ياقوتي من قطعة واحدة لارتدادات ثابتة ومتوقعة للكرة."
+    },
+    "specifications": {
+      "speedRating": 4,
+      "material": { "en": "Sapphire composite", "ar": "مركب ياقوتي" },
+      "surface": { "en": "Broad flat monolithic surface", "ar": "سطح كتلي عريض ومسطح" },
+      "accentColor": { "en": "Deep blue", "ar": "أزرق عميق" }
+    },
+    "x": 12,
+    "y": 454,
+    "width": 303,
+    "height": 69
+  },
+  {
+    "spriteNumber": 20,
+    "name": "paddle_sticky_graviton_film",
+    "displayName": { "en": "Graviton Film", "ar": "غشاء الجرافيتون" },
+    "group": { "id": "sticky", "en": "Sticky Paddle", "ar": "مضرب اللصق" },
+    "description": {
+      "en": "A gravity-reactive membrane that slows and holds the ball against its level surface.",
+      "ar": "غشاء متفاعل مع الجاذبية يبطئ الكرة ويثبتها على سطحه المستوي."
+    },
+    "specifications": {
+      "rangeRating": 4,
+      "adhesiveTechnology": { "en": "Graviton attraction film", "ar": "غشاء جذب جرافيتوني" },
+      "surface": { "en": "Flat dark energy membrane", "ar": "غشاء طاقة داكن ومسطح" },
+      "accentColor": { "en": "Violet", "ar": "بنفسجي" }
+    },
+    "x": 690,
+    "y": 454,
+    "width": 319,
+    "height": 69
+  },
+  {
+    "spriteNumber": 31,
+    "name": "paddle_weapon_cryo_blaster",
+    "displayName": { "en": "Cryo Blaster", "ar": "قاذف التجميد" },
+    "group": { "id": "weapon", "en": "Weapon Paddle", "ar": "المضرب المسلح" },
+    "description": {
+      "en": "A reinforced frost-metal paddle that fires freezing energy from twin cryogenic nozzles.",
+      "ar": "مضرب معدني جليدي مدعم يطلق طاقة تجميد من فوهتين مبردتين."
+    },
+    "specifications": {
+      "rangeRating": 4,
+      "weapon": { "en": "Dual cryogenic blasters", "ar": "قاذفا تجميد مزدوجان" },
+      "firingDirection": { "en": "Upward", "ar": "إلى الأعلى" },
+      "surface": { "en": "Flat reinforced frost metal", "ar": "معدن صقيعي مدعم ومسطح" },
+      "accentColor": { "en": "Glacier blue", "ar": "أزرق جليدي" }
+    },
+    "x": 341,
+    "y": 564,
+    "width": 312,
+    "height": 97
+  },
+  {
+    "spriteNumber": 40,
+    "name": "paddle_normal_copper_vector",
+    "displayName": { "en": "Copper Vector", "ar": "متجه النحاس" },
+    "group": { "id": "normal", "en": "Normal Paddle", "ar": "المضرب العادي" },
+    "description": {
+      "en": "A geometric copper-titanium paddle tuned for fast movement and controlled rebounds.",
+      "ar": "مضرب هندسي من النحاس والتيتانيوم مضبوط للحركة السريعة والارتداد المتحكم به."
+    },
+    "specifications": {
+      "speedRating": 5,
+      "material": { "en": "Copper-titanium composite", "ar": "مركب النحاس والتيتانيوم" },
+      "surface": { "en": "Flat geometric metal", "ar": "سطح معدني هندسي ومسطح" },
+      "accentColor": { "en": "Teal", "ar": "فيروزي داكن" }
+    },
+    "x": 11,
+    "y": 591,
+    "width": 306,
+    "height": 68
+  },
+  {
+    "spriteNumber": 41,
+    "name": "paddle_sticky_nano_suction",
+    "displayName": { "en": "Nano Suction", "ar": "الشفط النانوي" },
+    "group": { "id": "sticky", "en": "Sticky Paddle", "ar": "مضرب اللصق" },
+    "description": {
+      "en": "A graphite paddle covered with microscopic suction cells that secure the ball on contact.",
+      "ar": "مضرب جرافيتي مغطى بخلايا شفط مجهرية تثبت الكرة عند ملامستها."
+    },
+    "specifications": {
+      "rangeRating": 3,
+      "adhesiveTechnology": { "en": "Nano suction cells", "ar": "خلايا شفط نانوية" },
+      "surface": { "en": "Flat fine honeycomb texture", "ar": "نسيج خلوي دقيق ومسطح" },
+      "accentColor": { "en": "Cyan", "ar": "سماوي" }
+    },
+    "x": 687,
+    "y": 591,
+    "width": 324,
+    "height": 69
+  },
+  {
+    "spriteNumber": 44,
+    "name": "paddle_weapon_magnetic_accelerator",
+    "displayName": { "en": "Magnetic Accelerator", "ar": "المعجل المغناطيسي" },
+    "group": { "id": "weapon", "en": "Weapon Paddle", "ar": "المضرب المسلح" },
+    "description": {
+      "en": "A heavy combat paddle with two coil accelerators that launch magnetically charged projectiles.",
+      "ar": "مضرب قتالي ثقيل مزود بمعجلين ملفيين يطلقان مقذوفات مشحونة مغناطيسيًا."
+    },
+    "specifications": {
+      "rangeRating": 4,
+      "weapon": { "en": "Dual magnetic coil accelerators", "ar": "معجلان مغناطيسيان ملفيان" },
+      "firingDirection": { "en": "Upward", "ar": "إلى الأعلى" },
+      "surface": { "en": "Flat armored gunmetal", "ar": "سطح معدني مدرع ومسطح" },
+      "accentColor": { "en": "Purple", "ar": "بنفسجي" }
+    },
+    "x": 341,
+    "y": 709,
+    "width": 310,
+    "height": 89
+  },
+  {
+    "spriteNumber": 64,
+    "name": "paddle_normal_honeycomb_aegis",
+    "displayName": { "en": "Honeycomb Aegis", "ar": "درع الخلية" },
+    "group": { "id": "normal", "en": "Normal Paddle", "ar": "المضرب العادي" },
+    "description": {
+      "en": "An armored honeycomb paddle that balances durability, control and responsive movement.",
+      "ar": "مضرب مدرع بنمط خلوي يوازن بين المتانة والتحكم وسرعة الاستجابة."
+    },
+    "specifications": {
+      "speedRating": 4,
+      "material": { "en": "Honeycomb armor composite", "ar": "مركب درع خلوي" },
+      "surface": { "en": "Flat micro-hex surface", "ar": "سطح سداسي دقيق ومسطح" },
+      "accentColor": { "en": "Amber", "ar": "كهرماني" }
+    },
+    "x": 11,
+    "y": 731,
+    "width": 306,
+    "height": 64
+  },
+  {
+    "spriteNumber": 65,
+    "name": "paddle_sticky_reactive_crystal",
+    "displayName": { "en": "Reactive Crystal", "ar": "الكريستال التفاعلي" },
+    "group": { "id": "sticky", "en": "Sticky Paddle", "ar": "مضرب اللصق" },
+    "description": {
+      "en": "A rose-gold crystal paddle whose reactive surface locks onto the ball without losing flatness.",
+      "ar": "مضرب كريستالي بلون ذهبي وردي يتفاعل سطحه مع الكرة ويثبتها مع بقائه مسطحًا."
+    },
+    "specifications": {
+      "rangeRating": 4,
+      "adhesiveTechnology": { "en": "Reactive crystal lattice", "ar": "شبكة كريستالية تفاعلية" },
+      "surface": { "en": "Smooth unbroken crystal plane", "ar": "سطح كريستالي أملس ومتصل" },
+      "accentColor": { "en": "Rose gold", "ar": "ذهبي وردي" }
+    },
+    "x": 689,
+    "y": 731,
+    "width": 321,
+    "height": 66
+  },
+  {
+    "spriteNumber": 74,
+    "name": "paddle_weapon_shard_launcher",
+    "displayName": { "en": "Shard Launcher", "ar": "قاذف الشظايا" },
+    "group": { "id": "weapon", "en": "Weapon Paddle", "ar": "المضرب المسلح" },
+    "description": {
+      "en": "A dark armored paddle that launches concentrated energy shards from twin vertical emitters.",
+      "ar": "مضرب مدرع داكن يطلق شظايا طاقة مركزة من باعثين رأسيين."
+    },
+    "specifications": {
+      "rangeRating": 4,
+      "weapon": { "en": "Dual energy-shard launchers", "ar": "قاذفا شظايا طاقة مزدوجان" },
+      "firingDirection": { "en": "Upward", "ar": "إلى الأعلى" },
+      "surface": { "en": "Flat black titanium", "ar": "تيتانيوم أسود مسطح" },
+      "accentColor": { "en": "Amber", "ar": "كهرماني" }
+    },
+    "x": 341,
+    "y": 835,
+    "width": 310,
+    "height": 104
+  },
+  {
+    "spriteNumber": 77,
+    "name": "paddle_normal_lunar_chrome",
+    "displayName": { "en": "Lunar Chrome", "ar": "كروم القمر" },
+    "group": { "id": "normal", "en": "Normal Paddle", "ar": "المضرب العادي" },
+    "description": {
+      "en": "A mirror-chrome lunar paddle with balanced weight and a precise low-friction surface.",
+      "ar": "مضرب قمري من الكروم العاكس بوزن متوازن وسطح دقيق منخفض الاحتكاك."
+    },
+    "specifications": {
+      "speedRating": 5,
+      "material": { "en": "Lunar chrome alloy", "ar": "سبيكة كروم قمرية" },
+      "surface": { "en": "Mirror-smooth flat chrome", "ar": "كروم عاكس أملس ومسطح" },
+      "accentColor": { "en": "Violet", "ar": "بنفسجي" }
+    },
+    "x": 12,
+    "y": 867,
+    "width": 304,
+    "height": 71
+  },
+  {
+    "spriteNumber": 78,
+    "name": "paddle_sticky_biopolymer_silk",
+    "displayName": { "en": "Bio-Polymer Silk", "ar": "حرير البوليمر الحيوي" },
+    "group": { "id": "sticky", "en": "Sticky Paddle", "ar": "مضرب اللصق" },
+    "description": {
+      "en": "A seamless bio-polymer paddle with a silky matte surface that gently captures the ball.",
+      "ar": "مضرب متصل من البوليمر الحيوي بسطح حريري مطفي يلتقط الكرة بلطف."
+    },
+    "specifications": {
+      "rangeRating": 4,
+      "adhesiveTechnology": { "en": "Adaptive bio-polymer", "ar": "بوليمر حيوي متكيف" },
+      "surface": { "en": "Seamless matte-flat finish", "ar": "تشطيب مطفي مسطح بلا فواصل" },
+      "accentColor": { "en": "Pearl green", "ar": "أخضر لؤلؤي" }
+    },
+    "x": 687,
+    "y": 869,
+    "width": 322,
+    "height": 68
+  }
+]

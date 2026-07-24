@@ -1,0 +1,34 @@
+
+ui.png
+size: 1024, 512
+format: RGBA8888
+filter: Linear, Linear
+repeat: none
+bar
+  rotate: false
+  xy: 2, 2
+  size: 192, 48
+  orig: 192, 48
+  offset: 0, 0
+  index: -1
+button_primary
+  rotate: false
+  xy: 300, 212
+  size: 384, 128
+  orig: 384, 128
+  offset: 0, 0
+  index: -1
+github_mark
+  rotate: false
+  xy: 2, 54
+  size: 294, 286
+  orig: 294, 288
+  offset: 0, 2
+  index: -1
+panel
+  rotate: false
+  xy: 300, 80
+  size: 384, 128
+  orig: 384, 128
+  offset: 0, 0
+  index: -1

@@ -1,0 +1,12 @@
+[
+  {
+    "id": "github_invertocat_white",
+    "author": "GitHub, Inc.",
+    "sourcePage": "https://brand.github.com/foundations/logo",
+    "downloadUrl": "https://brand.github.com/GitHub_Logos.zip",
+    "archiveSha256": "E2A67D6CC51D990A52C46C1CF6BCAB688DB4830982174BCA50E0BE7A5C2F3194",
+    "destination": "ui.atlas/github_mark",
+    "runtimeReference": "SettingsScreen developer social button",
+    "modified": false
+  }
+]

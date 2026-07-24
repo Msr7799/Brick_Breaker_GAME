@@ -1,0 +1,8 @@
+<resources>
+    <style name="Base.Theme.BrickBreakerBall" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+    <style name="Theme.BrickBreakerBall" parent="Base.Theme.BrickBreakerBall" />
+</resources>

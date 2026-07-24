@@ -1,0 +1,40 @@
+
+backgrounds.png
+size: 2048, 2048
+format: RGBA8888
+filter: Linear, Linear
+repeat: none
+world_1_foundry
+  rotate: false
+  xy: 2, 2
+  size: 720, 1280
+  orig: 720, 1280
+  offset: 0, 0
+  index: -1
+world_2_crystal
+  rotate: false
+  xy: 726, 2
+  size: 720, 1280
+  orig: 720, 1280
+  offset: 0, 0
+  index: -1
+
+backgrounds2.png
+size: 2048, 2048
+format: RGBA8888
+filter: Linear, Linear
+repeat: none
+world_3_magma
+  rotate: false
+  xy: 2, 2
+  size: 720, 1280
+  orig: 720, 1280
+  offset: 0, 0
+  index: -1
+world_4_zerog
+  rotate: false
+  xy: 726, 2
+  size: 720, 1280
+  orig: 720, 1280
+  offset: 0, 0
+  index: -1

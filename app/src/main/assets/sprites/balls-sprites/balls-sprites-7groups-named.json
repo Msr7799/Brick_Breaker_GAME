@@ -1,0 +1,2728 @@
+{
+  "image": "balls-sprites-7.png",
+  "image_width": 1536,
+  "image_height": 1024,
+  "group_count": 40,
+  "sprite_count": 271,
+  "groups": [
+    {
+      "group_index": 1,
+      "group_name": "monsters",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "skull",
+          "sprite_name": "monsters_skull",
+          "x": 667,
+          "y": 8,
+          "width": 55,
+          "height": 56
+        },
+        {
+          "index": 2,
+          "name": "zombie",
+          "sprite_name": "monsters_zombie",
+          "x": 731,
+          "y": 8,
+          "width": 53,
+          "height": 56
+        },
+        {
+          "index": 3,
+          "name": "vampire",
+          "sprite_name": "monsters_vampire",
+          "x": 792,
+          "y": 8,
+          "width": 54,
+          "height": 56
+        },
+        {
+          "index": 4,
+          "name": "werewolf",
+          "sprite_name": "monsters_werewolf",
+          "x": 854,
+          "y": 8,
+          "width": 54,
+          "height": 56
+        },
+        {
+          "index": 5,
+          "name": "frankenstein",
+          "sprite_name": "monsters_frankenstein",
+          "x": 914,
+          "y": 8,
+          "width": 55,
+          "height": 56
+        },
+        {
+          "index": 6,
+          "name": "mummy",
+          "sprite_name": "monsters_mummy",
+          "x": 976,
+          "y": 8,
+          "width": 54,
+          "height": 56
+        },
+        {
+          "index": 7,
+          "name": "ghost",
+          "sprite_name": "monsters_ghost",
+          "x": 1037,
+          "y": 8,
+          "width": 54,
+          "height": 56
+        }
+      ]
+    },
+    {
+      "group_index": 2,
+      "group_name": "biomes",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "desert",
+          "sprite_name": "biomes_desert",
+          "x": 1119,
+          "y": 8,
+          "width": 51,
+          "height": 53
+        },
+        {
+          "index": 2,
+          "name": "volcano",
+          "sprite_name": "biomes_volcano",
+          "x": 1179,
+          "y": 8,
+          "width": 51,
+          "height": 52
+        },
+        {
+          "index": 3,
+          "name": "swamp",
+          "sprite_name": "biomes_swamp",
+          "x": 1239,
+          "y": 8,
+          "width": 50,
+          "height": 52
+        },
+        {
+          "index": 4,
+          "name": "grassland",
+          "sprite_name": "biomes_grassland",
+          "x": 1297,
+          "y": 8,
+          "width": 50,
+          "height": 52
+        },
+        {
+          "index": 5,
+          "name": "canyon",
+          "sprite_name": "biomes_canyon",
+          "x": 1355,
+          "y": 8,
+          "width": 50,
+          "height": 52
+        },
+        {
+          "index": 6,
+          "name": "forest",
+          "sprite_name": "biomes_forest",
+          "x": 1413,
+          "y": 8,
+          "width": 51,
+          "height": 51
+        },
+        {
+          "index": 7,
+          "name": "ice",
+          "sprite_name": "biomes_ice",
+          "x": 1473,
+          "y": 8,
+          "width": 49,
+          "height": 52
+        }
+      ]
+    },
+    {
+      "group_index": 3,
+      "group_name": "anatomy",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "heart",
+          "sprite_name": "anatomy_heart",
+          "x": 660,
+          "y": 101,
+          "width": 53,
+          "height": 55
+        },
+        {
+          "index": 2,
+          "name": "brain",
+          "sprite_name": "anatomy_brain",
+          "x": 723,
+          "y": 101,
+          "width": 55,
+          "height": 55
+        },
+        {
+          "index": 3,
+          "name": "lungs",
+          "sprite_name": "anatomy_lungs",
+          "x": 786,
+          "y": 101,
+          "width": 54,
+          "height": 55
+        },
+        {
+          "index": 4,
+          "name": "liver",
+          "sprite_name": "anatomy_liver",
+          "x": 849,
+          "y": 102,
+          "width": 53,
+          "height": 54
+        },
+        {
+          "index": 5,
+          "name": "kidney",
+          "sprite_name": "anatomy_kidney",
+          "x": 913,
+          "y": 101,
+          "width": 51,
+          "height": 55
+        },
+        {
+          "index": 6,
+          "name": "stomach",
+          "sprite_name": "anatomy_stomach",
+          "x": 973,
+          "y": 101,
+          "width": 52,
+          "height": 55
+        },
+        {
+          "index": 7,
+          "name": "eye",
+          "sprite_name": "anatomy_eye",
+          "x": 1035,
+          "y": 102,
+          "width": 53,
+          "height": 54
+        }
+      ]
+    },
+    {
+      "group_index": 4,
+      "group_name": "sports",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "soccer_ball",
+          "sprite_name": "sports_soccer_ball",
+          "x": 1118,
+          "y": 105,
+          "width": 49,
+          "height": 51
+        },
+        {
+          "index": 2,
+          "name": "basketball",
+          "sprite_name": "sports_basketball",
+          "x": 1177,
+          "y": 105,
+          "width": 50,
+          "height": 51
+        },
+        {
+          "index": 3,
+          "name": "tennis_ball",
+          "sprite_name": "sports_tennis_ball",
+          "x": 1237,
+          "y": 105,
+          "width": 50,
+          "height": 52
+        },
+        {
+          "index": 4,
+          "name": "baseball",
+          "sprite_name": "sports_baseball",
+          "x": 1297,
+          "y": 105,
+          "width": 49,
+          "height": 51
+        },
+        {
+          "index": 5,
+          "name": "golf_ball",
+          "sprite_name": "sports_golf_ball",
+          "x": 1356,
+          "y": 106,
+          "width": 50,
+          "height": 50
+        },
+        {
+          "index": 6,
+          "name": "billiard_ball",
+          "sprite_name": "sports_billiard_ball",
+          "x": 1416,
+          "y": 105,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 7,
+          "name": "bowling_ball",
+          "sprite_name": "sports_bowling_ball",
+          "x": 1474,
+          "y": 105,
+          "width": 49,
+          "height": 51
+        }
+      ]
+    },
+    {
+      "group_index": 5,
+      "group_name": "01_solar_system",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "mercury",
+          "sprite_name": "01_solar_system_mercury",
+          "x": 9,
+          "y": 194,
+          "width": 50,
+          "height": 51
+        },
+        {
+          "index": 2,
+          "name": "venus",
+          "sprite_name": "01_solar_system_venus",
+          "x": 63,
+          "y": 194,
+          "width": 49,
+          "height": 51
+        },
+        {
+          "index": 3,
+          "name": "earth",
+          "sprite_name": "01_solar_system_earth",
+          "x": 117,
+          "y": 194,
+          "width": 50,
+          "height": 51
+        },
+        {
+          "index": 4,
+          "name": "mars",
+          "sprite_name": "01_solar_system_mars",
+          "x": 172,
+          "y": 194,
+          "width": 50,
+          "height": 51
+        },
+        {
+          "index": 5,
+          "name": "jupiter",
+          "sprite_name": "01_solar_system_jupiter",
+          "x": 226,
+          "y": 194,
+          "width": 50,
+          "height": 51
+        },
+        {
+          "index": 6,
+          "name": "saturn",
+          "sprite_name": "01_solar_system_saturn",
+          "x": 276,
+          "y": 194,
+          "width": 60,
+          "height": 51
+        },
+        {
+          "index": 7,
+          "name": "neptune",
+          "sprite_name": "01_solar_system_neptune",
+          "x": 336,
+          "y": 194,
+          "width": 49,
+          "height": 51
+        }
+      ]
+    },
+    {
+      "group_index": 6,
+      "group_name": "02_gemstones",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "ruby",
+          "sprite_name": "02_gemstones_ruby",
+          "x": 9,
+          "y": 288,
+          "width": 50,
+          "height": 53
+        },
+        {
+          "index": 2,
+          "name": "emerald",
+          "sprite_name": "02_gemstones_emerald",
+          "x": 63,
+          "y": 288,
+          "width": 49,
+          "height": 53
+        },
+        {
+          "index": 3,
+          "name": "sapphire",
+          "sprite_name": "02_gemstones_sapphire",
+          "x": 118,
+          "y": 288,
+          "width": 49,
+          "height": 53
+        },
+        {
+          "index": 4,
+          "name": "diamond",
+          "sprite_name": "02_gemstones_diamond",
+          "x": 172,
+          "y": 288,
+          "width": 50,
+          "height": 53
+        },
+        {
+          "index": 5,
+          "name": "amethyst",
+          "sprite_name": "02_gemstones_amethyst",
+          "x": 227,
+          "y": 288,
+          "width": 49,
+          "height": 53
+        },
+        {
+          "index": 6,
+          "name": "topaz",
+          "sprite_name": "02_gemstones_topaz",
+          "x": 281,
+          "y": 288,
+          "width": 50,
+          "height": 53
+        },
+        {
+          "index": 7,
+          "name": "opal",
+          "sprite_name": "02_gemstones_opal",
+          "x": 335,
+          "y": 288,
+          "width": 50,
+          "height": 53
+        }
+      ]
+    },
+    {
+      "group_index": 7,
+      "group_name": "03_metals",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "gold",
+          "sprite_name": "03_metals_gold",
+          "x": 9,
+          "y": 377,
+          "width": 49,
+          "height": 51
+        },
+        {
+          "index": 2,
+          "name": "silver",
+          "sprite_name": "03_metals_silver",
+          "x": 63,
+          "y": 377,
+          "width": 49,
+          "height": 51
+        },
+        {
+          "index": 3,
+          "name": "copper",
+          "sprite_name": "03_metals_copper",
+          "x": 117,
+          "y": 377,
+          "width": 49,
+          "height": 52
+        },
+        {
+          "index": 4,
+          "name": "bronze",
+          "sprite_name": "03_metals_bronze",
+          "x": 172,
+          "y": 377,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 5,
+          "name": "iron",
+          "sprite_name": "03_metals_iron",
+          "x": 226,
+          "y": 377,
+          "width": 49,
+          "height": 51
+        },
+        {
+          "index": 6,
+          "name": "titanium",
+          "sprite_name": "03_metals_titanium",
+          "x": 280,
+          "y": 377,
+          "width": 49,
+          "height": 51
+        },
+        {
+          "index": 7,
+          "name": "chrome",
+          "sprite_name": "03_metals_chrome",
+          "x": 335,
+          "y": 377,
+          "width": 48,
+          "height": 51
+        }
+      ]
+    },
+    {
+      "group_index": 8,
+      "group_name": "04_woods",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "oak",
+          "sprite_name": "04_woods_oak",
+          "x": 9,
+          "y": 467,
+          "width": 49,
+          "height": 52
+        },
+        {
+          "index": 2,
+          "name": "walnut",
+          "sprite_name": "04_woods_walnut",
+          "x": 63,
+          "y": 467,
+          "width": 49,
+          "height": 51
+        },
+        {
+          "index": 3,
+          "name": "mahogany",
+          "sprite_name": "04_woods_mahogany",
+          "x": 117,
+          "y": 467,
+          "width": 49,
+          "height": 51
+        },
+        {
+          "index": 4,
+          "name": "pine",
+          "sprite_name": "04_woods_pine",
+          "x": 172,
+          "y": 467,
+          "width": 49,
+          "height": 51
+        },
+        {
+          "index": 5,
+          "name": "birch",
+          "sprite_name": "04_woods_birch",
+          "x": 226,
+          "y": 467,
+          "width": 49,
+          "height": 50
+        },
+        {
+          "index": 6,
+          "name": "ebony",
+          "sprite_name": "04_woods_ebony",
+          "x": 281,
+          "y": 467,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 7,
+          "name": "bamboo",
+          "sprite_name": "04_woods_bamboo",
+          "x": 335,
+          "y": 467,
+          "width": 48,
+          "height": 51
+        }
+      ]
+    },
+    {
+      "group_index": 9,
+      "group_name": "05_stones_and_minerals",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "granite",
+          "sprite_name": "05_stones_and_minerals_granite",
+          "x": 9,
+          "y": 556,
+          "width": 49,
+          "height": 52
+        },
+        {
+          "index": 2,
+          "name": "marble",
+          "sprite_name": "05_stones_and_minerals_marble",
+          "x": 63,
+          "y": 557,
+          "width": 49,
+          "height": 51
+        },
+        {
+          "index": 3,
+          "name": "slate",
+          "sprite_name": "05_stones_and_minerals_slate",
+          "x": 118,
+          "y": 556,
+          "width": 48,
+          "height": 52
+        },
+        {
+          "index": 4,
+          "name": "obsidian",
+          "sprite_name": "05_stones_and_minerals_obsidian",
+          "x": 172,
+          "y": 556,
+          "width": 48,
+          "height": 52
+        },
+        {
+          "index": 5,
+          "name": "quartz",
+          "sprite_name": "05_stones_and_minerals_quartz",
+          "x": 226,
+          "y": 556,
+          "width": 49,
+          "height": 51
+        },
+        {
+          "index": 6,
+          "name": "basalt",
+          "sprite_name": "05_stones_and_minerals_basalt",
+          "x": 280,
+          "y": 556,
+          "width": 48,
+          "height": 52
+        },
+        {
+          "index": 7,
+          "name": "limestone",
+          "sprite_name": "05_stones_and_minerals_limestone",
+          "x": 335,
+          "y": 556,
+          "width": 48,
+          "height": 51
+        }
+      ]
+    },
+    {
+      "group_index": 10,
+      "group_name": "06_fire_and_heat",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "fire",
+          "sprite_name": "06_fire_and_heat_fire",
+          "x": 9,
+          "y": 650,
+          "width": 50,
+          "height": 53
+        },
+        {
+          "index": 2,
+          "name": "lava",
+          "sprite_name": "06_fire_and_heat_lava",
+          "x": 63,
+          "y": 650,
+          "width": 49,
+          "height": 53
+        },
+        {
+          "index": 3,
+          "name": "molten_rock",
+          "sprite_name": "06_fire_and_heat_molten_rock",
+          "x": 117,
+          "y": 650,
+          "width": 49,
+          "height": 53
+        },
+        {
+          "index": 4,
+          "name": "explosion",
+          "sprite_name": "06_fire_and_heat_explosion",
+          "x": 172,
+          "y": 649,
+          "width": 48,
+          "height": 54
+        },
+        {
+          "index": 5,
+          "name": "phoenix_flame",
+          "sprite_name": "06_fire_and_heat_phoenix_flame",
+          "x": 226,
+          "y": 650,
+          "width": 49,
+          "height": 53
+        },
+        {
+          "index": 6,
+          "name": "solar_plasma",
+          "sprite_name": "06_fire_and_heat_solar_plasma",
+          "x": 281,
+          "y": 649,
+          "width": 48,
+          "height": 53
+        },
+        {
+          "index": 7,
+          "name": "magma",
+          "sprite_name": "06_fire_and_heat_magma",
+          "x": 335,
+          "y": 650,
+          "width": 48,
+          "height": 52
+        }
+      ]
+    },
+    {
+      "group_index": 11,
+      "group_name": "07_water",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "ocean",
+          "sprite_name": "07_water_ocean",
+          "x": 9,
+          "y": 740,
+          "width": 49,
+          "height": 53
+        },
+        {
+          "index": 2,
+          "name": "wave",
+          "sprite_name": "07_water_wave",
+          "x": 63,
+          "y": 740,
+          "width": 49,
+          "height": 53
+        },
+        {
+          "index": 3,
+          "name": "whirlpool",
+          "sprite_name": "07_water_whirlpool",
+          "x": 118,
+          "y": 740,
+          "width": 48,
+          "height": 53
+        },
+        {
+          "index": 4,
+          "name": "water_drop",
+          "sprite_name": "07_water_water_drop",
+          "x": 171,
+          "y": 740,
+          "width": 49,
+          "height": 53
+        },
+        {
+          "index": 5,
+          "name": "bubble",
+          "sprite_name": "07_water_bubble",
+          "x": 226,
+          "y": 740,
+          "width": 49,
+          "height": 52
+        },
+        {
+          "index": 6,
+          "name": "ice",
+          "sprite_name": "07_water_ice",
+          "x": 280,
+          "y": 740,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 7,
+          "name": "glacier",
+          "sprite_name": "07_water_glacier",
+          "x": 335,
+          "y": 740,
+          "width": 47,
+          "height": 51
+        }
+      ]
+    },
+    {
+      "group_index": 12,
+      "group_name": "08_weather",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "cloud",
+          "sprite_name": "08_weather_cloud",
+          "x": 10,
+          "y": 829,
+          "width": 48,
+          "height": 52
+        },
+        {
+          "index": 2,
+          "name": "rain",
+          "sprite_name": "08_weather_rain",
+          "x": 63,
+          "y": 829,
+          "width": 49,
+          "height": 52
+        },
+        {
+          "index": 3,
+          "name": "storm",
+          "sprite_name": "08_weather_storm",
+          "x": 117,
+          "y": 829,
+          "width": 49,
+          "height": 52
+        },
+        {
+          "index": 4,
+          "name": "lightning",
+          "sprite_name": "08_weather_lightning",
+          "x": 172,
+          "y": 829,
+          "width": 48,
+          "height": 52
+        },
+        {
+          "index": 5,
+          "name": "snow",
+          "sprite_name": "08_weather_snow",
+          "x": 226,
+          "y": 829,
+          "width": 49,
+          "height": 52
+        },
+        {
+          "index": 6,
+          "name": "fog",
+          "sprite_name": "08_weather_fog",
+          "x": 280,
+          "y": 829,
+          "width": 48,
+          "height": 52
+        },
+        {
+          "index": 7,
+          "name": "aurora",
+          "sprite_name": "08_weather_aurora",
+          "x": 335,
+          "y": 829,
+          "width": 48,
+          "height": 52
+        }
+      ]
+    },
+    {
+      "group_index": 13,
+      "group_name": "09_space",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "galaxy",
+          "sprite_name": "09_space_galaxy",
+          "x": 8,
+          "y": 924,
+          "width": 50,
+          "height": 54
+        },
+        {
+          "index": 2,
+          "name": "nebula",
+          "sprite_name": "09_space_nebula",
+          "x": 63,
+          "y": 924,
+          "width": 48,
+          "height": 54
+        },
+        {
+          "index": 3,
+          "name": "black_hole",
+          "sprite_name": "09_space_black_hole",
+          "x": 116,
+          "y": 923,
+          "width": 50,
+          "height": 55
+        },
+        {
+          "index": 4,
+          "name": "supernova",
+          "sprite_name": "09_space_supernova",
+          "x": 170,
+          "y": 923,
+          "width": 50,
+          "height": 55
+        },
+        {
+          "index": 5,
+          "name": "comet",
+          "sprite_name": "09_space_comet",
+          "x": 225,
+          "y": 923,
+          "width": 49,
+          "height": 55
+        },
+        {
+          "index": 6,
+          "name": "asteroid",
+          "sprite_name": "09_space_asteroid",
+          "x": 279,
+          "y": 923,
+          "width": 50,
+          "height": 55
+        },
+        {
+          "index": 7,
+          "name": "star_cluster",
+          "sprite_name": "09_space_star_cluster",
+          "x": 333,
+          "y": 923,
+          "width": 50,
+          "height": 55
+        }
+      ]
+    },
+    {
+      "group_index": 14,
+      "group_name": "10_technology",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "circuit_board",
+          "sprite_name": "10_technology_circuit_board",
+          "x": 413,
+          "y": 194,
+          "width": 49,
+          "height": 54
+        },
+        {
+          "index": 2,
+          "name": "cpu",
+          "sprite_name": "10_technology_cpu",
+          "x": 465,
+          "y": 195,
+          "width": 49,
+          "height": 53
+        },
+        {
+          "index": 3,
+          "name": "ai_core",
+          "sprite_name": "10_technology_ai_core",
+          "x": 518,
+          "y": 197,
+          "width": 47,
+          "height": 52
+        },
+        {
+          "index": 4,
+          "name": "quantum_core",
+          "sprite_name": "10_technology_quantum_core",
+          "x": 570,
+          "y": 197,
+          "width": 46,
+          "height": 52
+        },
+        {
+          "index": 5,
+          "name": "reactor",
+          "sprite_name": "10_technology_reactor",
+          "x": 620,
+          "y": 197,
+          "width": 48,
+          "height": 52
+        },
+        {
+          "index": 6,
+          "name": "energy_cell",
+          "sprite_name": "10_technology_energy_cell",
+          "x": 673,
+          "y": 195,
+          "width": 48,
+          "height": 54
+        },
+        {
+          "index": 7,
+          "name": "hologram",
+          "sprite_name": "10_technology_hologram",
+          "x": 726,
+          "y": 195,
+          "width": 48,
+          "height": 53
+        }
+      ]
+    },
+    {
+      "group_index": 15,
+      "group_name": "11_ancient_artifacts",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "ancient_coin",
+          "sprite_name": "11_ancient_artifacts_ancient_coin",
+          "x": 411,
+          "y": 290,
+          "width": 47,
+          "height": 51
+        },
+        {
+          "index": 2,
+          "name": "compass",
+          "sprite_name": "11_ancient_artifacts_compass",
+          "x": 463,
+          "y": 290,
+          "width": 47,
+          "height": 51
+        },
+        {
+          "index": 3,
+          "name": "rune_stone",
+          "sprite_name": "11_ancient_artifacts_rune_stone",
+          "x": 517,
+          "y": 290,
+          "width": 47,
+          "height": 51
+        },
+        {
+          "index": 4,
+          "name": "ancient_seal",
+          "sprite_name": "11_ancient_artifacts_ancient_seal",
+          "x": 570,
+          "y": 290,
+          "width": 46,
+          "height": 51
+        },
+        {
+          "index": 5,
+          "name": "relic",
+          "sprite_name": "11_ancient_artifacts_relic",
+          "x": 621,
+          "y": 290,
+          "width": 47,
+          "height": 51
+        },
+        {
+          "index": 6,
+          "name": "shield_emblem",
+          "sprite_name": "11_ancient_artifacts_shield_emblem",
+          "x": 673,
+          "y": 290,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 7,
+          "name": "mech_relic",
+          "sprite_name": "11_ancient_artifacts_mech_relic",
+          "x": 727,
+          "y": 290,
+          "width": 46,
+          "height": 51
+        }
+      ]
+    },
+    {
+      "group_index": 16,
+      "group_name": "12_plants",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "leaf",
+          "sprite_name": "12_plants_leaf",
+          "x": 411,
+          "y": 380,
+          "width": 47,
+          "height": 52
+        },
+        {
+          "index": 2,
+          "name": "tree",
+          "sprite_name": "12_plants_tree",
+          "x": 464,
+          "y": 380,
+          "width": 46,
+          "height": 52
+        },
+        {
+          "index": 3,
+          "name": "rose",
+          "sprite_name": "12_plants_rose",
+          "x": 517,
+          "y": 382,
+          "width": 46,
+          "height": 50
+        },
+        {
+          "index": 4,
+          "name": "lotus",
+          "sprite_name": "12_plants_lotus",
+          "x": 569,
+          "y": 382,
+          "width": 47,
+          "height": 50
+        },
+        {
+          "index": 5,
+          "name": "cactus",
+          "sprite_name": "12_plants_cactus",
+          "x": 621,
+          "y": 382,
+          "width": 46,
+          "height": 50
+        },
+        {
+          "index": 6,
+          "name": "fern",
+          "sprite_name": "12_plants_fern",
+          "x": 672,
+          "y": 382,
+          "width": 47,
+          "height": 50
+        },
+        {
+          "index": 7,
+          "name": "bamboo",
+          "sprite_name": "12_plants_bamboo",
+          "x": 725,
+          "y": 382,
+          "width": 46,
+          "height": 50
+        }
+      ]
+    },
+    {
+      "group_index": 17,
+      "group_name": "13_butterflies",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "blue_morpho",
+          "sprite_name": "13_butterflies_blue_morpho",
+          "x": 411,
+          "y": 473,
+          "width": 46,
+          "height": 50
+        },
+        {
+          "index": 2,
+          "name": "monarch",
+          "sprite_name": "13_butterflies_monarch",
+          "x": 463,
+          "y": 473,
+          "width": 47,
+          "height": 50
+        },
+        {
+          "index": 3,
+          "name": "glasswing",
+          "sprite_name": "13_butterflies_glasswing",
+          "x": 517,
+          "y": 473,
+          "width": 46,
+          "height": 50
+        },
+        {
+          "index": 4,
+          "name": "swallowtail",
+          "sprite_name": "13_butterflies_swallowtail",
+          "x": 570,
+          "y": 473,
+          "width": 46,
+          "height": 50
+        },
+        {
+          "index": 5,
+          "name": "purple_monarch",
+          "sprite_name": "13_butterflies_purple_monarch",
+          "x": 621,
+          "y": 473,
+          "width": 45,
+          "height": 50
+        },
+        {
+          "index": 6,
+          "name": "golden",
+          "sprite_name": "13_butterflies_golden",
+          "x": 674,
+          "y": 473,
+          "width": 45,
+          "height": 50
+        },
+        {
+          "index": 7,
+          "name": "white",
+          "sprite_name": "13_butterflies_white",
+          "x": 726,
+          "y": 473,
+          "width": 47,
+          "height": 50
+        }
+      ]
+    },
+    {
+      "group_index": 18,
+      "group_name": "14_trees",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "oak_tree",
+          "sprite_name": "14_trees_oak_tree",
+          "x": 411,
+          "y": 561,
+          "width": 46,
+          "height": 50
+        },
+        {
+          "index": 2,
+          "name": "pine_tree",
+          "sprite_name": "14_trees_pine_tree",
+          "x": 464,
+          "y": 561,
+          "width": 46,
+          "height": 50
+        },
+        {
+          "index": 3,
+          "name": "cherry_blossom",
+          "sprite_name": "14_trees_cherry_blossom",
+          "x": 517,
+          "y": 561,
+          "width": 46,
+          "height": 50
+        },
+        {
+          "index": 4,
+          "name": "palm_tree",
+          "sprite_name": "14_trees_palm_tree",
+          "x": 570,
+          "y": 562,
+          "width": 44,
+          "height": 50
+        },
+        {
+          "index": 5,
+          "name": "willow_tree",
+          "sprite_name": "14_trees_willow_tree",
+          "x": 620,
+          "y": 563,
+          "width": 46,
+          "height": 49
+        },
+        {
+          "index": 6,
+          "name": "baobab",
+          "sprite_name": "14_trees_baobab",
+          "x": 672,
+          "y": 563,
+          "width": 47,
+          "height": 49
+        },
+        {
+          "index": 7,
+          "name": "maple_tree",
+          "sprite_name": "14_trees_maple_tree",
+          "x": 726,
+          "y": 563,
+          "width": 46,
+          "height": 49
+        }
+      ]
+    },
+    {
+      "group_index": 19,
+      "group_name": "15_animals",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "wolf",
+          "sprite_name": "15_animals_wolf",
+          "x": 410,
+          "y": 654,
+          "width": 47,
+          "height": 51
+        },
+        {
+          "index": 2,
+          "name": "fox",
+          "sprite_name": "15_animals_fox",
+          "x": 462,
+          "y": 654,
+          "width": 45,
+          "height": 51
+        },
+        {
+          "index": 3,
+          "name": "bear",
+          "sprite_name": "15_animals_bear",
+          "x": 514,
+          "y": 654,
+          "width": 47,
+          "height": 51
+        },
+        {
+          "index": 4,
+          "name": "lion",
+          "sprite_name": "15_animals_lion",
+          "x": 567,
+          "y": 654,
+          "width": 46,
+          "height": 51
+        },
+        {
+          "index": 5,
+          "name": "owl",
+          "sprite_name": "15_animals_owl",
+          "x": 618,
+          "y": 655,
+          "width": 47,
+          "height": 51
+        },
+        {
+          "index": 6,
+          "name": "eagle",
+          "sprite_name": "15_animals_eagle",
+          "x": 671,
+          "y": 655,
+          "width": 48,
+          "height": 50
+        },
+        {
+          "index": 7,
+          "name": "tiger",
+          "sprite_name": "15_animals_tiger",
+          "x": 724,
+          "y": 655,
+          "width": 48,
+          "height": 50
+        }
+      ]
+    },
+    {
+      "group_index": 20,
+      "group_name": "16_sea_creatures",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "dolphin",
+          "sprite_name": "16_sea_creatures_dolphin",
+          "x": 410,
+          "y": 742,
+          "width": 46,
+          "height": 51
+        },
+        {
+          "index": 2,
+          "name": "whale",
+          "sprite_name": "16_sea_creatures_whale",
+          "x": 462,
+          "y": 742,
+          "width": 46,
+          "height": 51
+        },
+        {
+          "index": 3,
+          "name": "shark",
+          "sprite_name": "16_sea_creatures_shark",
+          "x": 515,
+          "y": 742,
+          "width": 46,
+          "height": 51
+        },
+        {
+          "index": 4,
+          "name": "octopus",
+          "sprite_name": "16_sea_creatures_octopus",
+          "x": 567,
+          "y": 742,
+          "width": 46,
+          "height": 51
+        },
+        {
+          "index": 5,
+          "name": "jellyfish",
+          "sprite_name": "16_sea_creatures_jellyfish",
+          "x": 619,
+          "y": 742,
+          "width": 45,
+          "height": 51
+        },
+        {
+          "index": 6,
+          "name": "sea_turtle",
+          "sprite_name": "16_sea_creatures_sea_turtle",
+          "x": 671,
+          "y": 742,
+          "width": 46,
+          "height": 51
+        },
+        {
+          "index": 7,
+          "name": "coral_reef",
+          "sprite_name": "16_sea_creatures_coral_reef",
+          "x": 724,
+          "y": 742,
+          "width": 48,
+          "height": 51
+        }
+      ]
+    },
+    {
+      "group_index": 21,
+      "group_name": "17_magic",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "mana_orb",
+          "sprite_name": "17_magic_mana_orb",
+          "x": 410,
+          "y": 832,
+          "width": 45,
+          "height": 52
+        },
+        {
+          "index": 2,
+          "name": "holy_orb",
+          "sprite_name": "17_magic_holy_orb",
+          "x": 462,
+          "y": 832,
+          "width": 46,
+          "height": 51
+        },
+        {
+          "index": 3,
+          "name": "dark_orb",
+          "sprite_name": "17_magic_dark_orb",
+          "x": 514,
+          "y": 832,
+          "width": 47,
+          "height": 52
+        },
+        {
+          "index": 4,
+          "name": "arcane_orb",
+          "sprite_name": "17_magic_arcane_orb",
+          "x": 567,
+          "y": 832,
+          "width": 46,
+          "height": 52
+        },
+        {
+          "index": 5,
+          "name": "nature_orb",
+          "sprite_name": "17_magic_nature_orb",
+          "x": 619,
+          "y": 832,
+          "width": 46,
+          "height": 53
+        },
+        {
+          "index": 6,
+          "name": "chaos_orb",
+          "sprite_name": "17_magic_chaos_orb",
+          "x": 671,
+          "y": 832,
+          "width": 46,
+          "height": 53
+        },
+        {
+          "index": 7,
+          "name": "light_orb",
+          "sprite_name": "17_magic_light_orb",
+          "x": 724,
+          "y": 830,
+          "width": 48,
+          "height": 55
+        }
+      ]
+    },
+    {
+      "group_index": 22,
+      "group_name": "18_elements",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "fire",
+          "sprite_name": "18_elements_fire",
+          "x": 408,
+          "y": 924,
+          "width": 48,
+          "height": 54
+        },
+        {
+          "index": 2,
+          "name": "water",
+          "sprite_name": "18_elements_water",
+          "x": 460,
+          "y": 924,
+          "width": 47,
+          "height": 54
+        },
+        {
+          "index": 3,
+          "name": "earth",
+          "sprite_name": "18_elements_earth",
+          "x": 512,
+          "y": 924,
+          "width": 48,
+          "height": 54
+        },
+        {
+          "index": 4,
+          "name": "air",
+          "sprite_name": "18_elements_air",
+          "x": 565,
+          "y": 924,
+          "width": 48,
+          "height": 54
+        },
+        {
+          "index": 5,
+          "name": "lightning",
+          "sprite_name": "18_elements_lightning",
+          "x": 618,
+          "y": 924,
+          "width": 47,
+          "height": 53
+        },
+        {
+          "index": 6,
+          "name": "ice",
+          "sprite_name": "18_elements_ice",
+          "x": 670,
+          "y": 924,
+          "width": 47,
+          "height": 54
+        },
+        {
+          "index": 7,
+          "name": "nature",
+          "sprite_name": "18_elements_nature",
+          "x": 724,
+          "y": 924,
+          "width": 47,
+          "height": 54
+        }
+      ]
+    },
+    {
+      "group_index": 23,
+      "group_name": "19_potions",
+      "sprite_count": 6,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "health",
+          "sprite_name": "19_potions_health",
+          "x": 798,
+          "y": 194,
+          "width": 49,
+          "height": 55
+        },
+        {
+          "index": 2,
+          "name": "mana",
+          "sprite_name": "19_potions_mana",
+          "x": 852,
+          "y": 194,
+          "width": 49,
+          "height": 55
+        },
+        {
+          "index": 3,
+          "name": "poison",
+          "sprite_name": "19_potions_poison",
+          "x": 906,
+          "y": 195,
+          "width": 50,
+          "height": 54
+        },
+        {
+          "index": 4,
+          "name": "speed",
+          "sprite_name": "19_potions_speed",
+          "x": 961,
+          "y": 195,
+          "width": 49,
+          "height": 54
+        },
+        {
+          "index": 5,
+          "name": "wisdom",
+          "sprite_name": "19_potions_wisdom",
+          "x": 1017,
+          "y": 195,
+          "width": 48,
+          "height": 54
+        },
+        {
+          "index": 6,
+          "name": "invisibility",
+          "sprite_name": "19_potions_invisibility",
+          "x": 1072,
+          "y": 194,
+          "width": 49,
+          "height": 55
+        }
+      ]
+    },
+    {
+      "group_index": 24,
+      "group_name": "20_dragons",
+      "sprite_count": 6,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "fire_dragon",
+          "sprite_name": "20_dragons_fire_dragon",
+          "x": 798,
+          "y": 287,
+          "width": 47,
+          "height": 53
+        },
+        {
+          "index": 2,
+          "name": "ice_dragon",
+          "sprite_name": "20_dragons_ice_dragon",
+          "x": 852,
+          "y": 288,
+          "width": 49,
+          "height": 52
+        },
+        {
+          "index": 3,
+          "name": "storm_dragon",
+          "sprite_name": "20_dragons_storm_dragon",
+          "x": 907,
+          "y": 288,
+          "width": 48,
+          "height": 52
+        },
+        {
+          "index": 4,
+          "name": "earth_dragon",
+          "sprite_name": "20_dragons_earth_dragon",
+          "x": 962,
+          "y": 288,
+          "width": 47,
+          "height": 52
+        },
+        {
+          "index": 5,
+          "name": "shadow_dragon",
+          "sprite_name": "20_dragons_shadow_dragon",
+          "x": 1017,
+          "y": 287,
+          "width": 48,
+          "height": 52
+        },
+        {
+          "index": 6,
+          "name": "crystal_dragon",
+          "sprite_name": "20_dragons_crystal_dragon",
+          "x": 1072,
+          "y": 287,
+          "width": 48,
+          "height": 52
+        }
+      ]
+    },
+    {
+      "group_index": 25,
+      "group_name": "21_insects",
+      "sprite_count": 6,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "butterfly",
+          "sprite_name": "21_insects_butterfly",
+          "x": 799,
+          "y": 383,
+          "width": 46,
+          "height": 51
+        },
+        {
+          "index": 2,
+          "name": "ladybug",
+          "sprite_name": "21_insects_ladybug",
+          "x": 853,
+          "y": 383,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 3,
+          "name": "dragonfly",
+          "sprite_name": "21_insects_dragonfly",
+          "x": 908,
+          "y": 383,
+          "width": 47,
+          "height": 51
+        },
+        {
+          "index": 4,
+          "name": "bee",
+          "sprite_name": "21_insects_bee",
+          "x": 962,
+          "y": 383,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 5,
+          "name": "beetle",
+          "sprite_name": "21_insects_beetle",
+          "x": 1018,
+          "y": 383,
+          "width": 47,
+          "height": 51
+        },
+        {
+          "index": 6,
+          "name": "firefly",
+          "sprite_name": "21_insects_firefly",
+          "x": 1072,
+          "y": 384,
+          "width": 48,
+          "height": 49
+        }
+      ]
+    },
+    {
+      "group_index": 26,
+      "group_name": "22_birds",
+      "sprite_count": 6,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "eagle",
+          "sprite_name": "22_birds_eagle",
+          "x": 798,
+          "y": 473,
+          "width": 48,
+          "height": 50
+        },
+        {
+          "index": 2,
+          "name": "owl",
+          "sprite_name": "22_birds_owl",
+          "x": 853,
+          "y": 473,
+          "width": 46,
+          "height": 50
+        },
+        {
+          "index": 3,
+          "name": "falcon",
+          "sprite_name": "22_birds_falcon",
+          "x": 907,
+          "y": 473,
+          "width": 47,
+          "height": 50
+        },
+        {
+          "index": 4,
+          "name": "peacock",
+          "sprite_name": "22_birds_peacock",
+          "x": 962,
+          "y": 473,
+          "width": 48,
+          "height": 50
+        },
+        {
+          "index": 5,
+          "name": "parrot",
+          "sprite_name": "22_birds_parrot",
+          "x": 1019,
+          "y": 473,
+          "width": 46,
+          "height": 50
+        },
+        {
+          "index": 6,
+          "name": "penguin",
+          "sprite_name": "22_birds_penguin",
+          "x": 1072,
+          "y": 473,
+          "width": 48,
+          "height": 50
+        }
+      ]
+    },
+    {
+      "group_index": 27,
+      "group_name": "23_fruits",
+      "sprite_count": 6,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "apple",
+          "sprite_name": "23_fruits_apple",
+          "x": 799,
+          "y": 562,
+          "width": 47,
+          "height": 50
+        },
+        {
+          "index": 2,
+          "name": "orange",
+          "sprite_name": "23_fruits_orange",
+          "x": 853,
+          "y": 561,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 3,
+          "name": "lemon",
+          "sprite_name": "23_fruits_lemon",
+          "x": 908,
+          "y": 562,
+          "width": 46,
+          "height": 50
+        },
+        {
+          "index": 4,
+          "name": "watermelon",
+          "sprite_name": "23_fruits_watermelon",
+          "x": 962,
+          "y": 563,
+          "width": 48,
+          "height": 49
+        },
+        {
+          "index": 5,
+          "name": "grapes",
+          "sprite_name": "23_fruits_grapes",
+          "x": 1018,
+          "y": 562,
+          "width": 47,
+          "height": 50
+        },
+        {
+          "index": 6,
+          "name": "strawberry",
+          "sprite_name": "23_fruits_strawberry",
+          "x": 1072,
+          "y": 561,
+          "width": 48,
+          "height": 51
+        }
+      ]
+    },
+    {
+      "group_index": 28,
+      "group_name": "24_mushrooms",
+      "sprite_count": 6,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "fly_agaric",
+          "sprite_name": "24_mushrooms_fly_agaric",
+          "x": 798,
+          "y": 654,
+          "width": 48,
+          "height": 52
+        },
+        {
+          "index": 2,
+          "name": "shiitake",
+          "sprite_name": "24_mushrooms_shiitake",
+          "x": 853,
+          "y": 654,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 3,
+          "name": "morel",
+          "sprite_name": "24_mushrooms_morel",
+          "x": 908,
+          "y": 655,
+          "width": 46,
+          "height": 51
+        },
+        {
+          "index": 4,
+          "name": "oyster",
+          "sprite_name": "24_mushrooms_oyster",
+          "x": 962,
+          "y": 654,
+          "width": 47,
+          "height": 51
+        },
+        {
+          "index": 5,
+          "name": "chanterelle",
+          "sprite_name": "24_mushrooms_chanterelle",
+          "x": 1017,
+          "y": 654,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 6,
+          "name": "truffle",
+          "sprite_name": "24_mushrooms_truffle",
+          "x": 1072,
+          "y": 654,
+          "width": 47,
+          "height": 51
+        }
+      ]
+    },
+    {
+      "group_index": 29,
+      "group_name": "25_crystals",
+      "sprite_count": 6,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "quartz",
+          "sprite_name": "25_crystals_quartz",
+          "x": 798,
+          "y": 742,
+          "width": 46,
+          "height": 51
+        },
+        {
+          "index": 2,
+          "name": "amethyst",
+          "sprite_name": "25_crystals_amethyst",
+          "x": 853,
+          "y": 742,
+          "width": 46,
+          "height": 51
+        },
+        {
+          "index": 3,
+          "name": "citrine",
+          "sprite_name": "25_crystals_citrine",
+          "x": 908,
+          "y": 742,
+          "width": 46,
+          "height": 51
+        },
+        {
+          "index": 4,
+          "name": "smoky_quartz",
+          "sprite_name": "25_crystals_smoky_quartz",
+          "x": 962,
+          "y": 742,
+          "width": 46,
+          "height": 51
+        },
+        {
+          "index": 5,
+          "name": "fluorite",
+          "sprite_name": "25_crystals_fluorite",
+          "x": 1018,
+          "y": 742,
+          "width": 45,
+          "height": 51
+        },
+        {
+          "index": 6,
+          "name": "calcite",
+          "sprite_name": "25_crystals_calcite",
+          "x": 1072,
+          "y": 742,
+          "width": 47,
+          "height": 51
+        }
+      ]
+    },
+    {
+      "group_index": 30,
+      "group_name": "26_ores",
+      "sprite_count": 6,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "gold_ore",
+          "sprite_name": "26_ores_gold_ore",
+          "x": 798,
+          "y": 834,
+          "width": 45,
+          "height": 50
+        },
+        {
+          "index": 2,
+          "name": "copper_ore",
+          "sprite_name": "26_ores_copper_ore",
+          "x": 852,
+          "y": 834,
+          "width": 46,
+          "height": 50
+        },
+        {
+          "index": 3,
+          "name": "iron_ore",
+          "sprite_name": "26_ores_iron_ore",
+          "x": 906,
+          "y": 834,
+          "width": 46,
+          "height": 51
+        },
+        {
+          "index": 4,
+          "name": "silver_ore",
+          "sprite_name": "26_ores_silver_ore",
+          "x": 961,
+          "y": 834,
+          "width": 46,
+          "height": 51
+        },
+        {
+          "index": 5,
+          "name": "uranium_ore",
+          "sprite_name": "26_ores_uranium_ore",
+          "x": 1017,
+          "y": 834,
+          "width": 46,
+          "height": 51
+        },
+        {
+          "index": 6,
+          "name": "cobalt_ore",
+          "sprite_name": "26_ores_cobalt_ore",
+          "x": 1072,
+          "y": 833,
+          "width": 46,
+          "height": 51
+        }
+      ]
+    },
+    {
+      "group_index": 31,
+      "group_name": "27_constellations",
+      "sprite_count": 6,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "orion",
+          "sprite_name": "27_constellations_orion",
+          "x": 798,
+          "y": 925,
+          "width": 48,
+          "height": 53
+        },
+        {
+          "index": 2,
+          "name": "ursa_major",
+          "sprite_name": "27_constellations_ursa_major",
+          "x": 852,
+          "y": 925,
+          "width": 49,
+          "height": 53
+        },
+        {
+          "index": 3,
+          "name": "cassiopeia",
+          "sprite_name": "27_constellations_cassiopeia",
+          "x": 906,
+          "y": 925,
+          "width": 49,
+          "height": 53
+        },
+        {
+          "index": 4,
+          "name": "scorpius",
+          "sprite_name": "27_constellations_scorpius",
+          "x": 961,
+          "y": 925,
+          "width": 48,
+          "height": 53
+        },
+        {
+          "index": 5,
+          "name": "lyra",
+          "sprite_name": "27_constellations_lyra",
+          "x": 1016,
+          "y": 924,
+          "width": 50,
+          "height": 54
+        },
+        {
+          "index": 6,
+          "name": "draco",
+          "sprite_name": "27_constellations_draco",
+          "x": 1072,
+          "y": 924,
+          "width": 49,
+          "height": 54
+        }
+      ]
+    },
+    {
+      "group_index": 32,
+      "group_name": "28_clouds_and_sky",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "sunset",
+          "sprite_name": "28_clouds_and_sky_sunset",
+          "x": 1148,
+          "y": 194,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 2,
+          "name": "sunrise",
+          "sprite_name": "28_clouds_and_sky_sunrise",
+          "x": 1202,
+          "y": 195,
+          "width": 48,
+          "height": 50
+        },
+        {
+          "index": 3,
+          "name": "night_sky",
+          "sprite_name": "28_clouds_and_sky_night_sky",
+          "x": 1256,
+          "y": 195,
+          "width": 47,
+          "height": 51
+        },
+        {
+          "index": 4,
+          "name": "cloudy",
+          "sprite_name": "28_clouds_and_sky_cloudy",
+          "x": 1309,
+          "y": 195,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 5,
+          "name": "clear_sky",
+          "sprite_name": "28_clouds_and_sky_clear_sky",
+          "x": 1363,
+          "y": 195,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 6,
+          "name": "dawn",
+          "sprite_name": "28_clouds_and_sky_dawn",
+          "x": 1416,
+          "y": 195,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 7,
+          "name": "dusk",
+          "sprite_name": "28_clouds_and_sky_dusk",
+          "x": 1471,
+          "y": 194,
+          "width": 48,
+          "height": 52
+        }
+      ]
+    },
+    {
+      "group_index": 33,
+      "group_name": "29_seasons",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "spring",
+          "sprite_name": "29_seasons_spring",
+          "x": 1149,
+          "y": 287,
+          "width": 47,
+          "height": 52
+        },
+        {
+          "index": 2,
+          "name": "summer",
+          "sprite_name": "29_seasons_summer",
+          "x": 1203,
+          "y": 287,
+          "width": 48,
+          "height": 52
+        },
+        {
+          "index": 3,
+          "name": "autumn",
+          "sprite_name": "29_seasons_autumn",
+          "x": 1257,
+          "y": 287,
+          "width": 48,
+          "height": 52
+        },
+        {
+          "index": 4,
+          "name": "winter",
+          "sprite_name": "29_seasons_winter",
+          "x": 1312,
+          "y": 287,
+          "width": 46,
+          "height": 51
+        },
+        {
+          "index": 5,
+          "name": "rainy",
+          "sprite_name": "29_seasons_rainy",
+          "x": 1365,
+          "y": 287,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 6,
+          "name": "snowy",
+          "sprite_name": "29_seasons_snowy",
+          "x": 1418,
+          "y": 287,
+          "width": 49,
+          "height": 52
+        },
+        {
+          "index": 7,
+          "name": "stormy",
+          "sprite_name": "29_seasons_stormy",
+          "x": 1472,
+          "y": 288,
+          "width": 47,
+          "height": 51
+        }
+      ]
+    },
+    {
+      "group_index": 34,
+      "group_name": "30_flowers",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "rose",
+          "sprite_name": "30_flowers_rose",
+          "x": 1148,
+          "y": 382,
+          "width": 48,
+          "height": 50
+        },
+        {
+          "index": 2,
+          "name": "tulip",
+          "sprite_name": "30_flowers_tulip",
+          "x": 1203,
+          "y": 382,
+          "width": 47,
+          "height": 50
+        },
+        {
+          "index": 3,
+          "name": "sunflower",
+          "sprite_name": "30_flowers_sunflower",
+          "x": 1257,
+          "y": 382,
+          "width": 47,
+          "height": 50
+        },
+        {
+          "index": 4,
+          "name": "orchid",
+          "sprite_name": "30_flowers_orchid",
+          "x": 1310,
+          "y": 382,
+          "width": 48,
+          "height": 50
+        },
+        {
+          "index": 5,
+          "name": "lavender",
+          "sprite_name": "30_flowers_lavender",
+          "x": 1363,
+          "y": 382,
+          "width": 47,
+          "height": 50
+        },
+        {
+          "index": 6,
+          "name": "lotus",
+          "sprite_name": "30_flowers_lotus",
+          "x": 1415,
+          "y": 382,
+          "width": 47,
+          "height": 50
+        },
+        {
+          "index": 7,
+          "name": "cherry_blossom",
+          "sprite_name": "30_flowers_cherry_blossom",
+          "x": 1468,
+          "y": 380,
+          "width": 51,
+          "height": 53
+        }
+      ]
+    },
+    {
+      "group_index": 35,
+      "group_name": "31_leaves",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "maple",
+          "sprite_name": "31_leaves_maple",
+          "x": 1148,
+          "y": 471,
+          "width": 49,
+          "height": 51
+        },
+        {
+          "index": 2,
+          "name": "oak",
+          "sprite_name": "31_leaves_oak",
+          "x": 1203,
+          "y": 471,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 3,
+          "name": "palm",
+          "sprite_name": "31_leaves_palm",
+          "x": 1257,
+          "y": 471,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 4,
+          "name": "fern",
+          "sprite_name": "31_leaves_fern",
+          "x": 1310,
+          "y": 471,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 5,
+          "name": "bamboo",
+          "sprite_name": "31_leaves_bamboo",
+          "x": 1363,
+          "y": 471,
+          "width": 47,
+          "height": 51
+        },
+        {
+          "index": 6,
+          "name": "ivy",
+          "sprite_name": "31_leaves_ivy",
+          "x": 1415,
+          "y": 471,
+          "width": 47,
+          "height": 51
+        },
+        {
+          "index": 7,
+          "name": "eucalyptus",
+          "sprite_name": "31_leaves_eucalyptus",
+          "x": 1469,
+          "y": 471,
+          "width": 48,
+          "height": 51
+        }
+      ]
+    },
+    {
+      "group_index": 36,
+      "group_name": "32_shells",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "conch",
+          "sprite_name": "32_shells_conch",
+          "x": 1148,
+          "y": 560,
+          "width": 47,
+          "height": 49
+        },
+        {
+          "index": 2,
+          "name": "spiral_shell",
+          "sprite_name": "32_shells_spiral_shell",
+          "x": 1202,
+          "y": 560,
+          "width": 47,
+          "height": 49
+        },
+        {
+          "index": 3,
+          "name": "clam",
+          "sprite_name": "32_shells_clam",
+          "x": 1256,
+          "y": 560,
+          "width": 47,
+          "height": 49
+        },
+        {
+          "index": 4,
+          "name": "oyster",
+          "sprite_name": "32_shells_oyster",
+          "x": 1310,
+          "y": 560,
+          "width": 47,
+          "height": 49
+        },
+        {
+          "index": 5,
+          "name": "scallop",
+          "sprite_name": "32_shells_scallop",
+          "x": 1365,
+          "y": 560,
+          "width": 45,
+          "height": 51
+        },
+        {
+          "index": 6,
+          "name": "nautilus",
+          "sprite_name": "32_shells_nautilus",
+          "x": 1416,
+          "y": 560,
+          "width": 48,
+          "height": 49
+        },
+        {
+          "index": 7,
+          "name": "cowrie",
+          "sprite_name": "32_shells_cowrie",
+          "x": 1470,
+          "y": 560,
+          "width": 47,
+          "height": 49
+        }
+      ]
+    },
+    {
+      "group_index": 37,
+      "group_name": "33_coral",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "red_coral",
+          "sprite_name": "33_coral_red_coral",
+          "x": 1148,
+          "y": 654,
+          "width": 46,
+          "height": 50
+        },
+        {
+          "index": 2,
+          "name": "blue_coral",
+          "sprite_name": "33_coral_blue_coral",
+          "x": 1201,
+          "y": 654,
+          "width": 48,
+          "height": 50
+        },
+        {
+          "index": 3,
+          "name": "brain_coral",
+          "sprite_name": "33_coral_brain_coral",
+          "x": 1256,
+          "y": 654,
+          "width": 47,
+          "height": 50
+        },
+        {
+          "index": 4,
+          "name": "fan_coral",
+          "sprite_name": "33_coral_fan_coral",
+          "x": 1310,
+          "y": 654,
+          "width": 47,
+          "height": 50
+        },
+        {
+          "index": 5,
+          "name": "black_coral",
+          "sprite_name": "33_coral_black_coral",
+          "x": 1363,
+          "y": 653,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 6,
+          "name": "soft_coral",
+          "sprite_name": "33_coral_soft_coral",
+          "x": 1416,
+          "y": 654,
+          "width": 48,
+          "height": 50
+        },
+        {
+          "index": 7,
+          "name": "tube_coral",
+          "sprite_name": "33_coral_tube_coral",
+          "x": 1469,
+          "y": 653,
+          "width": 48,
+          "height": 51
+        }
+      ]
+    },
+    {
+      "group_index": 38,
+      "group_name": "34_fabric",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "silk",
+          "sprite_name": "34_fabric_silk",
+          "x": 1148,
+          "y": 740,
+          "width": 46,
+          "height": 51
+        },
+        {
+          "index": 2,
+          "name": "velvet",
+          "sprite_name": "34_fabric_velvet",
+          "x": 1201,
+          "y": 740,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 3,
+          "name": "cotton",
+          "sprite_name": "34_fabric_cotton",
+          "x": 1254,
+          "y": 740,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 4,
+          "name": "linen",
+          "sprite_name": "34_fabric_linen",
+          "x": 1308,
+          "y": 740,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 5,
+          "name": "denim",
+          "sprite_name": "34_fabric_denim",
+          "x": 1362,
+          "y": 740,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 6,
+          "name": "leather",
+          "sprite_name": "34_fabric_leather",
+          "x": 1415,
+          "y": 740,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 7,
+          "name": "wool",
+          "sprite_name": "34_fabric_wool",
+          "x": 1469,
+          "y": 740,
+          "width": 48,
+          "height": 51
+        }
+      ]
+    },
+    {
+      "group_index": 39,
+      "group_name": "35_civilizations",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "egyptian",
+          "sprite_name": "35_civilizations_egyptian",
+          "x": 1148,
+          "y": 832,
+          "width": 46,
+          "height": 51
+        },
+        {
+          "index": 2,
+          "name": "greek",
+          "sprite_name": "35_civilizations_greek",
+          "x": 1201,
+          "y": 832,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 3,
+          "name": "viking",
+          "sprite_name": "35_civilizations_viking",
+          "x": 1256,
+          "y": 832,
+          "width": 46,
+          "height": 51
+        },
+        {
+          "index": 4,
+          "name": "japanese",
+          "sprite_name": "35_civilizations_japanese",
+          "x": 1309,
+          "y": 832,
+          "width": 47,
+          "height": 51
+        },
+        {
+          "index": 5,
+          "name": "chinese",
+          "sprite_name": "35_civilizations_chinese",
+          "x": 1363,
+          "y": 832,
+          "width": 47,
+          "height": 51
+        },
+        {
+          "index": 6,
+          "name": "mayan",
+          "sprite_name": "35_civilizations_mayan",
+          "x": 1416,
+          "y": 832,
+          "width": 48,
+          "height": 51
+        },
+        {
+          "index": 7,
+          "name": "aztec",
+          "sprite_name": "35_civilizations_aztec",
+          "x": 1471,
+          "y": 832,
+          "width": 46,
+          "height": 51
+        }
+      ]
+    },
+    {
+      "group_index": 40,
+      "group_name": "36_mechanical",
+      "sprite_count": 7,
+      "sprites": [
+        {
+          "index": 1,
+          "name": "gear",
+          "sprite_name": "36_mechanical_gear",
+          "x": 1147,
+          "y": 925,
+          "width": 49,
+          "height": 53
+        },
+        {
+          "index": 2,
+          "name": "clockwork",
+          "sprite_name": "36_mechanical_clockwork",
+          "x": 1200,
+          "y": 925,
+          "width": 49,
+          "height": 53
+        },
+        {
+          "index": 3,
+          "name": "engine",
+          "sprite_name": "36_mechanical_engine",
+          "x": 1254,
+          "y": 925,
+          "width": 48,
+          "height": 53
+        },
+        {
+          "index": 4,
+          "name": "robot_core",
+          "sprite_name": "36_mechanical_robot_core",
+          "x": 1306,
+          "y": 925,
+          "width": 49,
+          "height": 53
+        },
+        {
+          "index": 5,
+          "name": "industrial_core",
+          "sprite_name": "36_mechanical_industrial_core",
+          "x": 1359,
+          "y": 925,
+          "width": 50,
+          "height": 53
+        },
+        {
+          "index": 6,
+          "name": "mechanical_eye",
+          "sprite_name": "36_mechanical_mechanical_eye",
+          "x": 1414,
+          "y": 924,
+          "width": 49,
+          "height": 54
+        },
+        {
+          "index": 7,
+          "name": "reactor",
+          "sprite_name": "36_mechanical_reactor",
+          "x": 1468,
+          "y": 924,
+          "width": 50,
+          "height": 54
+        }
+      ]
+    }
+  ]
+}

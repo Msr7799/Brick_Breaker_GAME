@@ -1,0 +1,14 @@
+{
+  "maxWidth": 2048,
+  "maxHeight": 2048,
+  "paddingX": 4,
+  "paddingY": 4,
+  "duplicatePadding": true,
+  "edgePadding": true,
+  "rotation": false,
+  "stripWhitespaceX": true,
+  "stripWhitespaceY": true,
+  "filterMin": "Linear",
+  "filterMag": "Linear",
+  "useIndexes": false
+}
