@@ -4,6 +4,7 @@ import com.badlogic.gdx.utils.JsonReader
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -15,6 +16,18 @@ class CosmeticCustomizationTest {
     private val ballJson = File(root, "app/src/main/assets/sprites/balls-sprites/balls-sprites-7groups-named.json")
     private val ballPng = File(root, "app/src/main/assets/sprites/balls-sprites/balls-sprites-7.png")
     private val paddleDirectory = File(root, "app/src/main/assets/sprites/paddles-sprites")
+
+    @Test fun hiddenPaddleCardsCannotInterceptSaveAndBack() {
+        val saveAndBack = com.badlogic.gdx.math.Rectangle(250f, 45f, 400f, 80f)
+        val hiddenObsidianRow = com.badlogic.gdx.math.Rectangle(40f, 30f, 390f, 164f)
+        assertNull(CustomizationHitTesting.visiblePaddleCard(hiddenObsidianRow))
+
+        val partiallyVisible = com.badlogic.gdx.math.Rectangle(40f, 460f, 390f, 164f)
+        val clipped = requireNotNull(CustomizationHitTesting.visiblePaddleCard(partiallyVisible))
+        assertEquals(500f, clipped.y)
+        assertEquals(124f, clipped.height)
+        assertTrue(!clipped.overlaps(saveAndBack))
+    }
 
     @Test fun ballCatalogContainsAllGroupsSpritesAndValidUniqueBounds() {
         val image = ImageIO.read(ballPng)
@@ -45,18 +58,24 @@ class CosmeticCustomizationTest {
         first.settings.selectedBallGroupName = "planets"
         first.settings.selectedBallSpriteName = "planets_earth"
         first.settings.selectedBallBaseSize = BallSize.LARGE
-        first.settings.selectedPaddleId = "group2:paddle_sticky_nano_gel"
+        first.settings.selectedPaddleId = "group1:paddle_normal_solar_ceramic"
+        first.settings.selectedWeaponPaddleId = "group1:paddle_weapon_photon_lance"
+        first.settings.selectedStickyPaddleId = "group2:paddle_sticky_nano_gel"
         first.saveSettings()
 
         assertEquals("planets_earth", prefs.getString("selected_ball_sprite"))
         assertEquals("planets", prefs.getString("selected_ball_group"))
-        assertEquals("LARGE", prefs.getString("selected_ball_size"))
-        assertEquals("group2:paddle_sticky_nano_gel", prefs.getString("selected_paddle_id"))
+        assertEquals("DEFAULT", prefs.getString("selected_ball_size"))
+        assertEquals("group1:paddle_normal_solar_ceramic", prefs.getString("selected_paddle_id"))
+        assertEquals("group1:paddle_weapon_photon_lance", prefs.getString("selected_weapon_paddle_id"))
+        assertEquals("group2:paddle_sticky_nano_gel", prefs.getString("selected_sticky_paddle_id"))
         val restored = ProgressStore(prefs).settings
         assertEquals("planets_earth", restored.selectedBallSpriteName)
         assertEquals("planets", restored.selectedBallGroupName)
-        assertEquals(BallSize.LARGE, restored.selectedBallBaseSize)
-        assertEquals("group2:paddle_sticky_nano_gel", restored.selectedPaddleId)
+        assertEquals(BallSize.DEFAULT, restored.selectedBallBaseSize)
+        assertEquals("group1:paddle_normal_solar_ceramic", restored.selectedPaddleId)
+        assertEquals("group1:paddle_weapon_photon_lance", restored.selectedWeaponPaddleId)
+        assertEquals("group2:paddle_sticky_nano_gel", restored.selectedStickyPaddleId)
     }
 
     @Test fun startedGameFlagPersistsForContinueVersusStartMenuState() {
@@ -77,9 +96,9 @@ class CosmeticCustomizationTest {
     }
 
     @Test fun sizesDriveTheSameVisualAndCollisionRadius() {
-        assertEquals(11f, BallSize.SMALL.radius)
-        assertEquals(16f, BallSize.DEFAULT.radius)
-        assertEquals(22f, BallSize.LARGE.radius)
+        assertEquals(16f, BallSize.SMALL.radius)
+        assertEquals(22f, BallSize.DEFAULT.radius)
+        assertEquals(30f, BallSize.LARGE.radius)
         BallSize.entries.forEach { size ->
             val ball = Ball(1, size = size, baseSize = size)
             assertEquals(size.radius, ball.radius)
@@ -139,9 +158,9 @@ class CosmeticCustomizationTest {
         repeat(3) { session.activatePowerUp(PowerUpType.EXPAND_PADDLE) }
         store.save(level, session)
         val restored = requireNotNull(store.restore()).second
-        assertEquals(BallSize.LARGE, restored.baseBallSize)
-        assertEquals(BallSize.LARGE, restored.ball.baseSize)
-        assertEquals(BallSize.DEFAULT, restored.ball.size)
+        assertEquals(BallSize.DEFAULT, restored.baseBallSize)
+        assertEquals(BallSize.DEFAULT, restored.ball.baseSize)
+        assertEquals(BallSize.SMALL, restored.ball.size)
         assertEquals("monsters", restored.ball.cosmeticGroupName)
         assertEquals("monsters_skull", restored.ball.cosmeticSpriteName)
         assertEquals(3, restored.expandPaddleStacks)
@@ -163,10 +182,12 @@ class CosmeticCustomizationTest {
         assertEquals("normal", requireNotNull(paddles[CosmeticDefaults.PADDLE_ID]).groupId)
         assertEquals("weapon", requireNotNull(paddles[CosmeticDefaults.WEAPON_PADDLE_ID]) { paddles.keys.filter { "pulse" in it }.joinToString() }.groupId)
         assertEquals("sticky", requireNotNull(paddles[CosmeticDefaults.STICKY_PADDLE_ID]) { paddles.keys.filter { "nano" in it }.joinToString() }.groupId)
-        val custom = "group1:paddle_normal_solar_ceramic"
-        assertEquals(custom, CosmeticPaddleSelection.idForState(custom, laserActive = false, stickyActive = false))
-        assertEquals(CosmeticDefaults.WEAPON_PADDLE_ID, CosmeticPaddleSelection.idForState(custom, laserActive = true, stickyActive = false))
-        assertEquals(CosmeticDefaults.STICKY_PADDLE_ID, CosmeticPaddleSelection.idForState(custom, laserActive = false, stickyActive = true))
+        val normal = "group1:paddle_normal_solar_ceramic"
+        val weapon = "group1:paddle_weapon_photon_lance"
+        val sticky = "group1:paddle_sticky_liquid_metal_bond"
+        assertEquals(normal, CosmeticPaddleSelection.idForState(normal, weapon, sticky, laserActive = false, stickyActive = false))
+        assertEquals(weapon, CosmeticPaddleSelection.idForState(normal, weapon, sticky, laserActive = true, stickyActive = false))
+        assertEquals(sticky, CosmeticPaddleSelection.idForState(normal, weapon, sticky, laserActive = false, stickyActive = true))
     }
 
     @Test fun dualPaddlesAreAdjacentAndCollisionMatchesBothVisualSlots() {

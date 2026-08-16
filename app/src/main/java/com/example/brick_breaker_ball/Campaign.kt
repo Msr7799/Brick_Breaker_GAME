@@ -86,7 +86,7 @@ object LevelRepository {
         if (!bonusStage) {
             if (world >= 2 || stage >= 6) place(1, 2, BrickType.POWERUP_CARRIER)
             if (world >= 3) { place(1, 1, BrickType.MOVING_HORIZONTAL); place(2, 7, BrickType.MOVING_VERTICAL); place(4, 2, BrickType.LIGHTNING_SPEED_PASS_THROUGH); place(4, 6, BrickType.TRANSPARENT_SLOW_PASS_THROUGH) }
-            if (world >= 4) { place(1, 4, BrickType.REGENERATING); place(5, 1, BrickType.SPIKED_HAZARD) }
+            if (world >= 4) place(1, 4, BrickType.REGENERATING)
             if (world >= 5) { place(1, 3, BrickType.SWITCH, 2); place(2, 5, BrickType.GHOST, 2); place(4, 4, BrickType.BLACK_HOLE_TELEPORTER) }
             if (world >= 6) { place(1, 1, BrickType.KEY_BRICK, 1); place(1, 7, BrickType.LOCKED, 1); place(2, 7, BrickType.LOCKED, 1) }
             if (world >= 7) { place(3, 2, BrickType.CHAIN_BRICK, 3); place(3, 4, BrickType.CHAIN_BRICK, 3); place(3, 6, BrickType.CHAIN_BRICK, 3) }
@@ -106,7 +106,7 @@ object LevelRepository {
         val breakableCount = cells.flatten().count { it?.breakable == true }
         return LevelDefinition(
             id = id, world = world, name = if (bonusStage) "WORLD $world • BONUS CACHE" else "WORLD $world • STAGE ${stage.toString().padStart(2, '0')}", rows = rows, columns = columns, layout = layout,
-            ballSpeed = (540f + (world - 1) * 30f + (stage - 1) * 4f).coerceAtMost(GameSession.MAX_SPEED),
+            ballSpeed = (600f + (world - 1) * 26f + (stage - 1) * 3.5f).coerceAtMost(GameSession.MAX_SPEED),
             lives = if (world <= 2 || stage == stageCount) 4 else 3,
             threeStarScore = maxOf(1200, breakableCount * 85 + world * 120 + stage * 35),
             modifiers = buildSet { if (stage == stageCount) { add("BOSS"); add("CHALLENGE") }; if (bonusStage) add("BONUS"); if (world >= 4) add("VOLATILE") },
@@ -119,7 +119,7 @@ object LevelRepository {
         1 -> listOf(BrickType.NORMAL_ONE_HIT, BrickType.GLASS, BrickType.EXPLOSIVE, BrickType.ROUGH_STONE, BrickType.CRYSTAL_BLUE)
         2 -> listOf(BrickType.NORMAL_ONE_HIT, BrickType.ARMORED_TWO_HIT, BrickType.POWERUP_CARRIER, BrickType.ELECTRIC_WHITE, BrickType.CRYSTAL_GREEN)
         3 -> listOf(BrickType.ARMORED_TWO_HIT, BrickType.ARMORED_THREE_HIT, BrickType.MOVING_HORIZONTAL, BrickType.MOVING_VERTICAL, BrickType.LIGHTNING_SPEED_PASS_THROUGH, BrickType.TRANSPARENT_SLOW_PASS_THROUGH, BrickType.STONE_GRAY, BrickType.CRYSTAL_CYAN)
-        4 -> listOf(BrickType.ARMORED_THREE_HIT, BrickType.REGENERATING, BrickType.CRYSTAL_RED, BrickType.CRYSTAL_PURPLE, BrickType.CRYSTAL_PINK, BrickType.CRYSTAL_ORANGE, BrickType.SPIKED_HAZARD)
+        4 -> listOf(BrickType.ARMORED_THREE_HIT, BrickType.REGENERATING, BrickType.CRYSTAL_RED, BrickType.CRYSTAL_PURPLE, BrickType.CRYSTAL_PINK, BrickType.CRYSTAL_ORANGE)
         5 -> listOf(BrickType.ARMORED_THREE_HIT, BrickType.REGENERATING, BrickType.GHOST, BrickType.SWITCH, BrickType.BLACK_HOLE_TELEPORTER, BrickType.CRYSTAL_PURPLE, BrickType.ARMORED_DARK)
         6 -> listOf(BrickType.ARMORED_THREE_HIT, BrickType.KEY_BRICK, BrickType.LOCKED, BrickType.CRYSTAL_CYAN, BrickType.ARMORED_DARK, BrickType.CRYSTAL_GREEN)
         7 -> listOf(BrickType.ARMORED_THREE_HIT, BrickType.CHAIN_BRICK, BrickType.KEY_BRICK, BrickType.LOCKED, BrickType.GHOST, BrickType.SWITCH, BrickType.CRYSTAL_PINK)
@@ -190,6 +190,8 @@ data class GameSettings(
     var selectedBallGroupName: String = CosmeticDefaults.BALL_GROUP,
     var selectedBallBaseSize: BallSize = BallSize.DEFAULT,
     var selectedPaddleId: String = CosmeticDefaults.PADDLE_ID,
+    var selectedWeaponPaddleId: String = CosmeticDefaults.WEAPON_PADDLE_ID,
+    var selectedStickyPaddleId: String = CosmeticDefaults.STICKY_PADDLE_ID,
 )
 
 class ProgressStore(private val prefs: Preferences = Gdx.app.getPreferences("brickbreakerball-progress-v1")) {
@@ -209,10 +211,18 @@ class ProgressStore(private val prefs: Preferences = Gdx.app.getPreferences("bri
     }
     fun saveSettings() { with(settings) { prefs.putFloat("master",masterVolume).putFloat("music",musicVolume).putFloat("sfx",sfxVolume).putBoolean("haptics",haptics).putBoolean("motion",reduceMotion).putBoolean("contrast",highContrastBall).putBoolean("colorblind",colorBlind).putBoolean("left",leftHanded).putBoolean("relative",relativeControl).putFloat("sensitivity",sensitivity).putFloat("text",textScale).putString("quality",quality.name)
         .putString("selected_ball_sprite",selectedBallSpriteName).putString("selected_ball_group",selectedBallGroupName)
-        .putString("selected_ball_size",selectedBallBaseSize.name).putString("selected_paddle_id",selectedPaddleId).flush() } }
+        .putString("selected_ball_size",BallSize.DEFAULT.name).putString("selected_paddle_id",selectedPaddleId)
+        .putString("selected_weapon_paddle_id",selectedWeaponPaddleId)
+        .putString("selected_sticky_paddle_id",selectedStickyPaddleId).flush() } }
     private fun loadSettings() { with(settings) { masterVolume=prefs.getFloat("master",.8f);musicVolume=prefs.getFloat("music",.55f);sfxVolume=prefs.getFloat("sfx",.8f);haptics=prefs.getBoolean("haptics",true);reduceMotion=prefs.getBoolean("motion",false);highContrastBall=prefs.getBoolean("contrast",false);colorBlind=prefs.getBoolean("colorblind",false);leftHanded=prefs.getBoolean("left",false);relativeControl=prefs.getBoolean("relative",false);sensitivity=prefs.getFloat("sensitivity",1f);textScale=prefs.getFloat("text",1f);quality=runCatching{GraphicsQuality.valueOf(prefs.getString("quality","HIGH"))}.getOrDefault(GraphicsQuality.HIGH)
         selectedBallSpriteName=prefs.getString("selected_ball_sprite",CosmeticDefaults.BALL_SPRITE)
         selectedBallGroupName=prefs.getString("selected_ball_group",CosmeticDefaults.BALL_GROUP)
-        selectedBallBaseSize=runCatching{BallSize.valueOf(prefs.getString("selected_ball_size",BallSize.DEFAULT.name))}.getOrDefault(BallSize.DEFAULT)
-        selectedPaddleId=prefs.getString("selected_paddle_id",CosmeticDefaults.PADDLE_ID) } }
+        // Ball size is gameplay-owned: every run starts Normal and size talismans change it temporarily.
+        selectedBallBaseSize=BallSize.DEFAULT
+        val legacyPaddleId=prefs.getString("selected_paddle_id",CosmeticDefaults.PADDLE_ID)
+        selectedPaddleId=legacyPaddleId.takeIf { "_normal_" in it } ?: CosmeticDefaults.PADDLE_ID
+        selectedWeaponPaddleId=prefs.getString("selected_weapon_paddle_id",
+            legacyPaddleId.takeIf { "_weapon_" in it } ?: CosmeticDefaults.WEAPON_PADDLE_ID)
+        selectedStickyPaddleId=prefs.getString("selected_sticky_paddle_id",
+            legacyPaddleId.takeIf { "_sticky_" in it } ?: CosmeticDefaults.STICKY_PADDLE_ID) } }
 }

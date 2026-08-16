@@ -7,7 +7,7 @@ Brick Breaker Ball is an Android brick-breaker game written in Kotlin and render
 ## Target visual preview
 
 <p align="center">
-  <img src="the-game.png" alt="Target gameplay screen reference" width="320">
+  <img src="BrickBreakerBall.png" alt="Target gameplay screen reference" width="750">
 </p>
 
 `the-game.png` is a **461×951** visual reference for the intended gameplay presentation. It shows the top HUD, Items, Shop and Customize controls, active-effect indicators, a world background, the playfield, paddle, balls, and falling items. The image is not loaded by the game code and is not packaged as an APK runtime asset; it documents the target visual direction only.

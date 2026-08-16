@@ -118,7 +118,7 @@ class GameScreen(
         if (!videoVisible) drawBackgroundCover(assets.worldFallbackBg(level.world), Color(.66f, .74f, .9f, .9f))
         val playfieldBottom = 150f
         val playfieldTop = actionBarRect.y - 8f
-        draw(assets.ui.findRegion("panel"), 0f, playfieldBottom, 900f, playfieldTop - playfieldBottom, Color(0f, .012f, .035f, .18f))
+        draw(assets.ui.findRegion("panel"), 0f, playfieldBottom, 900f, playfieldTop - playfieldBottom, Color(0f, .006f, .02f, .46f))
         if (level.deathRailEnabled) drawDeathRail()
         if (session.fallingBricksMode) {
             val pulse = .35f + .2f * MathUtils.sin(deathRailTime * 7f)
@@ -145,7 +145,8 @@ class GameScreen(
 
     private fun brick(brick: Brick) {
         if (brick.type == BrickType.GHOST && !brick.ghostVisible) return
-        draw(assets.gameplayAtlas.brick(brick, level.world), brick.bounds.x, brick.bounds.y, brick.bounds.width, brick.bounds.height, Color.WHITE)
+        draw(assets.gameplayAtlas.brick(brick, level.world, useCampaignPalette = customTestEditor == null),
+            brick.bounds.x, brick.bounds.y, brick.bounds.width, brick.bounds.height, Color.WHITE)
         if (brick.locked) draw(assets.ui.findRegion("panel"), brick.bounds.x, brick.bounds.y, brick.bounds.width, brick.bounds.height, Color(.05f, .1f, .18f, .68f))
         if (brick.type == BrickType.BOSS_CORE) {
             val ratio = brick.health.toFloat() / level.bossHealth.coerceAtLeast(1)
@@ -163,21 +164,39 @@ class GameScreen(
         val paddle = session.paddle
         val laserActive = PowerUpType.LASER_PADDLE in session.powerUps || PowerUpType.LASER_AUTO_CHARGE in session.powerUps
         val stickyActive = PowerUpType.STICKY_PADDLE in session.powerUps
-        val activePaddleId = CosmeticPaddleSelection.idForState(game.progress.settings.selectedPaddleId, laserActive, stickyActive)
+        val magneticActive = PowerUpType.MAGNETIC_PADDLE in session.powerUps
+        val activePaddleId = CosmeticPaddleSelection.idForState(
+            game.progress.settings.selectedPaddleId,
+            game.progress.settings.selectedWeaponPaddleId,
+            game.progress.settings.selectedStickyPaddleId,
+            laserActive,
+            stickyActive,
+        )
         val selected = assets.cosmetics.selectedPaddle(activePaddleId)
         val region = selected?.let(assets.cosmetics::paddleRegion) ?: assets.gameplayAtlas.paddleNormal.whole
         val drawY = paddle.y - paddle.height / 2f
         val dual = PowerUpType.DUAL_PADDLE in session.powerUps
+        if (magneticActive) {
+            val fieldWidth = GameplayTuning.MAGNET_HORIZONTAL_RANGE * 2f
+            draw(assets.particles.findRegion("glow"), paddle.x - fieldWidth / 2f, paddle.y,
+                fieldWidth, GameplayTuning.MAGNET_RANGE, Color(.1f, 1f, .55f, .13f))
+        }
         PaddleVisualLayout.slots(paddle.x, paddle.width, dual).forEach { slot ->
             val visualHeight = (slot.width * region.regionHeight.toFloat() / region.regionWidth.toFloat()).coerceAtMost(92f)
+            val glow = assets.particles.findRegion("glow")
+            draw(glow, slot.centerX - slot.width * .56f, drawY - 15f,
+                slot.width * 1.12f, visualHeight + 30f, Color(.08f, .78f, 1f, .24f))
+            draw(region, slot.centerX - slot.width / 2f, drawY - 8f,
+                slot.width, visualHeight, Color(.005f, .012f, .02f, .9f))
             draw(region, slot.centerX - slot.width / 2f, drawY, slot.width, visualHeight, Color.WHITE)
             if (laserActive) {
-                val glow = assets.particles.findRegion("glow")
                 val glowSize = 24f
                 draw(glow, slot.centerX - slot.width * .38f - glowSize / 2f, drawY + visualHeight - 10f, glowSize, glowSize, Color(.12f, .9f, 1f, .82f))
                 draw(glow, slot.centerX + slot.width * .38f - glowSize / 2f, drawY + visualHeight - 10f, glowSize, glowSize, Color(.12f, .9f, 1f, .82f))
             }
             if (stickyActive) draw(assets.particles.findRegion("glow"), slot.centerX - slot.width * .46f, drawY + visualHeight - 16f, slot.width * .92f, 20f, Color(.35f, 1f, .72f, .58f))
+            if (magneticActive) draw(assets.particles.findRegion("glow"), slot.centerX - slot.width * .48f,
+                drawY - 8f, slot.width * .96f, visualHeight + 16f, Color(.08f, 1f, .42f, .38f))
         }
     }
 
@@ -186,15 +205,34 @@ class GameScreen(
         val diameter = ball.visualDiameter
         val selected = assets.cosmetics.selectedBall(ball.cosmeticGroupName, ball.cosmeticSpriteName)
         val region = selected?.let(assets.cosmetics::ballRegion) ?: assets.gameplayAtlas.ball(ball)
-        val trailTint = if (ball.element == BallElement.FIRE) Color(1f, .3f, .05f, 1f) else Color(.45f, .9f, 1f, 1f)
+        val ghost = ball.collisionMode == BallCollisionMode.GHOST
+        val trailTint = when {
+            ghost -> Color(.72f, .48f, 1f, 1f)
+            ball.element == BallElement.FIRE -> Color(1f, .3f, .05f, 1f)
+            else -> Color(.45f, .9f, 1f, 1f)
+        }
         if (!game.progress.settings.reduceMotion) for (i in 1..3) {
             val t = i / 4f
             val trailR = r * .82f
             val trailX = MathUtils.lerp(ball.position.x, ball.previousPosition.x, t)
             val trailY = MathUtils.lerp(ball.position.y, ball.previousPosition.y, t)
-            drawRegionFit(region, trailX - trailR, trailY - trailR, trailR * 2f, trailR * 2f, Color(trailTint.r, trailTint.g, trailTint.b, .16f * (1f - t)))
+            drawBallSquare(region, trailX - trailR, trailY - trailR, trailR * 2f, Color(trailTint.r, trailTint.g, trailTint.b, .16f * (1f - t)))
         }
-        drawRegionFit(region, ball.position.x - r, ball.position.y - r, diameter, diameter, if (game.progress.settings.highContrastBall) Color.YELLOW else Color.WHITE)
+        val ballTint = when {
+            game.progress.settings.highContrastBall -> Color.YELLOW
+            ghost -> Color(.72f, .72f, 1f, .58f)
+            else -> Color.WHITE
+        }
+        val ballGlow = when {
+            game.progress.settings.highContrastBall -> Color(1f, .92f, .08f, .38f)
+            ghost -> Color(.65f, .42f, 1f, .3f)
+            ball.element == BallElement.FIRE -> Color(1f, .28f, .04f, .36f)
+            else -> Color(.82f, .94f, 1f, .24f)
+        }
+        val glowDiameter = diameter * 1.42f
+        draw(assets.particles.findRegion("glow"), ball.position.x - glowDiameter / 2f,
+            ball.position.y - glowDiameter / 2f, glowDiameter, glowDiameter, ballGlow)
+        drawBallSquare(region, ball.position.x - r, ball.position.y - r, diameter, ballTint)
     }
 
     private fun aimGuide() {
@@ -271,7 +309,7 @@ class GameScreen(
     }
 
     private fun pauseOverlay() {
-        draw(assets.ui.findRegion("panel"), 92f, 240f, 716f, 894f, Color(.01f, .045f, .105f, .98f))
+        draw(assets.ui.findRegion("panel"), 92f, 240f, 716f, 894f, Color(.055f, .012f, .016f, .97f))
         assets.pauseTitleFont.draw(batch, if (customTestEditor != null) "TEST PAUSED" else "PAUSED", 0f, 1060f, 900f, Align.center, false)
         if (customTestEditor != null) {
             overlayButton(overlayResume, "RESUME")
@@ -290,7 +328,7 @@ class GameScreen(
 
     private fun pauseArtButton(rect: Rectangle, assetName: String) {
         batch.color = Color.WHITE
-        batch.draw(assets.pauseMenuTexture(assetName), 25f, rect.y - 47f, 850f, 198f)
+        batch.draw(assets.pauseMenuTexture(assetName), 90f, rect.y - 32f, 720f, 168f)
     }
 
     private fun overlayButton(rect: Rectangle, text: String) {
@@ -398,6 +436,10 @@ class GameScreen(
         val drawHeight = region.regionHeight * scale
         draw(region, x + (width - drawWidth) / 2f, y + (height - drawHeight) / 2f, drawWidth, drawHeight, color)
     }
+
+    /** Ball physics are circular, so cosmetic source rectangles are normalized to a square at draw time. */
+    private fun drawBallSquare(region: TextureRegion, x: Float, y: Float, diameter: Float, color: Color) =
+        draw(region, x, y, diameter, diameter, color)
 
     private fun drawBackgroundCover(region: TextureRegion, tint: Color) {
         val sourceAspect = region.regionWidth.toFloat() / region.regionHeight.toFloat()

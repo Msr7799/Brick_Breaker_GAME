@@ -10,14 +10,26 @@ import com.badlogic.gdx.utils.Align
 import kotlin.math.abs
 
 private enum class CustomizationTab { BALLS, PADDLES }
-private enum class PaddleFilter { ALL, NORMAL, WEAPON, STICKY }
+private enum class PaddleFilter { NORMAL, WEAPON, STICKY }
+
+internal object CustomizationHitTesting {
+    const val PADDLE_LIST_BOTTOM = 500f
+    const val PADDLE_LIST_TOP = 1150f
+
+    fun visiblePaddleCard(rect: Rectangle): Rectangle? {
+        val bottom = maxOf(rect.y, PADDLE_LIST_BOTTOM)
+        val top = minOf(rect.y + rect.height, PADDLE_LIST_TOP)
+        if (top <= bottom) return null
+        return Rectangle(rect.x, bottom, rect.width, top - bottom)
+    }
+}
 
 class CustomizationScreen(game: BrickBreakerGame, private val returnToPausedGame: Boolean = false) : ForgeScreen(game) {
     private var tab = CustomizationTab.BALLS
     private var ballGroupIndex = game.assets.cosmetics.ballGroups.indexOfFirst {
         it.groupName == game.progress.settings.selectedBallGroupName
     }.coerceAtLeast(0)
-    private var paddleFilter = PaddleFilter.ALL
+    private var paddleFilter = PaddleFilter.NORMAL
     private var paddleScrollOffset = 0f
     private var touchActive = false
     private var touchMoved = false
@@ -42,8 +54,8 @@ class CustomizationScreen(game: BrickBreakerGame, private val returnToPausedGame
         handleTouch(buildList {
             add(ballsTab to { tab = CustomizationTab.BALLS })
             add(paddlesTab to { tab = CustomizationTab.PADDLES })
-            addAll(hitTargets)
             add(back to ::leaveCustomization)
+            addAll(hitTargets)
         })
     }
 
@@ -56,16 +68,16 @@ class CustomizationScreen(game: BrickBreakerGame, private val returnToPausedGame
         }
         ballGroupIndex = ballGroupIndex.coerceIn(groups.indices)
         val group = groups[ballGroupIndex]
-        game.assets.bodyFont.draw(batch, group.groupName.replace('_', ' ').uppercase(), 0f, 1280f, 900f, Align.center, false)
-        drawSmallScaled("SWIPE UP / DOWN TO CHANGE GROUP", 80f, 1215f, 740f, .68f)
+        game.assets.bodyFont.draw(batch, group.groupName.replace('_', ' ').uppercase(), 0f, 1295f, 900f, Align.center, false)
+        drawSmallScaled("GROUP ${ballGroupIndex + 1} / ${groups.size}  •  USE PREV / NEXT OR SWIPE", 80f, 1235f, 740f, .68f)
 
         val settings = game.progress.settings
         group.sprites.forEachIndexed { index, definition ->
             val col = index % 4; val row = index / 4
-            val rect = Rectangle(35f + col * 215f, 1025f - row * 205f, 185f, 180f)
+            val rect = Rectangle(35f + col * 215f, 990f - row * 205f, 185f, 180f)
             val selected = settings.selectedBallGroupName == definition.groupName && settings.selectedBallSpriteName == definition.spriteName
             panel(rect, selected)
-            game.assets.cosmetics.ballRegion(definition)?.let { drawFit(it, rect.x + 50f, rect.y + 58f, 85f, 85f) }
+            game.assets.cosmetics.ballRegion(definition)?.let { drawBallSquare(it, rect.x + 50f, rect.y + 58f, 85f) }
             drawSmallScaled(definition.name.replace('_', ' ').uppercase(), rect.x + 8f, rect.y + 38f, rect.width - 16f, .68f)
             actions += rect to {
                 settings.selectedBallGroupName = definition.groupName
@@ -78,17 +90,20 @@ class CustomizationScreen(game: BrickBreakerGame, private val returnToPausedGame
             ?: group.sprites.first()
         val region = game.assets.cosmetics.ballRegion(selected)
         drawSmallScaled("SELECTED PREVIEW", 35f, 695f, 250f, .72f)
-        if (region != null) drawFit(region, 95f, 500f, 130f, 130f)
+        val previous = compactButton("PREV", 35f, 710f, 180f, 68f, false)
+        val next = compactButton("NEXT", 685f, 710f, 180f, 68f, false)
+        actions += previous to { changePage(-1) }
+        actions += next to { changePage(1) }
+        if (region != null) drawBallSquare(region, 95f, 500f, 130f)
         drawSmallScaled(selected.name.replace('_', ' ').uppercase(), 35f, 475f, 250f, .72f)
         drawSmallScaled("REAL SIZE COMPARISON", 305f, 695f, 560f, .78f)
+        drawSmallScaled("POWER-UP SIZE PREVIEW • EVERY RUN STARTS NORMAL", 305f, 650f, 560f, .68f)
         val sizes = listOf(BallSize.SMALL to "SMALL", BallSize.DEFAULT to "NORMAL", BallSize.LARGE to "LARGE")
         sizes.forEachIndexed { index, (size, label) ->
             val centerX = 390f + index * 190f
             val displayDiameter = size.radius * 3.4f
-            if (region != null) drawFit(region, centerX - displayDiameter / 2f, 535f - displayDiameter / 2f, displayDiameter, displayDiameter)
+            if (region != null) drawBallSquare(region, centerX - displayDiameter / 2f, 535f - displayDiameter / 2f, displayDiameter)
             drawSmallScaled("$label  R=${size.radius.toInt()}", centerX - 85f, 450f, 170f, .58f)
-            val button = compactButton(label, centerX - 82f, 335f, 164f, 72f, settings.selectedBallBaseSize == size)
-            actions += button to { settings.selectedBallBaseSize = size; game.progress.saveSettings() }
         }
         return actions
     }
@@ -97,10 +112,10 @@ class CustomizationScreen(game: BrickBreakerGame, private val returnToPausedGame
         val actions = mutableListOf<Pair<Rectangle, () -> Unit>>()
         val settings = game.progress.settings
         PaddleFilter.entries.forEachIndexed { index, filter ->
-            val rect = compactButton(filter.name, 28f + index * 217f, 1215f, 195f, 70f, paddleFilter == filter)
+            val rect = compactButton(filter.name, 45f + index * 285f, 1215f, 240f, 70f, paddleFilter == filter)
             actions += rect to { paddleFilter = filter; paddleScrollOffset = 0f }
         }
-        val filtered = game.assets.cosmetics.paddles.filter { paddleFilter == PaddleFilter.ALL || it.groupId.equals(paddleFilter.name, true) }
+        val filtered = game.assets.cosmetics.paddles.filter { it.groupId.equals(paddleFilter.name, true) }
         if (filtered.isEmpty()) {
             game.assets.bodyFont.draw(batch, "PADDLE SPRITES UNAVAILABLE\nUSING CLASSIC PADDLE", 100f, 900f, 700f, Align.center, true)
             return actions
@@ -111,19 +126,35 @@ class CustomizationScreen(game: BrickBreakerGame, private val returnToPausedGame
         filtered.forEachIndexed { index, definition ->
             val col = index % 2; val row = index / 2
             val rect = Rectangle(40f + col * 430f, 980f - row * 190f + paddleScrollOffset, 390f, 164f)
-            panel(rect, settings.selectedPaddleId == definition.id)
+            panel(rect, selectedPaddleId(settings) == definition.id)
             game.assets.cosmetics.paddleRegion(definition)?.let { drawFit(it, rect.x + 24f, rect.y + 64f, rect.width - 48f, 75f) }
             drawSmallScaled(definition.displayNameEn.uppercase(), rect.x + 12f, rect.y + 43f, rect.width - 24f, .72f)
-            actions += rect to { settings.selectedPaddleId = definition.id; game.progress.saveSettings() }
+            CustomizationHitTesting.visiblePaddleCard(rect)?.let { hitRect ->
+                actions += hitRect to { setSelectedPaddleId(settings, definition.id); game.progress.saveSettings() }
+            }
         }
         endPaddleClip()
-        val selected = game.assets.cosmetics.selectedPaddle(settings.selectedPaddleId)
-        game.assets.smallFont.draw(batch, "SELECTED PADDLE", 0f, 475f, 900f, Align.center, false)
+        val selected = game.assets.cosmetics.selectedPaddle(selectedPaddleId(settings))
+        game.assets.smallFont.draw(batch, "SELECTED ${paddleFilter.name} PADDLE", 0f, 475f, 900f, Align.center, false)
         selected?.let { definition ->
             game.assets.cosmetics.paddleRegion(definition)?.let { drawFit(it, 145f, 340f, 610f, 105f) }
             game.assets.smallFont.draw(batch, definition.displayNameEn.uppercase(), 100f, 320f, 700f, Align.center, false)
         }
         return actions
+    }
+
+    private fun selectedPaddleId(settings: GameSettings): String = when (paddleFilter) {
+        PaddleFilter.NORMAL -> settings.selectedPaddleId
+        PaddleFilter.WEAPON -> settings.selectedWeaponPaddleId
+        PaddleFilter.STICKY -> settings.selectedStickyPaddleId
+    }
+
+    private fun setSelectedPaddleId(settings: GameSettings, id: String) {
+        when (paddleFilter) {
+            PaddleFilter.NORMAL -> settings.selectedPaddleId = id
+            PaddleFilter.WEAPON -> settings.selectedWeaponPaddleId = id
+            PaddleFilter.STICKY -> settings.selectedStickyPaddleId = id
+        }
     }
 
     private fun maxPaddleScroll(itemCount: Int): Float {
@@ -133,8 +164,8 @@ class CustomizationScreen(game: BrickBreakerGame, private val returnToPausedGame
 
     private fun beginPaddleClip() {
         batch.flush()
-        val screenY = viewport.screenY + (500f / 1600f * viewport.screenHeight).toInt()
-        val screenHeight = (650f / 1600f * viewport.screenHeight).toInt()
+        val screenY = viewport.screenY + (CustomizationHitTesting.PADDLE_LIST_BOTTOM / 1600f * viewport.screenHeight).toInt()
+        val screenHeight = ((CustomizationHitTesting.PADDLE_LIST_TOP - CustomizationHitTesting.PADDLE_LIST_BOTTOM) / 1600f * viewport.screenHeight).toInt()
         Gdx.gl.glEnable(GL20.GL_SCISSOR_TEST)
         Gdx.gl.glScissor(viewport.screenX, screenY, viewport.screenWidth, screenHeight)
     }
@@ -161,9 +192,7 @@ class CustomizationScreen(game: BrickBreakerGame, private val returnToPausedGame
         if (touchActive && isTouched) {
             val point = touchPoint()
             if (tab == CustomizationTab.PADDLES) {
-                val filteredCount = game.assets.cosmetics.paddles.count {
-                    paddleFilter == PaddleFilter.ALL || it.groupId.equals(paddleFilter.name, true)
-                }
+                val filteredCount = game.assets.cosmetics.paddles.count { it.groupId.equals(paddleFilter.name, true) }
                 paddleScrollOffset = (paddleScrollOffset + point.y - touchLastY)
                     .coerceIn(0f, maxPaddleScroll(filteredCount))
             }
@@ -183,7 +212,7 @@ class CustomizationScreen(game: BrickBreakerGame, private val returnToPausedGame
     private fun changePage(direction: Int) {
         if (tab == CustomizationTab.BALLS) {
             val lastIndex = game.assets.cosmetics.ballGroups.lastIndex
-            if (lastIndex >= 0) ballGroupIndex = (ballGroupIndex + direction).coerceIn(0, lastIndex)
+            if (lastIndex >= 0) ballGroupIndex = (ballGroupIndex + direction).mod(lastIndex + 1)
         }
     }
 
@@ -208,6 +237,11 @@ class CustomizationScreen(game: BrickBreakerGame, private val returnToPausedGame
         val drawHeight = region.regionHeight * scale
         batch.color = Color.WHITE
         batch.draw(region, x + (width - drawWidth) / 2f, y + (height - drawHeight) / 2f, drawWidth, drawHeight)
+    }
+
+    private fun drawBallSquare(region: TextureRegion, x: Float, y: Float, diameter: Float) {
+        batch.color = Color.WHITE
+        batch.draw(region, x, y, diameter, diameter)
     }
 
     private fun drawSmallScaled(text: String, x: Float, baselineY: Float, width: Float, scale: Float) {

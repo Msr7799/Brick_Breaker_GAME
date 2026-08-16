@@ -44,10 +44,16 @@ object CosmeticDefaults {
 }
 
 object CosmeticPaddleSelection {
-    fun idForState(selectedPaddleId: String, laserActive: Boolean, stickyActive: Boolean): String = when {
-        laserActive -> CosmeticDefaults.WEAPON_PADDLE_ID
-        stickyActive -> CosmeticDefaults.STICKY_PADDLE_ID
-        else -> selectedPaddleId
+    fun idForState(
+        selectedNormalPaddleId: String,
+        selectedWeaponPaddleId: String,
+        selectedStickyPaddleId: String,
+        laserActive: Boolean,
+        stickyActive: Boolean,
+    ): String = when {
+        laserActive -> selectedWeaponPaddleId.ifBlank { CosmeticDefaults.WEAPON_PADDLE_ID }
+        stickyActive -> selectedStickyPaddleId.ifBlank { CosmeticDefaults.STICKY_PADDLE_ID }
+        else -> selectedNormalPaddleId.ifBlank { CosmeticDefaults.PADDLE_ID }
     }
 }
 

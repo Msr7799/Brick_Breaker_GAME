@@ -61,11 +61,16 @@ class PausedSessionStore(private val prefs: Preferences = Gdx.app.getPreferences
             }
             require(session.balls.isNotEmpty());session.bricks.clear()
             prefs.getString("bricks","").split(';').filter(String::isNotBlank).forEach { raw ->
-                val v=raw.split(','); val type=BrickType.valueOf(v[5])
-                session.bricks+=Brick(v[0].toInt(),Rectangle(v[1].toFloat(),v[2].toFloat(),v[3].toFloat(),v[4].toFloat()),type,v[6].toInt(),v[7].toFloat(),v[8].toFloat(),v[9].toFloat(),v[10].toFloat(),
+                val v=raw.split(',')
+                val savedType=BrickType.valueOf(v[5])
+                val temporaryOriginalType=v.getOrNull(16)?.takeUnless{it=="n"}?.let{BrickType.valueOf(it)}
+                val permanentLegacySpike=savedType==BrickType.SPIKED_HAZARD && temporaryOriginalType==null
+                val type=if(permanentLegacySpike)BrickType.NORMAL_ONE_HIT else savedType
+                val health=if(permanentLegacySpike)1 else v[6].toInt()
+                session.bricks+=Brick(v[0].toInt(),Rectangle(v[1].toFloat(),v[2].toFloat(),v[3].toFloat(),v[4].toFloat()),type,health,v[7].toFloat(),v[8].toFloat(),v[9].toFloat(),v[10].toFloat(),
                     groupId=v.getOrNull(11)?.toIntOrNull()?:0,locked=v.getOrNull(12)?.toBooleanStrictOrNull()?: (type==BrickType.LOCKED),ghostVisible=v.getOrNull(13)?.toBooleanStrictOrNull()?:true,
-                    initialHealth=v.getOrNull(14)?.toIntOrNull()?:v[6].toInt(),timedBombSeconds=v.getOrNull(15)?.takeUnless{it=="n"}?.toFloatOrNull(),
-                    temporaryOriginalType=v.getOrNull(16)?.takeUnless{it=="n"}?.let{BrickType.valueOf(it)},
+                    initialHealth=if(permanentLegacySpike)1 else v.getOrNull(14)?.toIntOrNull()?:health,timedBombSeconds=v.getOrNull(15)?.takeUnless{it=="n"}?.toFloatOrNull(),
+                    temporaryOriginalType=temporaryOriginalType,
                     temporaryOriginalHealth=v.getOrNull(17)?.toIntOrNull()?:0,temporaryOriginalInitialHealth=v.getOrNull(18)?.toIntOrNull()?:0)
             }
             session.fallingPowerUps.clear();prefs.getString("powers","").split(';').filter(String::isNotBlank).forEach { raw -> val v=raw.split(',');runCatching{PowerUpType.valueOf(v[1])}.getOrNull()?.let{type->session.fallingPowerUps+=FallingPowerUp(v[0].toInt(),type,Vector2(v[2].toFloat(),v[3].toFloat()),Vector2(v[4].toFloat(),v[5].toFloat()))} }
@@ -76,6 +81,15 @@ class PausedSessionStore(private val prefs: Preferences = Gdx.app.getPreferences
                 }
             }
             session.powerUps.restorePersistent(prefs.getString("persistent","").split(',').filter(String::isNotBlank).mapNotNull{runCatching{PowerUpType.valueOf(it)}.getOrNull()})
+            session.baseBallSize=BallSize.DEFAULT
+            session.balls.forEach { ball ->
+                ball.baseSize=BallSize.DEFAULT
+                ball.size=when {
+                    PowerUpType.SHRINK_BALL in session.powerUps -> BallSize.SMALL
+                    PowerUpType.MEGA_BALL in session.powerUps -> BallSize.LARGE
+                    else -> BallSize.DEFAULT
+                }
+            }
             session.laserShots.clear();prefs.getString("lasers","").split(';').filter(String::isNotBlank).forEach { raw -> val v=raw.split(',');session.laserShots+=LaserShot(Vector2(v[0].toFloat(),v[1].toFloat()),Vector2(v[2].toFloat(),v[3].toFloat())) }
             session.laserCooldown=prefs.getFloat("laserCooldown",0f);session.nextBallId=prefs.getInteger("nextBallId",(session.balls.maxOfOrNull{it.id}?:0)+1);session.nextPowerUpId=prefs.getInteger("nextPowerUpId",1)
             session.bottomShield=prefs.getBoolean("shield",false);session.explosionExpansion=prefs.getInteger("explosionExpansion",1);session.fallingBricksMode=prefs.getBoolean("fallingBricksMode",false)

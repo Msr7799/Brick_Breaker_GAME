@@ -226,8 +226,7 @@ class GameSession(
                     ball.baseSpeed = (ball.velocity.len() / speedMultiplier()).coerceIn(MIN_SPEED, MAX_SPEED)
                 ball.baseSpeed = (ball.baseSpeed * (1f + dt * .008f)).coerceIn(MIN_SPEED, MAX_SPEED)
                 syncBallSpeed(ball)
-                if (PowerUpType.MAGNETIC_PADDLE in powerUps && ball.velocity.y < 0f && ball.position.y < GameplayTuning.MAGNET_RANGE)
-                    ball.velocity.x += (paddle.x - ball.position.x) * dt * GameplayTuning.MAGNET_STRENGTH
+                applyMagneticAttraction(ball, dt)
                 simulateBall(ball, dt)
             }
         }
@@ -238,9 +237,22 @@ class GameSession(
         balls.removeAll(lost.toSet())
         if (balls.isEmpty()) loseLife(force = false)
         if (phase == GamePhase.PLAYING && bricks.none {
-                it.type.breakable && it.type !in setOf(BrickType.KEY_BRICK, BrickType.SWITCH) &&
+                (it.type.breakable || it.temporaryOriginalType?.breakable == true) &&
+                    it.type !in setOf(BrickType.KEY_BRICK, BrickType.SWITCH) &&
                     !(it.type == BrickType.GHOST && !it.ghostVisible)
             }) completeLevel()
+    }
+
+    private fun applyMagneticAttraction(ball: Ball, dt: Float) {
+        if (PowerUpType.MAGNETIC_PADDLE !in powerUps || ball.velocity.y >= 0f) return
+        val heightAbovePaddle = ball.position.y - paddle.y
+        val horizontalOffset = paddle.x - ball.position.x
+        if (heightAbovePaddle !in 0f..GameplayTuning.MAGNET_RANGE ||
+            abs(horizontalOffset) > GameplayTuning.MAGNET_HORIZONTAL_RANGE) return
+        val verticalFalloff = 1f - heightAbovePaddle / GameplayTuning.MAGNET_RANGE
+        val horizontalFalloff = 1f - abs(horizontalOffset) / GameplayTuning.MAGNET_HORIZONTAL_RANGE
+        ball.velocity.x += horizontalOffset * GameplayTuning.MAGNET_STRENGTH *
+            verticalFalloff * horizontalFalloff * dt
     }
 
     fun consumeDeathRailZapX(): Float? = pendingDeathRailZapX.also { pendingDeathRailZapX = null }
@@ -363,7 +375,7 @@ class GameSession(
 
     private fun speedMultiplier() = when {
         PowerUpType.FAST_BALL in powerUps -> 1.25f
-        PowerUpType.SLOW_BALL in powerUps -> .75f
+        PowerUpType.SLOW_BALL in powerUps -> GameplayTuning.SLOW_BALL_MULTIPLIER
         else -> 1f
     }
 
@@ -456,9 +468,17 @@ class GameSession(
             brick.age += dt
             brick.timedBombSeconds = brick.timedBombSeconds?.minus(dt)
             when (brick.type) {
-                BrickType.MOVING_HORIZONTAL -> brick.bounds.x =
-                    (brick.originX + MathUtils.sin(brick.age * 1.4f) * 42f).coerceIn(18f, WIDTH - 18f - brick.bounds.width)
-                BrickType.MOVING_VERTICAL -> brick.bounds.y = brick.originY + MathUtils.sin(brick.age * 1.2f) * 30f
+                BrickType.MOVING_HORIZONTAL -> moveBrickWithoutOverlap(
+                    brick,
+                    targetX = (brick.originX + MathUtils.sin(brick.age * 1.4f) * 42f)
+                        .coerceIn(18f, WIDTH - 18f - brick.bounds.width),
+                    targetY = brick.bounds.y,
+                )
+                BrickType.MOVING_VERTICAL -> moveBrickWithoutOverlap(
+                    brick,
+                    targetX = brick.bounds.x,
+                    targetY = brick.originY + MathUtils.sin(brick.age * 1.2f) * 30f,
+                )
                 BrickType.REGENERATING -> if (brick.health < brick.type.maxHealth && brick.age > 8f) { brick.health++; brick.age = 0f }
                 else -> Unit
             }
@@ -475,6 +495,40 @@ class GameSession(
                 .forEach { damageBrick(it, null, chain) }
             events += GameplayEvent.Explosion
         }
+    }
+
+    private fun moveBrickWithoutOverlap(brick: Brick, targetX: Float, targetY: Float) {
+        var safeX = targetX
+        if (targetX > brick.bounds.x) {
+            bricks.asSequence().filter { other -> other !== brick &&
+                other.bounds.y < brick.bounds.y + brick.bounds.height &&
+                other.bounds.y + other.bounds.height > brick.bounds.y &&
+                other.bounds.x >= brick.bounds.x + brick.bounds.width
+            }.forEach { other -> safeX = minOf(safeX, other.bounds.x - brick.bounds.width) }
+        } else if (targetX < brick.bounds.x) {
+            bricks.asSequence().filter { other -> other !== brick &&
+                other.bounds.y < brick.bounds.y + brick.bounds.height &&
+                other.bounds.y + other.bounds.height > brick.bounds.y &&
+                other.bounds.x + other.bounds.width <= brick.bounds.x
+            }.forEach { other -> safeX = maxOf(safeX, other.bounds.x + other.bounds.width) }
+        }
+        brick.bounds.x = safeX
+
+        var safeY = targetY
+        if (targetY > brick.bounds.y) {
+            bricks.asSequence().filter { other -> other !== brick &&
+                other.bounds.x < brick.bounds.x + brick.bounds.width &&
+                other.bounds.x + other.bounds.width > brick.bounds.x &&
+                other.bounds.y >= brick.bounds.y + brick.bounds.height
+            }.forEach { other -> safeY = minOf(safeY, other.bounds.y - brick.bounds.height) }
+        } else if (targetY < brick.bounds.y) {
+            bricks.asSequence().filter { other -> other !== brick &&
+                other.bounds.x < brick.bounds.x + brick.bounds.width &&
+                other.bounds.x + other.bounds.width > brick.bounds.x &&
+                other.bounds.y + other.bounds.height <= brick.bounds.y
+            }.forEach { other -> safeY = maxOf(safeY, other.bounds.y + other.bounds.height) }
+        }
+        brick.bounds.y = safeY
     }
 
     private fun applyFallingBricksStep() {
@@ -508,7 +562,8 @@ class GameSession(
             PowerUpType.ZAP_BRICKS -> bricks.any(::isZapTarget)
             PowerUpType.EIGHT_BALL, PowerUpType.MULTI_BALL, PowerUpType.TRIPLE_BALL -> balls.size < MAX_BALLS
             PowerUpType.MULTIBALL_PLUS_4, PowerUpType.MULTIBALL_15 -> balls.size < ABSOLUTE_MAX_BALLS
-            PowerUpType.INSTANT_KILL_BALL -> PowerUpType.INSTANT_KILL_BALL !in powerUps && bricks.count(::isHazardCandidate) >= 4
+            PowerUpType.INSTANT_KILL_BALL -> PowerUpType.INSTANT_KILL_BALL !in powerUps &&
+                bricks.count(::isHazardCandidate) >= GameplayTuning.TEMPORARY_SPIKE_COUNT
             PowerUpType.EXPAND_PADDLE -> expandPaddleStacks < MAX_EXPAND_STACKS
             PowerUpType.SHRINK_PADDLE -> paddle.targetWidth > PADDLE_SIZE_LEVELS.first()
             PowerUpType.SUPER_SHRINK -> paddle.targetWidth > PADDLE_SIZE_LEVELS.first()
@@ -567,7 +622,8 @@ class GameSession(
             PowerUpType.GHOST_BALL -> balls.forEach { it.collisionMode = BallCollisionMode.GHOST }
             PowerUpType.EXPLOSIVE_BALL -> balls.forEach { it.element = BallElement.EXPLOSIVE }
             PowerUpType.KILL_PADDLE -> loseLife(force = true, feedback = "PLAYER KILLED")
-            PowerUpType.INSTANT_KILL_BALL -> bricks.filter(::isHazardCandidate).sortedBy { effectRandom.nextInt() }.take(4).forEach { brick ->
+            PowerUpType.INSTANT_KILL_BALL -> bricks.filter(::isHazardCandidate)
+                .sortedBy { effectRandom.nextInt() }.take(GameplayTuning.TEMPORARY_SPIKE_COUNT).forEach { brick ->
                 brick.temporaryOriginalType = brick.type
                 brick.temporaryOriginalHealth = brick.health
                 brick.temporaryOriginalInitialHealth = brick.initialHealth

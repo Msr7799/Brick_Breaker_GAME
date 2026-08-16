@@ -7,7 +7,7 @@ enum class GamePhase { LOADING, READY, SERVING, PLAYING, RESOLVING, LEVEL_COMPLE
 enum class BallElement { NORMAL, FIRE, EXPLOSIVE }
 enum class BallCollisionMode { NORMAL, PIERCING, GHOST }
 enum class BallSize(val radius: Float) {
-    SMALL(11f), DEFAULT(16f), LARGE(22f);
+    SMALL(16f), DEFAULT(22f), LARGE(30f);
     fun smaller() = entries[(ordinal - 1).coerceAtLeast(0)]
     fun larger() = entries[(ordinal + 1).coerceAtMost(entries.lastIndex)]
     companion object { fun fromRadius(radius: Float) = when { radius < 14f -> SMALL; radius > 19f -> LARGE; else -> DEFAULT } }

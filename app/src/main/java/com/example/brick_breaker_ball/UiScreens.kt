@@ -81,7 +81,7 @@ class MainMenuScreen(game: BrickBreakerGame) : ForgeScreen(game) {
 
     private fun floatingY(baseY: Float, index: Int): Float {
         if (game.progress.settings.reduceMotion) return baseY
-        return baseY + sin(animationTime * .72f + index * .82f) * 11f
+        return baseY + sin(animationTime * .72f + index * .82f) * 5f
     }
 
     override fun render(delta: Float) {
@@ -100,11 +100,11 @@ class MainMenuScreen(game: BrickBreakerGame) : ForgeScreen(game) {
         val returningPlayer = game.progress.hasStartedGame || game.progress.unlockedLevel > 1 ||
             game.progress.stars(1) > 0 || game.pausedSession.hasPausedGame()
         val primaryTexture = game.assets.startMenuTexture(if (returningPlayer) "continue" else "start")
-        val primary = artButton(primaryTexture, 85f, floatingY(1070f, 0), 730f, 170f)
-        val worldMap = artButton(game.assets.startMenuTexture("world-map"), 85f, floatingY(835f, 1), 730f, 170f)
+        val primary = artButton(primaryTexture, 85f, floatingY(1010f, 0), 730f, 170f)
+        val worldMap = artButton(game.assets.startMenuTexture("world-map"), 85f, floatingY(805f, 1), 730f, 170f)
         val shop = artButton(game.assets.startMenuTexture("shop"), 85f, floatingY(600f, 2), 730f, 170f)
-        val editor = artButton(game.assets.startMenuTexture("level-editor"), 85f, floatingY(365f, 3), 730f, 170f)
-        val customize = artButton(game.assets.startMenuTexture("paddle&balls"), 85f, floatingY(130f, 4), 730f, 170f)
+        val editor = artButton(game.assets.startMenuTexture("level-editor"), 85f, floatingY(395f, 3), 730f, 170f)
+        val customize = artButton(game.assets.startMenuTexture("paddle&balls"), 85f, floatingY(190f, 4), 730f, 170f)
 
         if (confirmingNewGame) {
             batch.color = Color(.02f, .06f, .13f, .97f); batch.draw(game.assets.ui.findRegion("panel"), 90f, 530f, 720f, 560f); batch.color = Color.WHITE
@@ -224,7 +224,7 @@ class WorldMapScreen(game: BrickBreakerGame) : ForgeScreen(game) {
             val firstLevel = LevelRepository.firstLevel(world.id)
             val lastLevel = LevelRepository.lastLevel(world.id)
             val completed = (firstLevel..lastLevel).count { game.progress.stars(it) > 0 }
-            val unlocked = game.progress.unlockedLevel >= firstLevel
+            val unlocked = DevelopmentAccess.canSelectWorld(world.id, game.progress.unlockedLevel)
             val rect = mapCard(world, unlocked, x, y)
             cards += rect to world.id
             if (unlocked && completed > 0) {
@@ -283,8 +283,8 @@ class LevelSelectScreen(game: BrickBreakerGame, private val world: Int) : ForgeS
     override fun render(delta: Float) {
         begin(world, video = true)
         title(LevelRepository.worlds[world - 1].name)
-        val worldUnlocked = game.progress.unlockedLevel >= LevelRepository.firstLevel(world)
-        fittedText(game.assets.smallFont, if (worldUnlocked) LevelRepository.worlds[world - 1].subtitle else "WORLD PREVIEW • COMPLETE EARLIER WORLDS TO UNLOCK", 45f, 1375f, 810f, .9f)
+        val worldUnlocked = DevelopmentAccess.canSelectWorld(world, game.progress.unlockedLevel)
+        fittedText(game.assets.smallFont, if (worldUnlocked) "DEV ACCESS • ${LevelRepository.worlds[world - 1].subtitle}" else "WORLD PREVIEW • COMPLETE EARLIER WORLDS TO UNLOCK", 45f, 1375f, 810f, .9f)
         val cells = mutableListOf<Pair<Rectangle, Int>>()
         for (stage in 1..LevelRepository.worldLevelCount(world)) {
             val id = LevelRepository.firstLevel(world) + stage - 1
@@ -292,7 +292,7 @@ class LevelSelectScreen(game: BrickBreakerGame, private val world: Int) : ForgeS
             val row = (stage - 1) / 3
             val x = 75f + col * 260f
             val y = 1190f - row * 190f
-            val open = id <= game.progress.unlockedLevel
+            val open = DevelopmentAccess.canSelectLevel(id, game.progress.unlockedLevel)
             val completed = game.progress.stars(id) > 0
             val rect = button(if (open) stage.toString() else "LOCK", x, y, 230f, 125f)
             cells += rect to id
@@ -301,7 +301,7 @@ class LevelSelectScreen(game: BrickBreakerGame, private val world: Int) : ForgeS
         val back = button("BACK", 250f, 120f, 400f, 90f)
         end()
         cells.firstOrNull { tapped(it.first) }?.let {
-            if (it.second <= game.progress.unlockedLevel) game.play(it.second)
+            if (DevelopmentAccess.canSelectLevel(it.second, game.progress.unlockedLevel)) game.play(it.second)
         }
         if (tapped(back)) game.setScreen(WorldMapScreen(game))
     }
@@ -365,24 +365,25 @@ class SettingsScreen(game: BrickBreakerGame, private val returnToPausedGame: Boo
         } else {
             game.assets.settingsMenuTexture(if (enabled) "check-on" else "check-off")
         }
-        val size = if (sound) 92f else 66f
-        batch.draw(texture, 680f, y + (120f - size) / 2f, size, size)
+        val size = if (sound) 72f else 48f
+        val x = if (sound) 684f else 696f
+        batch.draw(texture, x, y + (120f - size) / 2f, size, size)
     }
 
     override fun render(delta: Float) {
         begin("world_2_crystal")
         title("SETTINGS")
         val settings = game.progress.settings
-        val sound = settingButton("sound", 1120f)
-        toggleIcon(settings.masterVolume > 0f, 1120f, sound = true)
-        val haptic = settingButton("haptics", 990f)
-        toggleIcon(settings.haptics, 990f)
-        val motion = settingButton("motion", 860f)
-        toggleIcon(settings.reduceMotion, 860f)
-        val contrast = settingButton("contrest-ball", 730f)
-        toggleIcon(settings.highContrastBall, 730f)
-        val color = settingButton("color-blind-palette", 600f)
-        toggleIcon(settings.colorBlind, 600f)
+        val sound = settingButton("sound", 1130f)
+        toggleIcon(settings.masterVolume > 0f, 1130f, sound = true)
+        val haptic = settingButton("haptics", 985f)
+        toggleIcon(settings.haptics, 985f)
+        val motion = settingButton("motion", 840f)
+        toggleIcon(settings.reduceMotion, 840f)
+        val contrast = settingButton("contrest-ball", 695f)
+        toggleIcon(settings.highContrastBall, 695f)
+        val color = settingButton("color-blind-palette", 550f)
+        toggleIcon(settings.colorBlind, 550f)
         batch.color = Color.WHITE
         batch.draw(game.assets.settingsMenuTexture("game-developer"), 0f, 365f, 900f, 210f)
         batch.draw(game.assets.settingsMenuTexture("github"), 0f, 225f, 900f, 210f)

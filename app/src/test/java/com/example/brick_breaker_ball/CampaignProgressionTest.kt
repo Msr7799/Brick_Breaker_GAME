@@ -17,9 +17,9 @@ class CampaignProgressionTest {
         }
     }
 
-    @Test fun worldsIntroduceAllBrickTypesAndDifficultyRisesAcrossWorlds() {
+    @Test fun worldsIntroduceAllPermanentBrickTypesAndDifficultyRisesAcrossWorlds() {
         val used = LevelRepository.levels.flatMap { it.brickIds.values }.map(BrickType::valueOf).toSet()
-        assertEquals(BrickType.entries.toSet(), used)
+        assertEquals(BrickType.entries.toSet() - BrickType.SPIKED_HAZARD, used)
         (1 until 13).forEach { world ->
             val previous = LevelRepository.levels.filter { it.world == world }.maxOf { it.ballSpeed }
             val next = LevelRepository.levels.filter { it.world == world + 1 }.minOf { it.ballSpeed }
@@ -37,5 +37,13 @@ class CampaignProgressionTest {
             assertTrue(levels.all { it.dropRate in 0f..1f })
         }
         assertTrue(LevelRepository.levels.last().dropRate > LevelRepository.levels.first().dropRate)
+    }
+
+    @Test fun everyCampaignLevelUsesTheIncreasedBallSpeedCurve() {
+        LevelRepository.levels.forEach { level ->
+            val stage = level.id - LevelRepository.firstLevel(level.world) + 1
+            val previousSpeed = 540f + (level.world - 1) * 30f + (stage - 1) * 4f
+            assertTrue("level ${level.id} should be faster", level.ballSpeed > previousSpeed)
+        }
     }
 }

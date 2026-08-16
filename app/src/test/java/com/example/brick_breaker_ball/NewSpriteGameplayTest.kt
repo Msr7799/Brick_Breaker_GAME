@@ -52,12 +52,12 @@ class NewSpriteGameplayTest {
         assertNull(game.bricks.firstOrNull { it.id == 1 })
     }
 
-    @Test fun redSpikeCardCreatesExactlyFourTemporaryRandomKillBricks() {
+    @Test fun redSpikeCardCreatesExactlyThreeTemporaryRandomKillBricks() {
         val game = playing(); game.bricks.clear()
         repeat(6) { index -> game.bricks += Brick(index + 1, Rectangle(80f + index * 120f, 600f, 90f, 44f), BrickType.CRYSTAL_BLUE, 2, index / 6f) }
         val originals = game.bricks.associate { it.id to it.type }
         assertTrue(game.activatePowerUp(PowerUpType.INSTANT_KILL_BALL))
-        assertEquals(4, game.bricks.count { it.type == BrickType.SPIKED_HAZARD })
+        assertEquals(3, game.bricks.count { it.type == BrickType.SPIKED_HAZARD })
         val hazard = game.bricks.first { it.type == BrickType.SPIKED_HAZARD }; val lives = game.lives
         game.ball.position.set(hazard.bounds.x + hazard.bounds.width / 2f, hazard.bounds.y - 100f)
         game.ball.velocity.set(0f, 800f); game.ball.baseSpeed = 800f; game.phase = GamePhase.PLAYING; game.update(.18f)
@@ -73,10 +73,40 @@ class NewSpriteGameplayTest {
         game.bricks.first { it.type != BrickType.SPIKED_HAZARD && it.type.breakable }.timedBombSeconds = 1.25f
         store.save(game.level, game)
         val restored = store.restore()!!.second
-        assertEquals(4, restored.bricks.count { it.type == BrickType.SPIKED_HAZARD && it.temporaryOriginalType != null })
+        assertEquals(3, restored.bricks.count { it.type == BrickType.SPIKED_HAZARD && it.temporaryOriginalType != null })
         assertEquals(1, restored.bricks.count { it.timedBombSeconds != null })
         restored.phase = GamePhase.SERVING; advance(restored, 17f)
         assertEquals(0, restored.bricks.count { it.type == BrickType.SPIKED_HAZARD })
+    }
+
+    @Test fun campaignContainsNoPermanentSpikeHazards() {
+        assertTrue(LevelRepository.levels.all { level ->
+            level.brickIds.values.none { it == BrickType.SPIKED_HAZARD.name }
+        })
+    }
+
+    @Test fun pausedCampaignMigratesOldPermanentSpikeButKeepsTemporarySpikes() {
+        val prefs = TestPreferences(); val store = PausedSessionStore(prefs); val game = GameSession()
+        val legacy = game.bricks.first()
+        legacy.type = BrickType.SPIKED_HAZARD; legacy.health = 1; legacy.initialHealth = 1
+        store.save(game.level, game)
+        assertTrue(store.restore()!!.second.bricks.none { it.type == BrickType.SPIKED_HAZARD })
+
+        assertTrue(game.activatePowerUp(PowerUpType.INSTANT_KILL_BALL))
+        store.save(game.level, game)
+        assertEquals(GameplayTuning.TEMPORARY_SPIKE_COUNT, store.restore()!!.second.bricks.count {
+            it.type == BrickType.SPIKED_HAZARD && it.temporaryOriginalType != null
+        })
+    }
+
+    @Test fun magneticPaddleCurvesDescendingBallTowardItsCenter() {
+        val game = playing()
+        game.ball.position.set(game.paddle.x + 250f, game.paddle.y + 180f)
+        game.ball.velocity.set(210f, -680f); game.ball.baseSpeed = game.ball.velocity.len()
+        assertTrue(game.activatePowerUp(PowerUpType.MAGNETIC_PADDLE))
+        val beforeX = game.ball.velocity.x
+        game.update(.1f)
+        assertTrue(game.ball.velocity.x < beforeX)
     }
 
     @Test fun ongoingOfficialEffectsExpireButPaddleSizeDoesNot() {

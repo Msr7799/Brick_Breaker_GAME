@@ -2,16 +2,11 @@ package com.example.brick_breaker_ball
 
 /**
  * The Android host owns the ExoPlayer; gameplay only requests an asset by world.
- * World 11 intentionally returns null because no 11.mp4 was supplied, allowing the
- * existing static artwork to remain the safe fallback instead of duplicating a video.
+ * Every campaign world maps to its matching numbered MP4 asset.
  */
 object WorldVideoBackgrounds {
     const val SPLASH_ASSET = "splash.mp4"
-    private val suppliedAssets = buildMap {
-        (1..10).forEach { put(it, "$it.mp4") }
-        put(12, "12.mp4")
-        put(13, "13.mp4")
-    }
+    private val suppliedAssets = (1..13).associateWith { "$it.mp4" }
 
     private var activeAsset: String? = null
     private var visible = false

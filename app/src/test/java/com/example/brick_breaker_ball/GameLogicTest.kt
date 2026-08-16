@@ -39,7 +39,7 @@ class GameLogicTest {
         assertNotNull(hit); assertTrue(hit!!.time in 0.49f..0.5f); assertEquals(-1f, hit.normalX, .001f)
     }
     @Test fun wallBounceAndSpeedClamp() {
-        val game = playingSession(); game.ball.position.set(34f, 500f); game.ball.velocity.set(-900f, 200f)
+        val game = playingSession(); game.ball.position.set(18f + game.ball.radius + 5f, 500f); game.ball.velocity.set(-900f, 200f)
         game.update(.05f); assertTrue(game.ball.velocity.x > 0f)
         game.ball.velocity.set(5000f, 1f); game.clampSpeed(game.ball)
         assertTrue(game.ball.velocity.len() <= GameSession.MAX_SPEED + .01f); assertTrue(abs(game.ball.velocity.y) >= GameSession.MIN_VERTICAL)
@@ -81,6 +81,17 @@ class GameLogicTest {
     @Test fun movingBrickUsesCurrentPosition() {
         val game = GameSession(); game.bricks.clear(); val brick = Brick(1, Rectangle(400f, 600f, 80f, 44f), BrickType.MOVING_HORIZONTAL, 1, 0f)
         game.bricks += brick; val before = brick.bounds.x; game.action(); game.update(.5f); assertNotEquals(before, brick.bounds.x)
+    }
+
+    @Test fun movingBrickStopsBeforeOverlappingNeighbor() {
+        val game = GameSession(); game.bricks.clear()
+        val moving = Brick(1, Rectangle(400f, 600f, 80f, 44f), BrickType.MOVING_HORIZONTAL, 1, 0f)
+        val neighbor = Brick(2, Rectangle(482f, 600f, 80f, 44f), BrickType.CRYSTAL_BLUE, 2, 0f)
+        game.bricks += moving; game.bricks += neighbor
+        repeat(80) {
+            game.update(.05f)
+            assertFalse(moving.bounds.overlaps(neighbor.bounds))
+        }
     }
     @Test fun scoreMultiplierAndBallModesActivateAndExpire() {
         val game = GameSession(); game.activatePowerUp(PowerUpType.SCORE_X3); assertTrue(PowerUpType.SCORE_X3 in game.powerUps)

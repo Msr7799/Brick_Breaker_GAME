@@ -22,15 +22,18 @@ class GameplayAtlas(private val sheet: DetailedSpriteSheet) {
         return sheet.region(SpriteId.valueOf("BALL_${ability}_$size"))
     }
 
-    fun brick(brick: Brick, world: Int): TextureRegion {
-        val intact = intactBrickId(brick.type, world, brick.id)
+    fun brick(brick: Brick, world: Int, useCampaignPalette: Boolean = true): TextureRegion {
+        val intact = intactBrickId(brick.type, world, brick.id, useCampaignPalette)
         val sprite = if (brick.health < brick.initialHealth) sheet.nextState(intact) ?: intact else intact
         return sheet.region(sprite)
     }
 
-    fun preview(type: BrickType, world: Int): TextureRegion = sheet.region(intactBrickId(type, world, type.ordinal * 17 + 5))
+    fun preview(type: BrickType, world: Int): TextureRegion =
+        sheet.region(intactBrickId(type, world, type.ordinal * 17 + 5, useCampaignPalette = false))
 
-    private fun intactBrickId(type: BrickType, world: Int, id: Int): SpriteId = when (type) {
+    private fun intactBrickId(type: BrickType, world: Int, id: Int, useCampaignPalette: Boolean): SpriteId {
+        if (useCampaignPalette) CampaignBrickPalette.spriteFor(type, world, id)?.let { return it }
+        return when (type) {
         BrickType.ROUGH_STONE -> SpriteId.BRICK_ROUGH_STONE
         BrickType.LIGHTNING_SPEED_PASS_THROUGH -> SpriteId.BRICK_LIGHTNING_SPEED_PASS_THROUGH
         BrickType.ELECTRIC_WHITE -> SpriteId.BRICK_ELECTRIC_WHITE_INTACT
@@ -65,6 +68,7 @@ class GameplayAtlas(private val sheet: DetailedSpriteSheet) {
             val choices = listOf(SpriteId.BRICK_BASIC_ONE_HIT, SpriteId.BRICK_CRYSTAL_BLUE_INTACT,
                 SpriteId.BRICK_CRYSTAL_PURPLE_INTACT, SpriteId.BRICK_CRYSTAL_PINK_INTACT)
             choices[(id + world * 3).mod(choices.size)]
+        }
         }
     }
 
