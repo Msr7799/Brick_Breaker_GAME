@@ -1,0 +1,674 @@
+[
+  {
+    "spriteNumber": 1,
+    "name": "paddle_normal_gold_white_alloy",
+    "displayName": {
+      "en": "Gold White Alloy",
+      "ar": "سبيكة أبيض ذهبي"
+    },
+    "group": {
+      "id": "normal",
+      "en": "Normal Paddle",
+      "ar": "المضرب العادي"
+    },
+    "description": {
+      "en": "A sleek gold normal paddle with a broad, flat rebound surface.",
+      "ar": "مضرب عادي أنيق بلون ذهبي بسطح ارتداد عريض ومسطح."
+    },
+    "specifications": {
+      "speedRating": 4,
+      "material": {
+        "en": "Reinforced alloy composite",
+        "ar": "سبيكة مركبة مدعمة"
+      },
+      "surface": {
+        "en": "Broad flat rebound surface",
+        "ar": "سطح ارتداد عريض ومسطح"
+      },
+      "accentColor": {
+        "en": "Gold",
+        "ar": "ذهبي"
+      }
+    },
+    "x": 17,
+    "y": 211,
+    "width": 374,
+    "height": 84
+  },
+  {
+    "spriteNumber": 2,
+    "name": "paddle_weapon_gold_white_blaster",
+    "displayName": {
+      "en": "Gold White Blaster",
+      "ar": "قاذف أبيض ذهبي"
+    },
+    "group": {
+      "id": "weapon",
+      "en": "Weapon Paddle",
+      "ar": "المضرب المسلح"
+    },
+    "description": {
+      "en": "A gold combat paddle fitted with twin upward-firing energy emitters.",
+      "ar": "مضرب قتالي بلون ذهبي مزود بباعثي طاقة مزدوجين يطلقان إلى الأعلى."
+    },
+    "specifications": {
+      "rangeRating": 4,
+      "weapon": {
+        "en": "Dual energy emitters",
+        "ar": "باعثا طاقة مزدوجان"
+      },
+      "firingDirection": {
+        "en": "Upward",
+        "ar": "إلى الأعلى"
+      },
+      "surface": {
+        "en": "Flat armored center plate",
+        "ar": "لوح مركزي مدرع ومسطح"
+      },
+      "accentColor": {
+        "en": "Gold",
+        "ar": "ذهبي"
+      }
+    },
+    "x": 420,
+    "y": 173,
+    "width": 389,
+    "height": 122
+  },
+  {
+    "spriteNumber": 3,
+    "name": "paddle_sticky_gold_white_field",
+    "displayName": {
+      "en": "Gold White Field",
+      "ar": "حقل أبيض ذهبي"
+    },
+    "group": {
+      "id": "sticky",
+      "en": "Sticky Paddle",
+      "ar": "مضرب اللصق"
+    },
+    "description": {
+      "en": "A gold sticky paddle with a reactive illuminated surface that captures the ball on contact.",
+      "ar": "مضرب لاصق بلون ذهبي بسطح مضيء تفاعلي يلتقط الكرة عند الملامسة."
+    },
+    "specifications": {
+      "rangeRating": 4,
+      "adhesiveTechnology": {
+        "en": "Reactive energy adhesion film",
+        "ar": "غشاء التصاق طاقي تفاعلي"
+      },
+      "surface": {
+        "en": "Flat illuminated adhesive surface",
+        "ar": "سطح لاصق مضيء ومسطح"
+      },
+      "accentColor": {
+        "en": "Gold",
+        "ar": "ذهبي"
+      }
+    },
+    "x": 844,
+    "y": 210,
+    "width": 391,
+    "height": 84
+  },
+  {
+    "spriteNumber": 4,
+    "name": "paddle_normal_blue_alloy",
+    "displayName": {
+      "en": "Blue Alloy",
+      "ar": "سبيكة أزرق"
+    },
+    "group": {
+      "id": "normal",
+      "en": "Normal Paddle",
+      "ar": "المضرب العادي"
+    },
+    "description": {
+      "en": "A sleek electric blue normal paddle with a broad, flat rebound surface.",
+      "ar": "مضرب عادي أنيق بلون أزرق كهربائي بسطح ارتداد عريض ومسطح."
+    },
+    "specifications": {
+      "speedRating": 4,
+      "material": {
+        "en": "Reinforced alloy composite",
+        "ar": "سبيكة مركبة مدعمة"
+      },
+      "surface": {
+        "en": "Broad flat rebound surface",
+        "ar": "سطح ارتداد عريض ومسطح"
+      },
+      "accentColor": {
+        "en": "Electric Blue",
+        "ar": "أزرق كهربائي"
+      }
+    },
+    "x": 18,
+    "y": 378,
+    "width": 374,
+    "height": 87
+  },
+  {
+    "spriteNumber": 5,
+    "name": "paddle_weapon_blue_blaster",
+    "displayName": {
+      "en": "Blue Blaster",
+      "ar": "قاذف أزرق"
+    },
+    "group": {
+      "id": "weapon",
+      "en": "Weapon Paddle",
+      "ar": "المضرب المسلح"
+    },
+    "description": {
+      "en": "A electric blue combat paddle fitted with twin upward-firing energy emitters.",
+      "ar": "مضرب قتالي بلون أزرق كهربائي مزود بباعثي طاقة مزدوجين يطلقان إلى الأعلى."
+    },
+    "specifications": {
+      "rangeRating": 4,
+      "weapon": {
+        "en": "Dual energy emitters",
+        "ar": "باعثا طاقة مزدوجان"
+      },
+      "firingDirection": {
+        "en": "Upward",
+        "ar": "إلى الأعلى"
+      },
+      "surface": {
+        "en": "Flat armored center plate",
+        "ar": "لوح مركزي مدرع ومسطح"
+      },
+      "accentColor": {
+        "en": "Electric Blue",
+        "ar": "أزرق كهربائي"
+      }
+    },
+    "x": 420,
+    "y": 343,
+    "width": 389,
+    "height": 124
+  },
+  {
+    "spriteNumber": 6,
+    "name": "paddle_sticky_blue_field",
+    "displayName": {
+      "en": "Blue Field",
+      "ar": "حقل أزرق"
+    },
+    "group": {
+      "id": "sticky",
+      "en": "Sticky Paddle",
+      "ar": "مضرب اللصق"
+    },
+    "description": {
+      "en": "A electric blue sticky paddle with a reactive illuminated surface that captures the ball on contact.",
+      "ar": "مضرب لاصق بلون أزرق كهربائي بسطح مضيء تفاعلي يلتقط الكرة عند الملامسة."
+    },
+    "specifications": {
+      "rangeRating": 4,
+      "adhesiveTechnology": {
+        "en": "Reactive energy adhesion film",
+        "ar": "غشاء التصاق طاقي تفاعلي"
+      },
+      "surface": {
+        "en": "Flat illuminated adhesive surface",
+        "ar": "سطح لاصق مضيء ومسطح"
+      },
+      "accentColor": {
+        "en": "Electric Blue",
+        "ar": "أزرق كهربائي"
+      }
+    },
+    "x": 841,
+    "y": 378,
+    "width": 396,
+    "height": 87
+  },
+  {
+    "spriteNumber": 7,
+    "name": "paddle_normal_aurora_alloy",
+    "displayName": {
+      "en": "Aurora Alloy",
+      "ar": "سبيكة الشفق"
+    },
+    "group": {
+      "id": "normal",
+      "en": "Normal Paddle",
+      "ar": "المضرب العادي"
+    },
+    "description": {
+      "en": "A sleek aurora normal paddle with a broad, flat rebound surface.",
+      "ar": "مضرب عادي أنيق بلون ألوان الشفق بسطح ارتداد عريض ومسطح."
+    },
+    "specifications": {
+      "speedRating": 4,
+      "material": {
+        "en": "Reinforced alloy composite",
+        "ar": "سبيكة مركبة مدعمة"
+      },
+      "surface": {
+        "en": "Broad flat rebound surface",
+        "ar": "سطح ارتداد عريض ومسطح"
+      },
+      "accentColor": {
+        "en": "Aurora",
+        "ar": "ألوان الشفق"
+      }
+    },
+    "x": 16,
+    "y": 549,
+    "width": 376,
+    "height": 86
+  },
+  {
+    "spriteNumber": 8,
+    "name": "paddle_weapon_aurora_blaster",
+    "displayName": {
+      "en": "Aurora Blaster",
+      "ar": "قاذف الشفق"
+    },
+    "group": {
+      "id": "weapon",
+      "en": "Weapon Paddle",
+      "ar": "المضرب المسلح"
+    },
+    "description": {
+      "en": "A aurora combat paddle fitted with twin upward-firing energy emitters.",
+      "ar": "مضرب قتالي بلون ألوان الشفق مزود بباعثي طاقة مزدوجين يطلقان إلى الأعلى."
+    },
+    "specifications": {
+      "rangeRating": 4,
+      "weapon": {
+        "en": "Dual energy emitters",
+        "ar": "باعثا طاقة مزدوجان"
+      },
+      "firingDirection": {
+        "en": "Upward",
+        "ar": "إلى الأعلى"
+      },
+      "surface": {
+        "en": "Flat armored center plate",
+        "ar": "لوح مركزي مدرع ومسطح"
+      },
+      "accentColor": {
+        "en": "Aurora",
+        "ar": "ألوان الشفق"
+      }
+    },
+    "x": 420,
+    "y": 516,
+    "width": 389,
+    "height": 120
+  },
+  {
+    "spriteNumber": 9,
+    "name": "paddle_sticky_aurora_field",
+    "displayName": {
+      "en": "Aurora Field",
+      "ar": "حقل الشفق"
+    },
+    "group": {
+      "id": "sticky",
+      "en": "Sticky Paddle",
+      "ar": "مضرب اللصق"
+    },
+    "description": {
+      "en": "A aurora sticky paddle with a reactive illuminated surface that captures the ball on contact.",
+      "ar": "مضرب لاصق بلون ألوان الشفق بسطح مضيء تفاعلي يلتقط الكرة عند الملامسة."
+    },
+    "specifications": {
+      "rangeRating": 4,
+      "adhesiveTechnology": {
+        "en": "Reactive energy adhesion film",
+        "ar": "غشاء التصاق طاقي تفاعلي"
+      },
+      "surface": {
+        "en": "Flat illuminated adhesive surface",
+        "ar": "سطح لاصق مضيء ومسطح"
+      },
+      "accentColor": {
+        "en": "Aurora",
+        "ar": "ألوان الشفق"
+      }
+    },
+    "x": 840,
+    "y": 549,
+    "width": 396,
+    "height": 87
+  },
+  {
+    "spriteNumber": 10,
+    "name": "paddle_normal_magenta_alloy",
+    "displayName": {
+      "en": "Magenta Alloy",
+      "ar": "سبيكة أرجواني"
+    },
+    "group": {
+      "id": "normal",
+      "en": "Normal Paddle",
+      "ar": "المضرب العادي"
+    },
+    "description": {
+      "en": "A sleek magenta normal paddle with a broad, flat rebound surface.",
+      "ar": "مضرب عادي أنيق بلون أرجواني بسطح ارتداد عريض ومسطح."
+    },
+    "specifications": {
+      "speedRating": 4,
+      "material": {
+        "en": "Reinforced alloy composite",
+        "ar": "سبيكة مركبة مدعمة"
+      },
+      "surface": {
+        "en": "Broad flat rebound surface",
+        "ar": "سطح ارتداد عريض ومسطح"
+      },
+      "accentColor": {
+        "en": "Magenta",
+        "ar": "أرجواني"
+      }
+    },
+    "x": 17,
+    "y": 717,
+    "width": 375,
+    "height": 88
+  },
+  {
+    "spriteNumber": 11,
+    "name": "paddle_weapon_magenta_blaster",
+    "displayName": {
+      "en": "Magenta Blaster",
+      "ar": "قاذف أرجواني"
+    },
+    "group": {
+      "id": "weapon",
+      "en": "Weapon Paddle",
+      "ar": "المضرب المسلح"
+    },
+    "description": {
+      "en": "A magenta combat paddle fitted with twin upward-firing energy emitters.",
+      "ar": "مضرب قتالي بلون أرجواني مزود بباعثي طاقة مزدوجين يطلقان إلى الأعلى."
+    },
+    "specifications": {
+      "rangeRating": 4,
+      "weapon": {
+        "en": "Dual energy emitters",
+        "ar": "باعثا طاقة مزدوجان"
+      },
+      "firingDirection": {
+        "en": "Upward",
+        "ar": "إلى الأعلى"
+      },
+      "surface": {
+        "en": "Flat armored center plate",
+        "ar": "لوح مركزي مدرع ومسطح"
+      },
+      "accentColor": {
+        "en": "Magenta",
+        "ar": "أرجواني"
+      }
+    },
+    "x": 420,
+    "y": 684,
+    "width": 389,
+    "height": 121
+  },
+  {
+    "spriteNumber": 12,
+    "name": "paddle_sticky_magenta_field",
+    "displayName": {
+      "en": "Magenta Field",
+      "ar": "حقل أرجواني"
+    },
+    "group": {
+      "id": "sticky",
+      "en": "Sticky Paddle",
+      "ar": "مضرب اللصق"
+    },
+    "description": {
+      "en": "A magenta sticky paddle with a reactive illuminated surface that captures the ball on contact.",
+      "ar": "مضرب لاصق بلون أرجواني بسطح مضيء تفاعلي يلتقط الكرة عند الملامسة."
+    },
+    "specifications": {
+      "rangeRating": 4,
+      "adhesiveTechnology": {
+        "en": "Reactive energy adhesion film",
+        "ar": "غشاء التصاق طاقي تفاعلي"
+      },
+      "surface": {
+        "en": "Flat illuminated adhesive surface",
+        "ar": "سطح لاصق مضيء ومسطح"
+      },
+      "accentColor": {
+        "en": "Magenta",
+        "ar": "أرجواني"
+      }
+    },
+    "x": 841,
+    "y": 719,
+    "width": 395,
+    "height": 86
+  },
+  {
+    "spriteNumber": 13,
+    "name": "paddle_normal_cyan_alloy",
+    "displayName": {
+      "en": "Cyan Alloy",
+      "ar": "سبيكة سماوي"
+    },
+    "group": {
+      "id": "normal",
+      "en": "Normal Paddle",
+      "ar": "المضرب العادي"
+    },
+    "description": {
+      "en": "A sleek cyan normal paddle with a broad, flat rebound surface.",
+      "ar": "مضرب عادي أنيق بلون سماوي بسطح ارتداد عريض ومسطح."
+    },
+    "specifications": {
+      "speedRating": 4,
+      "material": {
+        "en": "Reinforced alloy composite",
+        "ar": "سبيكة مركبة مدعمة"
+      },
+      "surface": {
+        "en": "Broad flat rebound surface",
+        "ar": "سطح ارتداد عريض ومسطح"
+      },
+      "accentColor": {
+        "en": "Cyan",
+        "ar": "سماوي"
+      }
+    },
+    "x": 16,
+    "y": 889,
+    "width": 375,
+    "height": 90
+  },
+  {
+    "spriteNumber": 14,
+    "name": "paddle_weapon_cyan_blaster",
+    "displayName": {
+      "en": "Cyan Blaster",
+      "ar": "قاذف سماوي"
+    },
+    "group": {
+      "id": "weapon",
+      "en": "Weapon Paddle",
+      "ar": "المضرب المسلح"
+    },
+    "description": {
+      "en": "A cyan combat paddle fitted with twin upward-firing energy emitters.",
+      "ar": "مضرب قتالي بلون سماوي مزود بباعثي طاقة مزدوجين يطلقان إلى الأعلى."
+    },
+    "specifications": {
+      "rangeRating": 4,
+      "weapon": {
+        "en": "Dual energy emitters",
+        "ar": "باعثا طاقة مزدوجان"
+      },
+      "firingDirection": {
+        "en": "Upward",
+        "ar": "إلى الأعلى"
+      },
+      "surface": {
+        "en": "Flat armored center plate",
+        "ar": "لوح مركزي مدرع ومسطح"
+      },
+      "accentColor": {
+        "en": "Cyan",
+        "ar": "سماوي"
+      }
+    },
+    "x": 422,
+    "y": 840,
+    "width": 386,
+    "height": 139
+  },
+  {
+    "spriteNumber": 15,
+    "name": "paddle_sticky_cyan_field",
+    "displayName": {
+      "en": "Cyan Field",
+      "ar": "حقل سماوي"
+    },
+    "group": {
+      "id": "sticky",
+      "en": "Sticky Paddle",
+      "ar": "مضرب اللصق"
+    },
+    "description": {
+      "en": "A cyan sticky paddle with a reactive illuminated surface that captures the ball on contact.",
+      "ar": "مضرب لاصق بلون سماوي بسطح مضيء تفاعلي يلتقط الكرة عند الملامسة."
+    },
+    "specifications": {
+      "rangeRating": 4,
+      "adhesiveTechnology": {
+        "en": "Reactive energy adhesion film",
+        "ar": "غشاء التصاق طاقي تفاعلي"
+      },
+      "surface": {
+        "en": "Flat illuminated adhesive surface",
+        "ar": "سطح لاصق مضيء ومسطح"
+      },
+      "accentColor": {
+        "en": "Cyan",
+        "ar": "سماوي"
+      }
+    },
+    "x": 840,
+    "y": 887,
+    "width": 397,
+    "height": 92
+  },
+  {
+    "spriteNumber": 16,
+    "name": "paddle_normal_solar_alloy",
+    "displayName": {
+      "en": "Solar Alloy",
+      "ar": "سبيكة شمسي"
+    },
+    "group": {
+      "id": "normal",
+      "en": "Normal Paddle",
+      "ar": "المضرب العادي"
+    },
+    "description": {
+      "en": "A sleek amber normal paddle with a broad, flat rebound surface.",
+      "ar": "مضرب عادي أنيق بلون كهرماني بسطح ارتداد عريض ومسطح."
+    },
+    "specifications": {
+      "speedRating": 4,
+      "material": {
+        "en": "Reinforced alloy composite",
+        "ar": "سبيكة مركبة مدعمة"
+      },
+      "surface": {
+        "en": "Broad flat rebound surface",
+        "ar": "سطح ارتداد عريض ومسطح"
+      },
+      "accentColor": {
+        "en": "Amber",
+        "ar": "كهرماني"
+      }
+    },
+    "x": 16,
+    "y": 1062,
+    "width": 376,
+    "height": 87
+  },
+  {
+    "spriteNumber": 17,
+    "name": "paddle_weapon_solar_blaster",
+    "displayName": {
+      "en": "Solar Blaster",
+      "ar": "قاذف شمسي"
+    },
+    "group": {
+      "id": "weapon",
+      "en": "Weapon Paddle",
+      "ar": "المضرب المسلح"
+    },
+    "description": {
+      "en": "A amber combat paddle fitted with twin upward-firing energy emitters.",
+      "ar": "مضرب قتالي بلون كهرماني مزود بباعثي طاقة مزدوجين يطلقان إلى الأعلى."
+    },
+    "specifications": {
+      "rangeRating": 4,
+      "weapon": {
+        "en": "Dual energy emitters",
+        "ar": "باعثا طاقة مزدوجان"
+      },
+      "firingDirection": {
+        "en": "Upward",
+        "ar": "إلى الأعلى"
+      },
+      "surface": {
+        "en": "Flat armored center plate",
+        "ar": "لوح مركزي مدرع ومسطح"
+      },
+      "accentColor": {
+        "en": "Amber",
+        "ar": "كهرماني"
+      }
+    },
+    "x": 420,
+    "y": 1024,
+    "width": 388,
+    "height": 127
+  },
+  {
+    "spriteNumber": 18,
+    "name": "paddle_sticky_solar_field",
+    "displayName": {
+      "en": "Solar Field",
+      "ar": "حقل شمسي"
+    },
+    "group": {
+      "id": "sticky",
+      "en": "Sticky Paddle",
+      "ar": "مضرب اللصق"
+    },
+    "description": {
+      "en": "A amber sticky paddle with a reactive illuminated surface that captures the ball on contact.",
+      "ar": "مضرب لاصق بلون كهرماني بسطح مضيء تفاعلي يلتقط الكرة عند الملامسة."
+    },
+    "specifications": {
+      "rangeRating": 4,
+      "adhesiveTechnology": {
+        "en": "Reactive energy adhesion film",
+        "ar": "غشاء التصاق طاقي تفاعلي"
+      },
+      "surface": {
+        "en": "Flat illuminated adhesive surface",
+        "ar": "سطح لاصق مضيء ومسطح"
+      },
+      "accentColor": {
+        "en": "Amber",
+        "ar": "كهرماني"
+      }
+    },
+    "x": 840,
+    "y": 1062,
+    "width": 397,
+    "height": 87
+  }
+]

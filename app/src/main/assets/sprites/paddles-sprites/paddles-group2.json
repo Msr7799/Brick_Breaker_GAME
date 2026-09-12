@@ -1,371 +1,434 @@
 [
   {
     "spriteNumber": 1,
-    "name": "paddle_weapon_dual_pulse_cannon ",
-    "displayName": { "en": "Dual Pulse Cannon", "ar": "المدفع النبضي المزدوج" },
-    "group": { "id": "weapon", "en": "Weapon Paddle", "ar": "المضرب المسلح" },
-    "description": {
-      "en": "A connected gunmetal paddle with two upward pulse cannons for rapid energy fire.",
-      "ar": "مضرب معدني متصل مزود بمدفعين نبضيين متجهين للأعلى لإطلاق طاقة سريع."
+    "name": "paddle_normal_ivory",
+    "displayName": {
+      "en": "Ivory Normal",
+      "ar": "العاجي - المضرب العادي"
     },
-    "specifications": {
-      "rangeRating": 4,
-      "weapon": { "en": "Dual pulse cannons", "ar": "مدفعان نبضيان" },
-      "firingDirection": { "en": "Upward", "ar": "إلى الأعلى" },
-      "surface": { "en": "Flat brushed gunmetal", "ar": "سطح معدني مصقول ومسطح" },
-      "accentColor": { "en": "Cyan", "ar": "سماوي" },
-      "default": { "en": "Default Gun Paddle", "ar": "المضرب المعياري للمسلح" }
+    "group": {
+      "id": "normal",
+      "en": "Normal Paddle",
+      "ar": "المضرب العادي"
     },
-    "x": 345,
-    "y": 145,
-    "width": 297,
-    "height": 94
+    "row": 1,
+    "column": 1,
+    "style": {
+      "en": "Ivory",
+      "ar": "العاجي"
+    },
+    "file": "01_normal_ivory.png",
+    "x": 21,
+    "y": 215,
+    "width": 370,
+    "height": 84
   },
   {
     "spriteNumber": 2,
-    "name": "paddle_normal_titanium_edge",
-    "displayName": { "en": "Titanium Edge", "ar": "حافة التيتانيوم" },
-    "group": { "id": "normal", "en": "Normal Paddle", "ar": "المضرب العادي" },
-    "description": {
-      "en": "A low-profile titanium paddle with a wide seamless surface built for maximum movement speed.",
-      "ar": "مضرب تيتانيوم منخفض وعريض بسطح متصل مصمم لأقصى سرعة حركة."
+    "name": "paddle_weapon_ivory",
+    "displayName": {
+      "en": "Ivory Weapon",
+      "ar": "العاجي - المضرب المسلح"
     },
-    "specifications": {
-      "speedRating": 5,
-      "material": { "en": "Brushed titanium", "ar": "تيتانيوم مصقول" },
-      "surface": { "en": "Smooth seamless flat top", "ar": "سطح علوي أملس ومسطح بلا فواصل" },
-      "accentColor": { "en": "Cyan", "ar": "سماوي" },
-      "default": { "en": "Default Normal Paddle", "ar": "المضرب العادي المعياري" }
+    "group": {
+      "id": "weapon",
+      "en": "Weapon Paddle",
+      "ar": "المضرب المسلح"
     },
-    "x": 13,
-    "y": 174,
-    "width": 302,
-    "height": 65
+    "row": 1,
+    "column": 2,
+    "style": {
+      "en": "Ivory",
+      "ar": "العاجي"
+    },
+    "file": "01_weapon_ivory.png",
+    "x": 419,
+    "y": 198,
+    "width": 379,
+    "height": 101
   },
   {
     "spriteNumber": 3,
-    "name": "paddle_sticky_nano_gel",
-    "displayName": { "en": "Nano Gel", "ar": "الهلام النانوي" },
-    "group": { "id": "sticky", "en": "Sticky Paddle", "ar": "مضرب اللصق" },
-    "description": {
-      "en": "A cyan nano-gel paddle that captures the ball on a perfectly level adhesive surface.",
-      "ar": "مضرب بهلام نانوي سماوي يلتقط الكرة على سطح لاصق مستوٍ تمامًا."
+    "name": "paddle_sticky_ivory",
+    "displayName": {
+      "en": "Ivory Sticky",
+      "ar": "العاجي - مضرب اللصق"
     },
-    "specifications": {
-      "rangeRating": 3,
-      "adhesiveTechnology": { "en": "Adaptive nano gel", "ar": "هلام نانوي متكيف" },
-      "surface": { "en": "Solid smooth flat gel layer", "ar": "طبقة هلام صلبة وملساء ومسطحة" },
-      "accentColor": { "en": "Aqua cyan", "ar": "سماوي مائي" },
-      "default": { "en": "Default Sticky Paddle", "ar": "المضرب اللصق المعياري" }
+    "group": {
+      "id": "sticky",
+      "en": "Sticky Paddle",
+      "ar": "مضرب اللصق"
     },
-    "x": 687,
-    "y": 174,
-    "width": 321,
-    "height": 65
+    "row": 1,
+    "column": 3,
+    "style": {
+      "en": "Ivory",
+      "ar": "العاجي"
+    },
+    "file": "01_sticky_ivory.png",
+    "x": 840,
+    "y": 216,
+    "width": 391,
+    "height": 83
   },
   {
-    "spriteNumber": 17,
-    "name": "paddle_weapon_rotary_blaster",
-    "displayName": { "en": "Rotary Blaster", "ar": "المدفع الدوار" },
-    "group": { "id": "weapon", "en": "Weapon Paddle", "ar": "المضرب المسلح" },
-    "description": {
-      "en": "A reinforced paddle equipped with two compact upward rotary blasters for sustained fire.",
-      "ar": "مضرب مدعم مزود بمدفعين دوارين صغيرين متجهين للأعلى لإطلاق مستمر."
+    "spriteNumber": 4,
+    "name": "paddle_normal_frost",
+    "displayName": {
+      "en": "Frost Normal",
+      "ar": "الصقيع - المضرب العادي"
     },
-    "specifications": {
-      "rangeRating": 3,
-      "weapon": { "en": "Dual rotary blasters", "ar": "مدفعان دواران" },
-      "firingDirection": { "en": "Upward", "ar": "إلى الأعلى" },
-      "surface": { "en": "Flat armored alloy", "ar": "سطح سبيكة مدرع ومسطح" },
-      "accentColor": { "en": "Amber", "ar": "كهرماني" }
+    "group": {
+      "id": "normal",
+      "en": "Normal Paddle",
+      "ar": "المضرب العادي"
     },
-    "x": 341,
-    "y": 293,
-    "width": 310,
+    "row": 2,
+    "column": 1,
+    "style": {
+      "en": "Frost",
+      "ar": "الصقيع"
+    },
+    "file": "02_normal_frost.png",
+    "x": 20,
+    "y": 386,
+    "width": 371,
     "height": 85
   },
   {
-    "spriteNumber": 20,
-    "name": "paddle_normal_neon_wing",
-    "displayName": { "en": "Neon Wing", "ar": "جناح النيون" },
-    "group": { "id": "normal", "en": "Normal Paddle", "ar": "المضرب العادي" },
-    "description": {
-      "en": "An aerodynamic black paddle with raised wing tips and vivid magenta edge lighting.",
-      "ar": "مضرب أسود انسيابي بأطراف جناحية مرتفعة وإضاءة حواف أرجوانية زاهية."
+    "spriteNumber": 5,
+    "name": "paddle_weapon_frost",
+    "displayName": {
+      "en": "Frost Weapon",
+      "ar": "الصقيع - المضرب المسلح"
     },
-    "specifications": {
-      "speedRating": 4,
-      "material": { "en": "Aerospace composite", "ar": "مركب فضائي" },
-      "surface": { "en": "Flat low-friction center", "ar": "منتصف مسطح منخفض الاحتكاك" },
-      "accentColor": { "en": "Magenta", "ar": "أرجواني" }
+    "group": {
+      "id": "weapon",
+      "en": "Weapon Paddle",
+      "ar": "المضرب المسلح"
     },
-    "x": 15,
-    "y": 309,
-    "width": 302,
-    "height": 72
+    "row": 2,
+    "column": 2,
+    "style": {
+      "en": "Frost",
+      "ar": "الصقيع"
+    },
+    "file": "02_weapon_frost.png",
+    "x": 419,
+    "y": 385,
+    "width": 379,
+    "height": 86
   },
   {
-    "spriteNumber": 21,
-    "name": "paddle_sticky_magnetic_resin",
-    "displayName": { "en": "Magnetic Resin", "ar": "الراتنج المغناطيسي" },
-    "group": { "id": "sticky", "en": "Sticky Paddle", "ar": "مضرب اللصق" },
-    "description": {
-      "en": "A crimson resin paddle that combines adhesive grip with a controlled magnetic pull.",
-      "ar": "مضرب راتنجي قرمزي يجمع بين الالتصاق والجذب المغناطيسي المتحكم به."
+    "spriteNumber": 6,
+    "name": "paddle_sticky_frost",
+    "displayName": {
+      "en": "Frost Sticky",
+      "ar": "الصقيع - مضرب اللصق"
     },
-    "specifications": {
-      "rangeRating": 3,
-      "adhesiveTechnology": { "en": "Magnetized resin", "ar": "راتنج ممغنط" },
-      "surface": { "en": "Glossy solid flat resin", "ar": "راتنج صلب ولامع ومسطح" },
-      "accentColor": { "en": "Crimson red", "ar": "أحمر قرمزي" }
+    "group": {
+      "id": "sticky",
+      "en": "Sticky Paddle",
+      "ar": "مضرب اللصق"
     },
-    "x": 690,
-    "y": 313,
-    "width": 319,
-    "height": 66
+    "row": 2,
+    "column": 3,
+    "style": {
+      "en": "Frost",
+      "ar": "الصقيع"
+    },
+    "file": "02_sticky_frost.png",
+    "x": 840,
+    "y": 386,
+    "width": 391,
+    "height": 85
   },
   {
-    "spriteNumber": 26,
-    "name": "paddle_weapon_ion_bolt",
-    "displayName": { "en": "Ion Bolt", "ar": "الصاعقة الأيونية" },
-    "group": { "id": "weapon", "en": "Weapon Paddle", "ar": "المضرب المسلح" },
-    "description": {
-      "en": "A silver energy paddle with two upward ion emitters that fire concentrated electric bolts.",
-      "ar": "مضرب طاقة فضي مزود بباعثين أيونيين يطلقان صواعق كهربائية مركزة إلى الأعلى."
+    "spriteNumber": 7,
+    "name": "paddle_normal_navy",
+    "displayName": {
+      "en": "Navy Normal",
+      "ar": "الكحلي - المضرب العادي"
     },
-    "specifications": {
-      "rangeRating": 4,
-      "weapon": { "en": "Dual ion-bolt emitters", "ar": "باعثا صواعق أيونية" },
-      "firingDirection": { "en": "Upward", "ar": "إلى الأعلى" },
-      "surface": { "en": "Flat satin silver alloy", "ar": "سطح فضي ساتاني ومسطح" },
-      "accentColor": { "en": "Electric blue", "ar": "أزرق كهربائي" }
+    "group": {
+      "id": "normal",
+      "en": "Normal Paddle",
+      "ar": "المضرب العادي"
     },
-    "x": 348,
-    "y": 428,
-    "width": 293,
+    "row": 3,
+    "column": 1,
+    "style": {
+      "en": "Navy",
+      "ar": "الكحلي"
+    },
+    "file": "03_normal_navy.png",
+    "x": 20,
+    "y": 555,
+    "width": 371,
+    "height": 86
+  },
+  {
+    "spriteNumber": 8,
+    "name": "paddle_weapon_navy",
+    "displayName": {
+      "en": "Navy Weapon",
+      "ar": "الكحلي - المضرب المسلح"
+    },
+    "group": {
+      "id": "weapon",
+      "en": "Weapon Paddle",
+      "ar": "المضرب المسلح"
+    },
+    "row": 3,
+    "column": 2,
+    "style": {
+      "en": "Navy",
+      "ar": "الكحلي"
+    },
+    "file": "03_weapon_navy.png",
+    "x": 419,
+    "y": 530,
+    "width": 379,
+    "height": 111
+  },
+  {
+    "spriteNumber": 9,
+    "name": "paddle_sticky_navy",
+    "displayName": {
+      "en": "Navy Sticky",
+      "ar": "الكحلي - مضرب اللصق"
+    },
+    "group": {
+      "id": "sticky",
+      "en": "Sticky Paddle",
+      "ar": "مضرب اللصق"
+    },
+    "row": 3,
+    "column": 3,
+    "style": {
+      "en": "Navy",
+      "ar": "الكحلي"
+    },
+    "file": "03_sticky_navy.png",
+    "x": 840,
+    "y": 554,
+    "width": 391,
+    "height": 87
+  },
+  {
+    "spriteNumber": 10,
+    "name": "paddle_normal_copper",
+    "displayName": {
+      "en": "Copper Normal",
+      "ar": "النحاسي - المضرب العادي"
+    },
+    "group": {
+      "id": "normal",
+      "en": "Normal Paddle",
+      "ar": "المضرب العادي"
+    },
+    "row": 4,
+    "column": 1,
+    "style": {
+      "en": "Copper",
+      "ar": "النحاسي"
+    },
+    "file": "04_normal_copper.png",
+    "x": 20,
+    "y": 719,
+    "width": 371,
     "height": 88
   },
   {
-    "spriteNumber": 27,
-    "name": "paddle_normal_quantum_slate",
-    "displayName": { "en": "Quantum Slate", "ar": "لوح الكوانتم" },
-    "group": { "id": "normal", "en": "Normal Paddle", "ar": "المضرب العادي" },
-    "description": {
-      "en": "A compact graphite paddle stabilized by a violet quantum-energy seam.",
-      "ar": "مضرب جرافيتي مدمج تثبته وصلة طاقة كوانتم بنفسجية."
+    "spriteNumber": 11,
+    "name": "paddle_weapon_copper",
+    "displayName": {
+      "en": "Copper Weapon",
+      "ar": "النحاسي - المضرب المسلح"
     },
-    "specifications": {
-      "speedRating": 4,
-      "material": { "en": "Quantum graphite", "ar": "جرافيت كوانتمي" },
-      "surface": { "en": "Smooth planar graphite", "ar": "جرافيت مستوٍ وأملس" },
-      "accentColor": { "en": "Violet", "ar": "بنفسجي" }
+    "group": {
+      "id": "weapon",
+      "en": "Weapon Paddle",
+      "ar": "المضرب المسلح"
     },
-    "x": 12,
-    "y": 448,
-    "width": 302,
-    "height": 67
+    "row": 4,
+    "column": 2,
+    "style": {
+      "en": "Copper",
+      "ar": "النحاسي"
+    },
+    "file": "04_weapon_copper.png",
+    "x": 419,
+    "y": 703,
+    "width": 379,
+    "height": 104
   },
   {
-    "spriteNumber": 30,
-    "name": "paddle_sticky_crystal_membrane",
-    "displayName": { "en": "Crystal Membrane", "ar": "الغشاء الكريستالي" },
-    "group": { "id": "sticky", "en": "Sticky Paddle", "ar": "مضرب اللصق" },
-    "description": {
-      "en": "An iridescent crystal membrane that flexes microscopically to hold the ball on contact.",
-      "ar": "غشاء كريستالي متقزح ينثني مجهريًا لتثبيت الكرة عند الملامسة."
+    "spriteNumber": 12,
+    "name": "paddle_sticky_copper",
+    "displayName": {
+      "en": "Copper Sticky",
+      "ar": "النحاسي - مضرب اللصق"
     },
-    "specifications": {
-      "rangeRating": 4,
-      "adhesiveTechnology": { "en": "Reactive crystal membrane", "ar": "غشاء كريستالي تفاعلي" },
-      "surface": { "en": "Unbroken level crystal film", "ar": "غشاء كريستالي متصل ومستوي" },
-      "accentColor": { "en": "Iridescent violet-blue", "ar": "بنفسجي أزرق متقزح" }
+    "group": {
+      "id": "sticky",
+      "en": "Sticky Paddle",
+      "ar": "مضرب اللصق"
     },
-    "x": 687,
-    "y": 449,
-    "width": 322,
-    "height": 67
+    "row": 4,
+    "column": 3,
+    "style": {
+      "en": "Copper",
+      "ar": "النحاسي"
+    },
+    "file": "04_sticky_copper.png",
+    "x": 840,
+    "y": 720,
+    "width": 391,
+    "height": 87
   },
   {
-    "spriteNumber": 39,
-    "name": "paddle_weapon_arc_cannon",
-    "displayName": { "en": "Arc Cannon", "ar": "المدفع القوسي" },
-    "group": { "id": "weapon", "en": "Weapon Paddle", "ar": "المضرب المسلح" },
-    "description": {
-      "en": "An armored electric paddle with twin forked cannons that discharge upward lightning arcs.",
-      "ar": "مضرب كهربائي مدرع مزود بمدفعين متشعبين يطلقان أقواس برق إلى الأعلى."
+    "spriteNumber": 13,
+    "name": "paddle_normal_gold",
+    "displayName": {
+      "en": "Gold Normal",
+      "ar": "الذهبي - المضرب العادي"
     },
-    "specifications": {
-      "rangeRating": 4,
-      "weapon": { "en": "Dual arc cannons", "ar": "مدفعان قوسيان" },
-      "firingDirection": { "en": "Upward", "ar": "إلى الأعلى" },
-      "surface": { "en": "Flat shock-insulated armor", "ar": "سطح مدرع مسطح ومعزول كهربائيًا" },
-      "accentColor": { "en": "Electric blue", "ar": "أزرق كهربائي" }
+    "group": {
+      "id": "normal",
+      "en": "Normal Paddle",
+      "ar": "المضرب العادي"
     },
-    "x": 341,
-    "y": 570,
-    "width": 312,
-    "height": 82
+    "row": 5,
+    "column": 1,
+    "style": {
+      "en": "Gold",
+      "ar": "الذهبي"
+    },
+    "file": "05_normal_gold.png",
+    "x": 20,
+    "y": 888,
+    "width": 371,
+    "height": 84
   },
   {
-    "spriteNumber": 40,
-    "name": "paddle_sticky_smart_foam",
-    "displayName": { "en": "Smart Foam", "ar": "الرغوة الذكية" },
-    "group": { "id": "sticky", "en": "Sticky Paddle", "ar": "مضرب اللصق" },
-    "description": {
-      "en": "A memory-foam paddle that briefly conforms around the ball and then returns to a flat shape.",
-      "ar": "مضرب من رغوة الذاكرة يحيط بالكرة لحظيًا ثم يعود إلى شكله المسطح."
+    "spriteNumber": 14,
+    "name": "paddle_weapon_gold",
+    "displayName": {
+      "en": "Gold Weapon",
+      "ar": "الذهبي - المضرب المسلح"
     },
-    "specifications": {
-      "rangeRating": 3,
-      "adhesiveTechnology": { "en": "Shape-memory foam", "ar": "رغوة ذاكرة الشكل" },
-      "surface": { "en": "Smooth matte flat foam", "ar": "رغوة مطفية وملساء ومسطحة" },
-      "accentColor": { "en": "Sea green", "ar": "أخضر بحري" }
+    "group": {
+      "id": "weapon",
+      "en": "Weapon Paddle",
+      "ar": "المضرب المسلح"
     },
-    "x": 688,
-    "y": 587,
-    "width": 323,
-    "height": 64
+    "row": 5,
+    "column": 2,
+    "style": {
+      "en": "Gold",
+      "ar": "الذهبي"
+    },
+    "file": "05_weapon_gold.png",
+    "x": 419,
+    "y": 871,
+    "width": 379,
+    "height": 102
   },
   {
-    "spriteNumber": 41,
-    "name": "paddle_normal_prism_guard",
-    "displayName": { "en": "Prism Guard", "ar": "درع المنشور" },
-    "group": { "id": "normal", "en": "Normal Paddle", "ar": "المضرب العادي" },
-    "description": {
-      "en": "A faceted prism-alloy paddle with a transparent crystalline contact plate and high speed.",
-      "ar": "مضرب من سبيكة منشورية متعددة الأوجه بسطح ارتداد كريستالي شفاف وسرعة عالية."
+    "spriteNumber": 15,
+    "name": "paddle_sticky_gold",
+    "displayName": {
+      "en": "Gold Sticky",
+      "ar": "الذهبي - مضرب اللصق"
     },
-    "specifications": {
-      "speedRating": 5,
-      "material": { "en": "Prismatic crystal alloy", "ar": "سبيكة كريستالية منشورية" },
-      "surface": { "en": "Flat transparent crystal plate", "ar": "لوح كريستالي شفاف ومسطح" },
-      "accentColor": { "en": "Ice cyan", "ar": "سماوي جليدي" }
+    "group": {
+      "id": "sticky",
+      "en": "Sticky Paddle",
+      "ar": "مضرب اللصق"
     },
-    "x": 11,
-    "y": 589,
-    "width": 304,
-    "height": 62
+    "row": 5,
+    "column": 3,
+    "style": {
+      "en": "Gold",
+      "ar": "الذهبي"
+    },
+    "file": "05_sticky_gold.png",
+    "x": 840,
+    "y": 889,
+    "width": 391,
+    "height": 84
   },
   {
-    "spriteNumber": 49,
-    "name": "paddle_weapon_micro_rocket_pods",
-    "displayName": { "en": "Micro Rocket Pods", "ar": "حاضنات الصواريخ المصغرة" },
-    "group": { "id": "weapon", "en": "Weapon Paddle", "ar": "المضرب المسلح" },
-    "description": {
-      "en": "A heavy tactical paddle with two upward micro-rocket pods for explosive brick clearing.",
-      "ar": "مضرب تكتيكي ثقيل مزود بحاضنتي صواريخ مصغرة متجهتين للأعلى لتدمير الطوب."
+    "spriteNumber": 16,
+    "name": "paddle_normal_violet",
+    "displayName": {
+      "en": "Violet Normal",
+      "ar": "البنفسجي - المضرب العادي"
     },
-    "specifications": {
-      "rangeRating": 3,
-      "weapon": { "en": "Dual micro-rocket pods", "ar": "حاضنتا صواريخ مصغرة" },
-      "firingDirection": { "en": "Upward", "ar": "إلى الأعلى" },
-      "surface": { "en": "Flat heavy tactical armor", "ar": "سطح تكتيكي ثقيل ومدرع ومسطح" },
-      "accentColor": { "en": "Red and amber", "ar": "أحمر وكهرماني" }
+    "group": {
+      "id": "normal",
+      "en": "Normal Paddle",
+      "ar": "المضرب العادي"
     },
-    "x": 342,
-    "y": 700,
-    "width": 311,
-    "height": 88
+    "row": 6,
+    "column": 1,
+    "style": {
+      "en": "Violet",
+      "ar": "البنفسجي"
+    },
+    "file": "06_normal_violet.png",
+    "x": 20,
+    "y": 1055,
+    "width": 371,
+    "height": 89
   },
   {
-    "spriteNumber": 56,
-    "name": "paddle_normal_obsidian_rail",
-    "displayName": { "en": "Obsidian Rail", "ar": "سكة الأوبسيديان" },
-    "group": { "id": "normal", "en": "Normal Paddle", "ar": "المضرب العادي" },
-    "description": {
-      "en": "A dense volcanic-glass paddle with glowing magma veins and strong controlled rebounds.",
-      "ar": "مضرب كثيف من الزجاج البركاني بعروق صهارة مضيئة وارتدادات قوية ومتحكم بها."
+    "spriteNumber": 17,
+    "name": "paddle_weapon_violet",
+    "displayName": {
+      "en": "Violet Weapon",
+      "ar": "البنفسجي - المضرب المسلح"
     },
-    "specifications": {
-      "speedRating": 3,
-      "material": { "en": "Reinforced obsidian", "ar": "أوبسيديان مدعم" },
-      "surface": { "en": "Long polished flat glass", "ar": "زجاج طويل مصقول ومسطح" },
-      "accentColor": { "en": "Magma red", "ar": "أحمر صهاري" }
+    "group": {
+      "id": "weapon",
+      "en": "Weapon Paddle",
+      "ar": "المضرب المسلح"
     },
-    "x": 13,
-    "y": 725,
-    "width": 303,
-    "height": 62
+    "row": 6,
+    "column": 2,
+    "style": {
+      "en": "Violet",
+      "ar": "البنفسجي"
+    },
+    "file": "06_weapon_violet.png",
+    "x": 419,
+    "y": 1031,
+    "width": 378,
+    "height": 113
   },
   {
-    "spriteNumber": 57,
-    "name": "paddle_sticky_vacuum_pad",
-    "displayName": { "en": "Vacuum Pad", "ar": "لوح الشفط الفراغي" },
-    "group": { "id": "sticky", "en": "Sticky Paddle", "ar": "مضرب اللصق" },
-    "description": {
-      "en": "A dark suction-tech paddle that creates localized vacuum fields to catch the ball.",
-      "ar": "مضرب داكن بتقنية شفط يصنع حقول فراغ موضعية لالتقاط الكرة."
+    "spriteNumber": 18,
+    "name": "paddle_sticky_violet",
+    "displayName": {
+      "en": "Violet Sticky",
+      "ar": "البنفسجي - مضرب اللصق"
     },
-    "specifications": {
-      "rangeRating": 3,
-      "adhesiveTechnology": { "en": "Localized vacuum fields", "ar": "حقول فراغ موضعية" },
-      "surface": { "en": "Flat sealed suction surface", "ar": "سطح شفط محكم ومسطح" },
-      "accentColor": { "en": "Cyan", "ar": "سماوي" }
+    "group": {
+      "id": "sticky",
+      "en": "Sticky Paddle",
+      "ar": "مضرب اللصق"
     },
-    "x": 690,
-    "y": 725,
-    "width": 321,
-    "height": 65
-  },
-  {
-    "spriteNumber": 70,
-    "name": "paddle_weapon_plasma_gatling",
-    "displayName": { "en": "Plasma Gatling", "ar": "جاتلينج البلازما" },
-    "group": { "id": "weapon", "en": "Weapon Paddle", "ar": "المضرب المسلح" },
-    "description": {
-      "en": "A premium combat paddle with twin upward plasma gatlings and high-capacity energy vents.",
-      "ar": "مضرب قتالي متطور مزود بمدفعي جاتلينج بلازما متجهين للأعلى وفتحات طاقة عالية السعة."
+    "row": 6,
+    "column": 3,
+    "style": {
+      "en": "Violet",
+      "ar": "البنفسجي"
     },
-    "specifications": {
-      "rangeRating": 4,
-      "weapon": { "en": "Dual plasma gatlings", "ar": "مدفعا جاتلينج بلازما" },
-      "firingDirection": { "en": "Upward", "ar": "إلى الأعلى" },
-      "surface": { "en": "Flat reinforced gunmetal", "ar": "سطح معدني مدعم ومسطح" },
-      "accentColor": { "en": "Plasma cyan", "ar": "سماوي بلازمي" }
-    },
-    "x": 341,
-    "y": 842,
-    "width": 305,
-    "height": 93
-  },
-  {
-    "spriteNumber": 73,
-    "name": "paddle_normal_carbon_specter",
-    "displayName": { "en": "Carbon Specter", "ar": "الطيف الكربوني" },
-    "group": { "id": "normal", "en": "Normal Paddle", "ar": "المضرب العادي" },
-    "description": {
-      "en": "An agile carbon-fiber paddle with spectral green lighting and responsive handling.",
-      "ar": "مضرب رشيق من ألياف الكربون بإضاءة خضراء طيفية وتحكم سريع الاستجابة."
-    },
-    "specifications": {
-      "speedRating": 4,
-      "material": { "en": "Lightweight carbon fiber", "ar": "ألياف كربون خفيفة" },
-      "surface": { "en": "Flat woven-carbon surface", "ar": "سطح كربوني منسوج ومسطح" },
-      "accentColor": { "en": "Spectral green", "ar": "أخضر طيفي" }
-    },
-    "x": 14,
-    "y": 862,
-    "width": 301,
-    "height": 72
-  },
-  {
-    "spriteNumber": 74,
-    "name": "paddle_sticky_electrostatic_mesh",
-    "displayName": { "en": "Electrostatic Mesh", "ar": "الشبكة الكهروستاتيكية" },
-    "group": { "id": "sticky", "en": "Sticky Paddle", "ar": "مضرب اللصق" },
-    "description": {
-      "en": "A violet conductive mesh that generates a controllable electrostatic hold on the ball.",
-      "ar": "شبكة موصلة بنفسجية تولد قوة كهروستاتيكية قابلة للتحكم لتثبيت الكرة."
-    },
-    "specifications": {
-      "rangeRating": 4,
-      "adhesiveTechnology": { "en": "Electrostatic attraction mesh", "ar": "شبكة جذب كهروستاتيكية" },
-      "surface": { "en": "Smooth level conductive grid", "ar": "شبكة موصلة ناعمة ومستوية" },
-      "accentColor": { "en": "Violet", "ar": "بنفسجي" }
-    },
-    "x": 688,
-    "y": 867,
-    "width": 321,
-    "height": 64
+    "file": "06_sticky_violet.png",
+    "x": 840,
+    "y": 1057,
+    "width": 391,
+    "height": 87
   }
 ]

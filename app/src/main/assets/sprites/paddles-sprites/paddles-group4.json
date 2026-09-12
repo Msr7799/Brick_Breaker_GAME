@@ -1,0 +1,200 @@
+[
+  {
+    "row": 1,
+    "column": 1,
+    "type": "normal",
+    "style": "cyan",
+    "x": 13,
+    "y": 205,
+    "width": 394,
+    "height": 99,
+    "file": "01_normal_cyan.png"
+  },
+  {
+    "row": 1,
+    "column": 2,
+    "type": "weapon",
+    "style": "cyan",
+    "x": 419,
+    "y": 181,
+    "width": 414,
+    "height": 123,
+    "file": "01_weapon_cyan.png"
+  },
+  {
+    "row": 1,
+    "column": 3,
+    "type": "sticky",
+    "style": "cyan",
+    "x": 843,
+    "y": 205,
+    "width": 400,
+    "height": 99,
+    "file": "01_sticky_cyan.png"
+  },
+  {
+    "row": 2,
+    "column": 1,
+    "type": "normal",
+    "style": "amber",
+    "x": 13,
+    "y": 373,
+    "width": 394,
+    "height": 99,
+    "file": "02_normal_amber.png"
+  },
+  {
+    "row": 2,
+    "column": 2,
+    "type": "weapon",
+    "style": "amber",
+    "x": 419,
+    "y": 354,
+    "width": 414,
+    "height": 120,
+    "file": "02_weapon_amber.png"
+  },
+  {
+    "row": 2,
+    "column": 3,
+    "type": "sticky",
+    "style": "amber",
+    "x": 843,
+    "y": 371,
+    "width": 400,
+    "height": 101,
+    "file": "02_sticky_amber.png"
+  },
+  {
+    "row": 3,
+    "column": 1,
+    "type": "normal",
+    "style": "green",
+    "x": 13,
+    "y": 550,
+    "width": 394,
+    "height": 100,
+    "file": "03_normal_green.png"
+  },
+  {
+    "row": 3,
+    "column": 2,
+    "type": "weapon",
+    "style": "green",
+    "x": 419,
+    "y": 526,
+    "width": 414,
+    "height": 129,
+    "file": "03_weapon_green.png"
+  },
+  {
+    "row": 3,
+    "column": 3,
+    "type": "sticky",
+    "style": "green",
+    "x": 843,
+    "y": 550,
+    "width": 400,
+    "height": 100,
+    "file": "03_sticky_green.png"
+  },
+  {
+    "row": 4,
+    "column": 1,
+    "type": "normal",
+    "style": "blue",
+    "x": 13,
+    "y": 727,
+    "width": 394,
+    "height": 102,
+    "file": "04_normal_blue.png"
+  },
+  {
+    "row": 4,
+    "column": 2,
+    "type": "weapon",
+    "style": "blue",
+    "x": 419,
+    "y": 704,
+    "width": 414,
+    "height": 125,
+    "file": "04_weapon_blue.png"
+  },
+  {
+    "row": 4,
+    "column": 3,
+    "type": "sticky",
+    "style": "blue",
+    "x": 843,
+    "y": 727,
+    "width": 400,
+    "height": 102,
+    "file": "04_sticky_blue.png"
+  },
+  {
+    "row": 5,
+    "column": 1,
+    "type": "normal",
+    "style": "crimson",
+    "x": 13,
+    "y": 898,
+    "width": 394,
+    "height": 99,
+    "file": "05_normal_crimson.png"
+  },
+  {
+    "row": 5,
+    "column": 2,
+    "type": "weapon",
+    "style": "crimson",
+    "x": 419,
+    "y": 872,
+    "width": 414,
+    "height": 127,
+    "file": "05_weapon_crimson.png"
+  },
+  {
+    "row": 5,
+    "column": 3,
+    "type": "sticky",
+    "style": "crimson",
+    "x": 843,
+    "y": 898,
+    "width": 400,
+    "height": 99,
+    "file": "05_sticky_crimson.png"
+  },
+  {
+    "row": 6,
+    "column": 1,
+    "type": "normal",
+    "style": "lunar",
+    "x": 13,
+    "y": 1071,
+    "width": 394,
+    "height": 104,
+    "file": "06_normal_lunar.png"
+  },
+  {
+    "row": 6,
+    "column": 2,
+    "type": "weapon",
+    "style": "lunar",
+    "x": 419,
+    "y": 1046,
+    "width": 414,
+    "height": 130,
+    "file": "06_weapon_lunar.png"
+  },
+  {
+    "row": 6,
+    "column": 3,
+    "type": "sticky",
+    "style": "lunar",
+    "x": 843,
+    "y": 1071,
+    "width": 400,
+    "height": 104,
+    "file": "06_sticky_lunar.png"
+  }
+]

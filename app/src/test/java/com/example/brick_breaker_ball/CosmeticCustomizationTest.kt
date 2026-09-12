@@ -1,14 +1,22 @@
+/*
+ * ملاحظات صيانة الملف:
+ * المسار: app/src/test/java/com/example/brick_breaker_ball/CosmeticCustomizationTest.kt
+ * المؤلف: mohamed alromaihi
+ * اختبار حاوية الكور: `hiddenBallCardsCannotInterceptPreviewOrSave`
+ * الدوال الموجودة: `hiddenPaddleCardsCannotInterceptSaveAndBack`، `ballCatalogContainsAllGroupsSpritesAndValidUniqueBounds`، `paddleCatalogDiscoversEveryNumberedJsonPngPair`، `futurePaddleGroupsNeedNoCodeChange`، `cosmeticSettingsRoundTripWithStablePreferenceKeys`، `startedGameFlagPersistsForContinueVersusStartMenuState`، `corruptValuesUseSafeDefaultsWithoutThrowing`، `sizesDriveTheSameVisualAndCollisionRadius`، `multiballInheritsCosmeticSizeElementAndCollisionMode`، `megaExpiresButShrinkLastsForTheLevelWithinBounds`، `pausedSessionRoundTripsBaseSizeAndCosmeticIdentity`، `weaponAndStickyPaddleSelectionsNeverActivateAbilities`، `groupTwoDefaultsAreSelectedForNormalWeaponAndStickyStates`، `dualPaddlesAreAdjacentAndCollisionMatchesBothVisualSlots`، `parsePaddles`
+ */
+
 package com.example.brick_breaker_ball
 
 import com.badlogic.gdx.utils.JsonReader
+import java.io.File
+import javax.imageio.ImageIO
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
-import javax.imageio.ImageIO
 
 class CosmeticCustomizationTest {
     private val root = generateSequence(File(requireNotNull(System.getProperty("user.dir")))) { it.parentFile }
@@ -17,6 +25,7 @@ class CosmeticCustomizationTest {
     private val ballPng = File(root, "app/src/main/assets/sprites/balls-sprites/balls-sprites-7.png")
     private val paddleDirectory = File(root, "app/src/main/assets/sprites/paddles-sprites")
 
+    /** ملاحظة صيانة: الدالة `hiddenPaddleCardsCannotInterceptSaveAndBack` توثّق حالة اختبار أو تهيئة آلية وتحمي السلوك المتوقع من التراجع؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     @Test fun hiddenPaddleCardsCannotInterceptSaveAndBack() {
         val saveAndBack = com.badlogic.gdx.math.Rectangle(250f, 45f, 400f, 80f)
         val hiddenObsidianRow = com.badlogic.gdx.math.Rectangle(40f, 30f, 390f, 164f)
@@ -29,6 +38,18 @@ class CosmeticCustomizationTest {
         assertTrue(!clipped.overlaps(saveAndBack))
     }
 
+    /** يضمن أن لمس الكور محصور في حاوية الصفوف الثلاثة القابلة للتمرير. */
+    @Test fun hiddenBallCardsCannotInterceptPreviewOrSave() {
+        val hiddenBelowCollection = com.badlogic.gdx.math.Rectangle(55f, 300f, 250f, 190f)
+        val partiallyVisibleBottom = com.badlogic.gdx.math.Rectangle(55f, 480f, 250f, 190f)
+        val partiallyVisibleTop = com.badlogic.gdx.math.Rectangle(55f, 1100f, 250f, 190f)
+
+        assertNull(CustomizationHitTesting.visibleBallCard(hiddenBelowCollection))
+        assertEquals(135f, requireNotNull(CustomizationHitTesting.visibleBallCard(partiallyVisibleBottom)).height)
+        assertEquals(85f, requireNotNull(CustomizationHitTesting.visibleBallCard(partiallyVisibleTop)).height)
+    }
+
+    /** ملاحظة صيانة: الدالة `ballCatalogContainsAllGroupsSpritesAndValidUniqueBounds` توثّق حالة اختبار أو تهيئة آلية وتحمي السلوك المتوقع من التراجع؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     @Test fun ballCatalogContainsAllGroupsSpritesAndValidUniqueBounds() {
         val image = ImageIO.read(ballPng)
         val groups = CosmeticSpriteCatalogParser.balls(ballJson.readText(), image.width, image.height)
@@ -36,22 +57,46 @@ class CosmeticCustomizationTest {
         assertEquals(40, groups.size)
         assertEquals(271, balls.size)
         assertEquals(271, balls.map { it.id }.toSet().size)
-        assertTrue(balls.all { it.x >= 0 && it.y >= 0 && it.width > 0 && it.height > 0 && it.x + it.width <= image.width && it.y + it.height <= image.height })
+        assertTrue(
+            balls.all {
+                it.x >= 0 && it.y >= 0 && it.width > 0 && it.height > 0 && it.x + it.width <= image.width &&
+                    it.y + it.height <= image.height
+            }
+        )
     }
 
-    @Test fun paddleCatalogContainsAllThreeGroupsAndUniqueCompositeIds() {
-        val group1 = parsePaddles("group1")
-        val group2 = parsePaddles("group2")
-        val group3 = parsePaddles("group3")
-        assertEquals(18, group1.size)
-        assertEquals(18, group2.size)
-        assertEquals(18, group3.size)
-        val allPaddles = group1 + group2 + group3
-        assertEquals(54, allPaddles.size)
-        assertEquals(54, allPaddles.map { it.id }.toSet().size)
+    /** ملاحظة صيانة: يتحقق الاختبار من اكتشاف مجموعات البادلز الست وتكوين 36 عائلة كاملة وفريدة. */
+    @Test fun paddleCatalogDiscoversEveryNumberedJsonPngPair() {
+        val assets = CosmeticSpriteCatalogParser.paddleSheets(paddleDirectory.list()?.toList().orEmpty())
+        assertEquals((1..6).map { "group$it" }, assets.map { it.group })
+        assertEquals("paddle-group1.png", assets.single { it.group == "group1" }.imageFile)
+        assertEquals("paddle-group3.png", assets.single { it.group == "group3" }.imageFile)
+
+        val allPaddles = assets.flatMap { parsePaddles(it) }
+        assertEquals(108, allPaddles.size)
+        assertEquals(108, allPaddles.map { it.id }.toSet().size)
+        assertEquals(36, PaddleStyleCatalog.build(allPaddles).size)
         assertTrue(allPaddles.all { it.groupId in setOf("normal", "weapon", "sticky") })
+        assertNotNull(allPaddles.singleOrNull { it.id == "group4:paddle_normal_cyan" })
     }
 
+    @Test fun futurePaddleGroupsNeedNoCodeChange() {
+        val assets = CosmeticSpriteCatalogParser.paddleSheets(
+            listOf(
+                "paddles-group6.png",
+                "paddles-group5.json",
+                "notes.txt",
+                "paddles-group6.json",
+                "paddles-group5.png",
+                "paddles-group7.json"
+            )
+        )
+
+        assertEquals(listOf("group5", "group6"), assets.map { it.group })
+        assertEquals(listOf("paddles-group5.png", "paddles-group6.png"), assets.map { it.imageFile })
+    }
+
+    /** ملاحظة صيانة: الدالة `cosmeticSettingsRoundTripWithStablePreferenceKeys` توثّق حالة اختبار أو تهيئة آلية وتحمي السلوك المتوقع من التراجع؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     @Test fun cosmeticSettingsRoundTripWithStablePreferenceKeys() {
         val prefs = TestPreferences()
         val first = ProgressStore(prefs)
@@ -78,6 +123,7 @@ class CosmeticCustomizationTest {
         assertEquals("group2:paddle_sticky_nano_gel", restored.selectedStickyPaddleId)
     }
 
+    /** ملاحظة صيانة: الدالة `startedGameFlagPersistsForContinueVersusStartMenuState` توثّق حالة اختبار أو تهيئة آلية وتحمي السلوك المتوقع من التراجع؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     @Test fun startedGameFlagPersistsForContinueVersusStartMenuState() {
         val prefs = TestPreferences()
         val progress = ProgressStore(prefs)
@@ -87,6 +133,7 @@ class CosmeticCustomizationTest {
         assertTrue(prefs.getBoolean("has_started_game"))
     }
 
+    /** ملاحظة صيانة: الدالة `corruptValuesUseSafeDefaultsWithoutThrowing` توثّق حالة اختبار أو تهيئة آلية وتحمي السلوك المتوقع من التراجع؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     @Test fun corruptValuesUseSafeDefaultsWithoutThrowing() {
         val prefs = TestPreferences().putString("selected_ball_size", "BROKEN")
         assertEquals(BallSize.DEFAULT, ProgressStore(prefs).settings.selectedBallBaseSize)
@@ -95,6 +142,7 @@ class CosmeticCustomizationTest {
         assertNotNull(rootJson.get("groups"))
     }
 
+    /** ملاحظة صيانة: الدالة `sizesDriveTheSameVisualAndCollisionRadius` توثّق حالة اختبار أو تهيئة آلية وتحمي السلوك المتوقع من التراجع؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     @Test fun sizesDriveTheSameVisualAndCollisionRadius() {
         assertEquals(16f, BallSize.SMALL.radius)
         assertEquals(22f, BallSize.DEFAULT.radius)
@@ -106,11 +154,12 @@ class CosmeticCustomizationTest {
         }
     }
 
+    /** ملاحظة صيانة: الدالة `multiballInheritsCosmeticSizeElementAndCollisionMode` توثّق حالة اختبار أو تهيئة آلية وتحمي السلوك المتوقع من التراجع؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     @Test fun multiballInheritsCosmeticSizeElementAndCollisionMode() {
         val session = GameSession(
             baseBallSize = BallSize.SMALL,
             selectedBallGroupName = "monsters",
-            selectedBallSpriteName = "monsters_skull",
+            selectedBallSpriteName = "monsters_skull"
         )
         assertTrue(session.activatePowerUp(PowerUpType.MEGA_BALL))
         assertTrue(session.activatePowerUp(PowerUpType.FIRE_BALL))
@@ -127,6 +176,7 @@ class CosmeticCustomizationTest {
         }
     }
 
+    /** ملاحظة صيانة: الدالة `megaExpiresButShrinkLastsForTheLevelWithinBounds` توثّق حالة اختبار أو تهيئة آلية وتحمي السلوك المتوقع من التراجع؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     @Test fun megaExpiresButShrinkLastsForTheLevelWithinBounds() {
         val small = GameSession(baseBallSize = BallSize.SMALL)
         assertFalse(small.canActivatePowerUp(PowerUpType.SHRINK_BALL))
@@ -148,12 +198,31 @@ class CosmeticCustomizationTest {
         assertTrue(PowerUpType.SHRINK_BALL in large.powerUps)
     }
 
+    @Test fun sizePowerUpsKeepSelectedCosmeticWhileElementEffectsUseGameplayArt() {
+        val ball = Ball(
+            id = 1,
+            size = BallSize.LARGE,
+            baseSize = BallSize.DEFAULT,
+            cosmeticGroupName = "biomes",
+            cosmeticSpriteName = "biomes_swamp"
+        )
+        assertFalse(requiresGameplayBallSprite(ball))
+
+        ball.element = BallElement.FIRE
+        assertTrue(requiresGameplayBallSprite(ball))
+    }
+
+    /** ملاحظة صيانة: الدالة `pausedSessionRoundTripsBaseSizeAndCosmeticIdentity` توثّق حالة اختبار أو تهيئة آلية وتحمي السلوك المتوقع من التراجع؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     @Test fun pausedSessionRoundTripsBaseSizeAndCosmeticIdentity() {
         val prefs = TestPreferences()
         val store = PausedSessionStore(prefs)
         val level = LevelRepository.level(1)
-        val session = GameSession(level = level, baseBallSize = BallSize.LARGE,
-            selectedBallGroupName = "monsters", selectedBallSpriteName = "monsters_skull")
+        val session = GameSession(
+            level = level,
+            baseBallSize = BallSize.LARGE,
+            selectedBallGroupName = "monsters",
+            selectedBallSpriteName = "monsters_skull"
+        )
         session.activatePowerUp(PowerUpType.SHRINK_BALL)
         repeat(3) { session.activatePowerUp(PowerUpType.EXPAND_PADDLE) }
         store.save(level, session)
@@ -164,9 +233,10 @@ class CosmeticCustomizationTest {
         assertEquals("monsters", restored.ball.cosmeticGroupName)
         assertEquals("monsters_skull", restored.ball.cosmeticSpriteName)
         assertEquals(3, restored.expandPaddleStacks)
-        assertEquals(352f, restored.paddle.targetWidth)
+        assertEquals(GameSession.BASE_PADDLE_WIDTH + GameSession.PADDLE_EXPAND_STEP * 3f, restored.paddle.targetWidth)
     }
 
+    /** ملاحظة صيانة: الدالة `weaponAndStickyPaddleSelectionsNeverActivateAbilities` توثّق حالة اختبار أو تهيئة آلية وتحمي السلوك المتوقع من التراجع؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     @Test fun weaponAndStickyPaddleSelectionsNeverActivateAbilities() {
         val session = GameSession()
         assertFalse(PowerUpType.LASER_PADDLE in session.powerUps)
@@ -177,11 +247,22 @@ class CosmeticCustomizationTest {
         assertTrue(paddles.any { it.groupId == "sticky" })
     }
 
-    @Test fun groupTwoDefaultsAreSelectedForNormalWeaponAndStickyStates() {
-        val paddles = (parsePaddles("group1") + parsePaddles("group2")).associateBy { it.id }
+    /** ملاحظة صيانة: يتحقق الاختبار من أن عائلة البداية تأتي من المجموعة الأولى بعد إعادة تنظيم الصور. */
+    @Test fun groupOneDefaultsAreSelectedForNormalWeaponAndStickyStates() {
+        val paddles = parsePaddles("group1").associateBy { it.id }
         assertEquals("normal", requireNotNull(paddles[CosmeticDefaults.PADDLE_ID]).groupId)
-        assertEquals("weapon", requireNotNull(paddles[CosmeticDefaults.WEAPON_PADDLE_ID]) { paddles.keys.filter { "pulse" in it }.joinToString() }.groupId)
-        assertEquals("sticky", requireNotNull(paddles[CosmeticDefaults.STICKY_PADDLE_ID]) { paddles.keys.filter { "nano" in it }.joinToString() }.groupId)
+        assertEquals(
+            "weapon",
+            requireNotNull(paddles[CosmeticDefaults.WEAPON_PADDLE_ID]) {
+                paddles.keys.filter { "pulse" in it }.joinToString()
+            }.groupId
+        )
+        assertEquals(
+            "sticky",
+            requireNotNull(paddles[CosmeticDefaults.STICKY_PADDLE_ID]) {
+                paddles.keys.filter { "nano" in it }.joinToString()
+            }.groupId
+        )
         val normal = "group1:paddle_normal_solar_ceramic"
         val weapon = "group1:paddle_weapon_photon_lance"
         val sticky = "group1:paddle_sticky_liquid_metal_bond"
@@ -190,6 +271,21 @@ class CosmeticCustomizationTest {
         assertEquals(sticky, CosmeticPaddleSelection.idForState(normal, weapon, sticky, laserActive = false, stickyActive = true))
     }
 
+    @Test fun starterPaddleFamilyIsFirstInNormalWeaponAndStickyOrdering() {
+        val paddles = parsePaddles("group1") + parsePaddles("group2") + parsePaddles("group3")
+        val defaultBall = BallSpriteDefinition(0, CosmeticDefaults.BALL_GROUP, 0, "starter", CosmeticDefaults.BALL_SPRITE, 0, 0, 32, 32)
+        val progression = CosmeticProgressionService(
+            balls = listOf(defaultBall),
+            paddles = PaddleStyleCatalog.build(paddles),
+            ownership = CosmeticOwnershipStore(TestPreferences())
+        )
+        val first = progression.paddleStyles.first()
+        assertEquals(CosmeticDefaults.PADDLE_ID, first.normal.id)
+        assertEquals(CosmeticDefaults.WEAPON_PADDLE_ID, first.weapon.id)
+        assertEquals(CosmeticDefaults.STICKY_PADDLE_ID, first.sticky.id)
+    }
+
+    /** ملاحظة صيانة: الدالة `dualPaddlesAreAdjacentAndCollisionMatchesBothVisualSlots` توثّق حالة اختبار أو تهيئة آلية وتحمي السلوك المتوقع من التراجع؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     @Test fun dualPaddlesAreAdjacentAndCollisionMatchesBothVisualSlots() {
         val session = GameSession()
         session.activatePowerUp(PowerUpType.DUAL_PADDLE)
@@ -208,9 +304,19 @@ class CosmeticCustomizationTest {
         assertTrue(session.paddleCollisionBounds().all { it.x >= 0f && it.x + it.width <= GameSession.WIDTH })
     }
 
+    /** ملاحظة صيانة: الدالة `parsePaddles` توثّق حالة اختبار أو تهيئة آلية وتحمي السلوك المتوقع من التراجع؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun parsePaddles(group: String): List<PaddleSpriteDefinition> {
-        val imageName = if (group == "group3") "paddle-group3.png" else "paddles-$group.png"
-        val image = ImageIO.read(File(paddleDirectory, imageName))
-        return CosmeticSpriteCatalogParser.paddles(File(paddleDirectory, "paddles-$group.json").readText(), group, image.width, image.height)
+        val assets = CosmeticSpriteCatalogParser.paddleSheets(paddleDirectory.list()?.toList().orEmpty())
+        return parsePaddles(requireNotNull(assets.singleOrNull { it.group == group }))
+    }
+
+    private fun parsePaddles(asset: PaddleSheetAsset): List<PaddleSpriteDefinition> {
+        val image = ImageIO.read(File(paddleDirectory, asset.imageFile))
+        return CosmeticSpriteCatalogParser.paddles(
+            File(paddleDirectory, asset.jsonFile).readText(),
+            asset.group,
+            image.width,
+            image.height
+        )
     }
 }

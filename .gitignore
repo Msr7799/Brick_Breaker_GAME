@@ -30,3 +30,9 @@ AGENTS.md
 /docs/codex/*
 .agents/*
 .agents/skills/*
+docs/developer-notes/*
+/tools/*
+/tools/assets_staging/*
+/tools/assets_staging/licenses/*
+/tools/assets_staging/selected/*
+/tools/assets_staging/selected/atlas_inputs/*

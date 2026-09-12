@@ -1,0 +1,857 @@
+[
+  {
+    "ballNumber": 1,
+    "name": "ball_midnight_blue_half",
+    "displayName": {
+      "en": "Midnight Blue Half",
+      "ar": "نصف أزرق ليلي"
+    },
+    "shapeDescription": {
+      "en": "A glossy black sphere partially filled with deep blue liquid.",
+      "ar": "كرة سوداء لامعة مملوءة جزئيًا بسائل أزرق داكن."
+    },
+    "row": 1,
+    "column": 1,
+    "file": "01_midnight_blue_half.png",
+    "x": 16,
+    "y": 239,
+    "width": 136,
+    "height": 152
+  },
+  {
+    "ballNumber": 2,
+    "name": "ball_silver_smoke",
+    "displayName": {
+      "en": "Silver Smoke",
+      "ar": "دخان فضي"
+    },
+    "shapeDescription": {
+      "en": "A glossy dark sphere containing swirling white smoke.",
+      "ar": "كرة داكنة لامعة تحتوي على دخان أبيض ملتف."
+    },
+    "row": 1,
+    "column": 2,
+    "file": "02_silver_smoke.png",
+    "x": 149,
+    "y": 239,
+    "width": 139,
+    "height": 152
+  },
+  {
+    "ballNumber": 3,
+    "name": "ball_violet_smoke",
+    "displayName": {
+      "en": "Violet Smoke",
+      "ar": "دخان بنفسجي"
+    },
+    "shapeDescription": {
+      "en": "A transparent violet sphere filled with bright purple smoke plumes.",
+      "ar": "كرة بنفسجية شفافة مليئة بأعمدة دخان أرجوانية زاهية."
+    },
+    "row": 1,
+    "column": 3,
+    "file": "03_violet_smoke.png",
+    "x": 284,
+    "y": 239,
+    "width": 140,
+    "height": 152
+  },
+  {
+    "ballNumber": 4,
+    "name": "ball_crimson_smoke",
+    "displayName": {
+      "en": "Crimson Smoke",
+      "ar": "دخان قرمزي"
+    },
+    "shapeDescription": {
+      "en": "A transparent red sphere filled with vivid crimson smoke.",
+      "ar": "كرة حمراء شفافة مليئة بدخان قرمزي قوي."
+    },
+    "row": 1,
+    "column": 4,
+    "file": "04_crimson_smoke.png",
+    "x": 420,
+    "y": 239,
+    "width": 140,
+    "height": 152
+  },
+  {
+    "ballNumber": 5,
+    "name": "ball_cyan_smoke",
+    "displayName": {
+      "en": "Cyan Smoke",
+      "ar": "دخان سماوي"
+    },
+    "shapeDescription": {
+      "en": "A glossy teal sphere with luminous cyan smoke inside.",
+      "ar": "كرة تركوازية لامعة بداخلها دخان سماوي مضيء."
+    },
+    "row": 1,
+    "column": 5,
+    "file": "05_cyan_smoke.png",
+    "x": 556,
+    "y": 239,
+    "width": 140,
+    "height": 152
+  },
+  {
+    "ballNumber": 6,
+    "name": "ball_forest_camo",
+    "displayName": {
+      "en": "Forest Camo",
+      "ar": "تمويه غابي"
+    },
+    "shapeDescription": {
+      "en": "A matte sphere painted in a green-brown forest camouflage pattern.",
+      "ar": "كرة مطفية بنمط تمويه غابي أخضر وبني."
+    },
+    "row": 1,
+    "column": 6,
+    "file": "06_forest_camo.png",
+    "x": 692,
+    "y": 239,
+    "width": 140,
+    "height": 152
+  },
+  {
+    "ballNumber": 7,
+    "name": "ball_obsidian_spike",
+    "displayName": {
+      "en": "Obsidian Spike",
+      "ar": "أوبسيديان شائك"
+    },
+    "shapeDescription": {
+      "en": "A black rocky sphere covered with sharp faceted protrusions.",
+      "ar": "كرة صخرية سوداء مغطاة بنتوءات حادة متعددة الأوجه."
+    },
+    "row": 1,
+    "column": 7,
+    "file": "07_obsidian_spike.png",
+    "x": 828,
+    "y": 239,
+    "width": 140,
+    "height": 152
+  },
+  {
+    "ballNumber": 8,
+    "name": "ball_desert_camo",
+    "displayName": {
+      "en": "Desert Camo",
+      "ar": "تمويه صحراوي"
+    },
+    "shapeDescription": {
+      "en": "A matte sphere painted in a beige desert camouflage pattern.",
+      "ar": "كرة مطفية بنمط تمويه صحراوي بيج."
+    },
+    "row": 1,
+    "column": 8,
+    "file": "08_desert_camo.png",
+    "x": 964,
+    "y": 239,
+    "width": 140,
+    "height": 152
+  },
+  {
+    "ballNumber": 9,
+    "name": "ball_urban_camo",
+    "displayName": {
+      "en": "Urban Camo",
+      "ar": "تمويه حضري"
+    },
+    "shapeDescription": {
+      "en": "A matte sphere painted in a black, white, and gray urban camouflage pattern.",
+      "ar": "كرة مطفية بنمط تمويه حضري بالأسود والأبيض والرمادي."
+    },
+    "row": 1,
+    "column": 9,
+    "file": "09_urban_camo.png",
+    "x": 1100,
+    "y": 239,
+    "width": 138,
+    "height": 152
+  },
+  {
+    "ballNumber": 10,
+    "name": "ball_lava_crack",
+    "displayName": {
+      "en": "Lava Crack",
+      "ar": "شقوق الحمم"
+    },
+    "shapeDescription": {
+      "en": "A volcanic sphere with glowing molten cracks across a dark crust.",
+      "ar": "كرة بركانية ذات شقوق حمم متوهجة عبر قشرة داكنة."
+    },
+    "row": 2,
+    "column": 1,
+    "file": "10_lava_crack.png",
+    "x": 12,
+    "y": 393,
+    "width": 140,
+    "height": 157
+  },
+  {
+    "ballNumber": 11,
+    "name": "ball_blue_stone_crack",
+    "displayName": {
+      "en": "Blue Stone Crack",
+      "ar": "شقوق حجرية زرقاء"
+    },
+    "shapeDescription": {
+      "en": "A cracked stone sphere with large glowing blue plates.",
+      "ar": "كرة حجرية متشققة بألواح زرقاء متوهجة."
+    },
+    "row": 2,
+    "column": 2,
+    "file": "11_blue_stone_crack.png",
+    "x": 148,
+    "y": 393,
+    "width": 140,
+    "height": 157
+  },
+  {
+    "ballNumber": 12,
+    "name": "ball_cyan_stone_crack",
+    "displayName": {
+      "en": "Cyan Stone Crack",
+      "ar": "شقوق حجرية سماوية"
+    },
+    "shapeDescription": {
+      "en": "A cracked stone sphere with bright cyan fragments.",
+      "ar": "كرة حجرية متشققة بقطع سماوية ساطعة."
+    },
+    "row": 2,
+    "column": 3,
+    "file": "12_cyan_stone_crack.png",
+    "x": 284,
+    "y": 393,
+    "width": 140,
+    "height": 157
+  },
+  {
+    "ballNumber": 13,
+    "name": "ball_ice_crystal",
+    "displayName": {
+      "en": "Ice Crystal",
+      "ar": "بلور جليدي"
+    },
+    "shapeDescription": {
+      "en": "A faceted icy sphere made of layered crystalline shards.",
+      "ar": "كرة جليدية متعددة الأوجه مكوّنة من شظايا بلورية متراكبة."
+    },
+    "row": 2,
+    "column": 4,
+    "file": "13_ice_crystal.png",
+    "x": 420,
+    "y": 393,
+    "width": 140,
+    "height": 157
+  },
+  {
+    "ballNumber": 14,
+    "name": "ball_frost_fang",
+    "displayName": {
+      "en": "Frost Fang",
+      "ar": "أنياب الصقيع"
+    },
+    "shapeDescription": {
+      "en": "A blue sphere split by a jagged icy mouth with sharp frost teeth.",
+      "ar": "كرة زرقاء منقسمة بفم جليدي مسنن مع أنياب صقيعية حادة."
+    },
+    "row": 2,
+    "column": 5,
+    "file": "14_frost_fang.png",
+    "x": 556,
+    "y": 393,
+    "width": 140,
+    "height": 157
+  },
+  {
+    "ballNumber": 15,
+    "name": "ball_smooth_blue_panel",
+    "displayName": {
+      "en": "Smooth Blue Panel",
+      "ar": "لوح أزرق أملس"
+    },
+    "shapeDescription": {
+      "en": "A sleek light-blue sphere with curved panel-like grooves.",
+      "ar": "كرة زرقاء فاتحة أنيقة ذات أخاديد منحنية تشبه الألواح."
+    },
+    "row": 2,
+    "column": 6,
+    "file": "15_smooth_blue_panel.png",
+    "x": 692,
+    "y": 393,
+    "width": 140,
+    "height": 157
+  },
+  {
+    "ballNumber": 16,
+    "name": "ball_aqua_bubble",
+    "displayName": {
+      "en": "Aqua Bubble",
+      "ar": "فقاعة مائية"
+    },
+    "shapeDescription": {
+      "en": "A clear glossy aqua sphere with a clean watery look.",
+      "ar": "كرة مائية سماوية شفافة ولامعة بمظهر نقي."
+    },
+    "row": 2,
+    "column": 7,
+    "file": "16_aqua_bubble.png",
+    "x": 828,
+    "y": 393,
+    "width": 140,
+    "height": 157
+  },
+  {
+    "ballNumber": 17,
+    "name": "ball_storm_lightning",
+    "displayName": {
+      "en": "Storm Lightning",
+      "ar": "برق العاصفة"
+    },
+    "shapeDescription": {
+      "en": "A dark sphere charged with vivid electric lightning inside.",
+      "ar": "كرة داكنة مشحونة ببرق كهربائي ساطع بداخلها."
+    },
+    "row": 2,
+    "column": 8,
+    "file": "17_storm_lightning.png",
+    "x": 964,
+    "y": 393,
+    "width": 140,
+    "height": 157
+  },
+  {
+    "ballNumber": 18,
+    "name": "ball_plasma_burst",
+    "displayName": {
+      "en": "Plasma Burst",
+      "ar": "انفجار بلازما"
+    },
+    "shapeDescription": {
+      "en": "A purple energy sphere with a bright plasma burst at its core.",
+      "ar": "كرة طاقة بنفسجية بها انفجار بلازمي ساطع في المركز."
+    },
+    "row": 2,
+    "column": 9,
+    "file": "18_plasma_burst.png",
+    "x": 1100,
+    "y": 393,
+    "width": 139,
+    "height": 157
+  },
+  {
+    "ballNumber": 19,
+    "name": "ball_molten_core",
+    "displayName": {
+      "en": "Molten Core",
+      "ar": "نواة منصهرة"
+    },
+    "shapeDescription": {
+      "en": "A lava sphere with a bright molten core visible through a cracked shell.",
+      "ar": "كرة حممية تظهر نواتها المنصهرة المضيئة من خلال قشرة متشققة."
+    },
+    "row": 3,
+    "column": 1,
+    "file": "19_molten_core.png",
+    "x": 12,
+    "y": 554,
+    "width": 140,
+    "height": 153
+  },
+  {
+    "ballNumber": 20,
+    "name": "ball_tech_core",
+    "displayName": {
+      "en": "Tech Core",
+      "ar": "نواة تقنية"
+    },
+    "shapeDescription": {
+      "en": "A mechanical orb with a glowing blue technological core.",
+      "ar": "كرة ميكانيكية بنواة تقنية زرقاء متوهجة."
+    },
+    "row": 3,
+    "column": 2,
+    "file": "20_tech_core.png",
+    "x": 148,
+    "y": 554,
+    "width": 140,
+    "height": 153
+  },
+  {
+    "ballNumber": 21,
+    "name": "ball_blue_gem",
+    "displayName": {
+      "en": "Blue Gem",
+      "ar": "جوهرة زرقاء"
+    },
+    "shapeDescription": {
+      "en": "A faceted gemstone sphere in rich sapphire-blue tones.",
+      "ar": "كرة جوهرية متعددة الأوجه بدرجات ياقوتية زرقاء."
+    },
+    "row": 3,
+    "column": 3,
+    "file": "21_blue_gem.png",
+    "x": 284,
+    "y": 554,
+    "width": 140,
+    "height": 153
+  },
+  {
+    "ballNumber": 22,
+    "name": "ball_red_gem",
+    "displayName": {
+      "en": "Red Gem",
+      "ar": "جوهرة حمراء"
+    },
+    "shapeDescription": {
+      "en": "A faceted gemstone sphere in bright ruby-red tones.",
+      "ar": "كرة جوهرية متعددة الأوجه بدرجات روبي حمراء."
+    },
+    "row": 3,
+    "column": 4,
+    "file": "22_red_gem.png",
+    "x": 420,
+    "y": 554,
+    "width": 140,
+    "height": 153
+  },
+  {
+    "ballNumber": 23,
+    "name": "ball_violet_gem",
+    "displayName": {
+      "en": "Violet Gem",
+      "ar": "جوهرة بنفسجية"
+    },
+    "shapeDescription": {
+      "en": "A faceted gemstone sphere in vibrant violet tones.",
+      "ar": "كرة جوهرية متعددة الأوجه بدرجات بنفسجية زاهية."
+    },
+    "row": 3,
+    "column": 5,
+    "file": "23_violet_gem.png",
+    "x": 556,
+    "y": 554,
+    "width": 140,
+    "height": 153
+  },
+  {
+    "ballNumber": 24,
+    "name": "ball_smoke_marble",
+    "displayName": {
+      "en": "Smoke Marble",
+      "ar": "رخام دخاني"
+    },
+    "shapeDescription": {
+      "en": "A glossy black marble sphere with swirling smoky gray patterns.",
+      "ar": "كرة رخامية سوداء لامعة بنقوش دخانية رمادية ملتفة."
+    },
+    "row": 3,
+    "column": 6,
+    "file": "24_smoke_marble.png",
+    "x": 692,
+    "y": 554,
+    "width": 140,
+    "height": 153
+  },
+  {
+    "ballNumber": 25,
+    "name": "ball_hydro_mech",
+    "displayName": {
+      "en": "Hydro Mech",
+      "ar": "مائي ميكانيكي"
+    },
+    "shapeDescription": {
+      "en": "A transparent blue sphere with a mechanical liquid-core design.",
+      "ar": "كرة زرقاء شفافة بتصميم مائي ميكانيكي في النواة."
+    },
+    "row": 3,
+    "column": 7,
+    "file": "25_hydro_mech.png",
+    "x": 828,
+    "y": 554,
+    "width": 140,
+    "height": 153
+  },
+  {
+    "ballNumber": 26,
+    "name": "ball_shadow_gloss",
+    "displayName": {
+      "en": "Shadow Gloss",
+      "ar": "لمعان الظل"
+    },
+    "shapeDescription": {
+      "en": "A near-black glossy sphere with strong dark reflections.",
+      "ar": "كرة شديدة السواد ولامعة بانعكاسات داكنة واضحة."
+    },
+    "row": 3,
+    "column": 8,
+    "file": "26_shadow_gloss.png",
+    "x": 964,
+    "y": 554,
+    "width": 140,
+    "height": 153
+  },
+  {
+    "ballNumber": 27,
+    "name": "ball_midnight_gloss",
+    "displayName": {
+      "en": "Midnight Gloss",
+      "ar": "لمعان منتصف الليل"
+    },
+    "shapeDescription": {
+      "en": "A deep midnight-blue glossy sphere with soft reflections.",
+      "ar": "كرة لامعة بلون أزرق ليلي عميق مع انعكاسات ناعمة."
+    },
+    "row": 3,
+    "column": 9,
+    "file": "27_midnight_gloss.png",
+    "x": 1100,
+    "y": 554,
+    "width": 139,
+    "height": 153
+  },
+  {
+    "ballNumber": 28,
+    "name": "ball_sun_vortex",
+    "displayName": {
+      "en": "Sun Vortex",
+      "ar": "دوامة شمسية"
+    },
+    "shapeDescription": {
+      "en": "A fiery orange sphere with a swirling solar vortex pattern.",
+      "ar": "كرة برتقالية نارية بنمط دوامة شمسية ملتفة."
+    },
+    "row": 4,
+    "column": 1,
+    "file": "28_sun_vortex.png",
+    "x": 12,
+    "y": 708,
+    "width": 140,
+    "height": 155
+  },
+  {
+    "ballNumber": 29,
+    "name": "ball_violet_vortex",
+    "displayName": {
+      "en": "Violet Vortex",
+      "ar": "دوامة بنفسجية"
+    },
+    "shapeDescription": {
+      "en": "A purple sphere with a bright spiral vortex at the center.",
+      "ar": "كرة بنفسجية بدوامة لولبية ساطعة في المركز."
+    },
+    "row": 4,
+    "column": 2,
+    "file": "29_violet_vortex.png",
+    "x": 148,
+    "y": 708,
+    "width": 140,
+    "height": 155
+  },
+  {
+    "ballNumber": 30,
+    "name": "ball_blue_energy_vortex",
+    "displayName": {
+      "en": "Blue Energy Vortex",
+      "ar": "دوامة طاقة زرقاء"
+    },
+    "shapeDescription": {
+      "en": "A pale-blue sphere filled with a luminous energy vortex.",
+      "ar": "كرة زرقاء فاتحة مليئة بدوامة طاقة مضيئة."
+    },
+    "row": 4,
+    "column": 3,
+    "file": "30_blue_energy_vortex.png",
+    "x": 284,
+    "y": 708,
+    "width": 140,
+    "height": 155
+  },
+  {
+    "ballNumber": 31,
+    "name": "ball_cosmic_field",
+    "displayName": {
+      "en": "Cosmic Field",
+      "ar": "حقل كوني"
+    },
+    "shapeDescription": {
+      "en": "A starry blue sphere dotted with tiny cosmic lights and nebula-like glow.",
+      "ar": "كرة زرقاء مرصعة بنجوم صغيرة وتوهج كوني شبيه بالسديم."
+    },
+    "row": 4,
+    "column": 4,
+    "file": "31_cosmic_field.png",
+    "x": 420,
+    "y": 708,
+    "width": 140,
+    "height": 155
+  },
+  {
+    "ballNumber": 32,
+    "name": "ball_ice_spiral",
+    "displayName": {
+      "en": "Ice Spiral",
+      "ar": "حلزون جليدي"
+    },
+    "shapeDescription": {
+      "en": "A cool blue sphere with layered icy spiral bands.",
+      "ar": "كرة زرقاء باردة ذات طبقات حلزونية جليدية."
+    },
+    "row": 4,
+    "column": 5,
+    "file": "32_ice_spiral.png",
+    "x": 556,
+    "y": 708,
+    "width": 140,
+    "height": 155
+  },
+  {
+    "ballNumber": 33,
+    "name": "ball_deep_ocean",
+    "displayName": {
+      "en": "Deep Ocean",
+      "ar": "محيط عميق"
+    },
+    "shapeDescription": {
+      "en": "A glossy deep-blue sphere with subtle water-like internal shading.",
+      "ar": "كرة زرقاء عميقة لامعة بتدرجات داخلية تشبه الماء."
+    },
+    "row": 4,
+    "column": 6,
+    "file": "33_deep_ocean.png",
+    "x": 692,
+    "y": 708,
+    "width": 140,
+    "height": 155
+  },
+  {
+    "ballNumber": 34,
+    "name": "ball_layered_planet",
+    "displayName": {
+      "en": "Layered Planet",
+      "ar": "كوكب طبقي"
+    },
+    "shapeDescription": {
+      "en": "A green-and-blue striped planet-like sphere with layered rings.",
+      "ar": "كرة شبيهة بالكواكب بخطوط خضراء وزرقاء وطبقات ملتفة."
+    },
+    "row": 4,
+    "column": 7,
+    "file": "34_layered_planet.png",
+    "x": 828,
+    "y": 708,
+    "width": 140,
+    "height": 155
+  },
+  {
+    "ballNumber": 35,
+    "name": "ball_teal_spiral",
+    "displayName": {
+      "en": "Teal Spiral",
+      "ar": "حلزون تركوازي"
+    },
+    "shapeDescription": {
+      "en": "A turquoise sphere with a carved spiral motif.",
+      "ar": "كرة تركوازية بنقش حلزوني محفور."
+    },
+    "row": 4,
+    "column": 8,
+    "file": "35_teal_spiral.png",
+    "x": 964,
+    "y": 708,
+    "width": 140,
+    "height": 155
+  },
+  {
+    "ballNumber": 36,
+    "name": "ball_teal_tunnel",
+    "displayName": {
+      "en": "Teal Tunnel",
+      "ar": "نفق تركوازي"
+    },
+    "shapeDescription": {
+      "en": "A turquoise sphere with a deep concentric tunnel-like spiral.",
+      "ar": "كرة تركوازية بدوامة عميقة تشبه النفق."
+    },
+    "row": 4,
+    "column": 9,
+    "file": "36_teal_tunnel.png",
+    "x": 1100,
+    "y": 708,
+    "width": 140,
+    "height": 155
+  },
+  {
+    "ballNumber": 37,
+    "name": "ball_neon_purple",
+    "displayName": {
+      "en": "Neon Purple",
+      "ar": "بنفسجي نيون"
+    },
+    "shapeDescription": {
+      "en": "A smooth glossy sphere with a dark center and vibrant purple rim glow.",
+      "ar": "كرة ناعمة لامعة ذات مركز داكن وتوهج محيطي بنفسجي ساطع."
+    },
+    "row": 5,
+    "column": 1,
+    "file": "37_neon_purple.png",
+    "x": 15,
+    "y": 863,
+    "width": 137,
+    "height": 154
+  },
+  {
+    "ballNumber": 38,
+    "name": "ball_chrome_mirror",
+    "displayName": {
+      "en": "Chrome Mirror",
+      "ar": "مرآة كرومية"
+    },
+    "shapeDescription": {
+      "en": "A highly reflective silver chrome sphere.",
+      "ar": "كرة فضية كرومية شديدة الانعكاس."
+    },
+    "row": 5,
+    "column": 2,
+    "file": "38_chrome_mirror.png",
+    "x": 148,
+    "y": 863,
+    "width": 140,
+    "height": 154
+  },
+  {
+    "ballNumber": 39,
+    "name": "ball_black_gloss",
+    "displayName": {
+      "en": "Black Gloss",
+      "ar": "أسود لامع"
+    },
+    "shapeDescription": {
+      "en": "A pure glossy black sphere with clean reflective highlights.",
+      "ar": "كرة سوداء لامعة خالصة بانعكاسات نظيفة."
+    },
+    "row": 5,
+    "column": 3,
+    "file": "39_black_gloss.png",
+    "x": 284,
+    "y": 863,
+    "width": 140,
+    "height": 154
+  },
+  {
+    "ballNumber": 40,
+    "name": "ball_gold_segment",
+    "displayName": {
+      "en": "Gold Segment",
+      "ar": "ذهبي مقسّم"
+    },
+    "shapeDescription": {
+      "en": "A metallic gold sphere divided by fine curved seams.",
+      "ar": "كرة ذهبية معدنية مقسمة بخطوط منحنية دقيقة."
+    },
+    "row": 5,
+    "column": 4,
+    "file": "40_gold_segment.png",
+    "x": 420,
+    "y": 863,
+    "width": 140,
+    "height": 154
+  },
+  {
+    "ballNumber": 41,
+    "name": "ball_pearl_white",
+    "displayName": {
+      "en": "Pearl White",
+      "ar": "أبيض لؤلؤي"
+    },
+    "shapeDescription": {
+      "en": "A clean glossy white pearl-like sphere.",
+      "ar": "كرة بيضاء لؤلؤية لامعة ونظيفة."
+    },
+    "row": 5,
+    "column": 5,
+    "file": "41_pearl_white.png",
+    "x": 556,
+    "y": 863,
+    "width": 140,
+    "height": 154
+  },
+  {
+    "ballNumber": 42,
+    "name": "ball_smoky_stone",
+    "displayName": {
+      "en": "Smoky Stone",
+      "ar": "حجر دخاني"
+    },
+    "shapeDescription": {
+      "en": "A gray smoky marble sphere with cloudy stone patterns.",
+      "ar": "كرة رخامية رمادية دخانية بنقوش حجرية غائمة."
+    },
+    "row": 5,
+    "column": 6,
+    "file": "42_smoky_stone.png",
+    "x": 692,
+    "y": 863,
+    "width": 140,
+    "height": 154
+  },
+  {
+    "ballNumber": 43,
+    "name": "ball_amber_glass",
+    "displayName": {
+      "en": "Amber Glass",
+      "ar": "زجاج كهرماني"
+    },
+    "shapeDescription": {
+      "en": "A translucent amber sphere with warm golden-brown tint.",
+      "ar": "كرة زجاجية شفافة بلون كهرماني دافئ."
+    },
+    "row": 5,
+    "column": 7,
+    "file": "43_amber_glass.png",
+    "x": 828,
+    "y": 863,
+    "width": 140,
+    "height": 154
+  },
+  {
+    "ballNumber": 44,
+    "name": "ball_orange_glass",
+    "displayName": {
+      "en": "Orange Glass",
+      "ar": "زجاج برتقالي"
+    },
+    "shapeDescription": {
+      "en": "A translucent orange sphere with a rich warm glow.",
+      "ar": "كرة زجاجية شفافة برتقالية بتوهج دافئ."
+    },
+    "row": 5,
+    "column": 8,
+    "file": "44_orange_glass.png",
+    "x": 964,
+    "y": 863,
+    "width": 140,
+    "height": 154
+  },
+  {
+    "ballNumber": 45,
+    "name": "ball_mist_white",
+    "displayName": {
+      "en": "Mist White",
+      "ar": "أبيض ضبابي"
+    },
+    "shapeDescription": {
+      "en": "A milky translucent white sphere with soft cloudy opacity.",
+      "ar": "كرة بيضاء شفافة ضبابية بعتمة ناعمة وغيمية."
+    },
+    "row": 5,
+    "column": 9,
+    "file": "45_mist_white.png",
+    "x": 1100,
+    "y": 863,
+    "width": 140,
+    "height": 154
+  }
+]

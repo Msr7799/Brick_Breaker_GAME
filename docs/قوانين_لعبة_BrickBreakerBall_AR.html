@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>قوانين لعبة BrickBreakerBall</title>
+<style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 18mm 16mm;
+  @bottom-left {
+    content: "BrickBreakerBall";
+    font-family: "DejaVu Sans";
+    font-size: 8pt;
+    color: #66727c;
+    direction: ltr;
+  }
+  @bottom-right {
+    content: "الصفحة " counter(page);
+    font-family: "DejaVu Sans";
+    font-size: 8pt;
+    color: #66727c;
+    direction: rtl;
+  }
+}
+
+html, body {
+  font-family: "DejaVu Sans", sans-serif;
+  color: #1f2a33;
+  background: #ffffff;
+}
+
+body {
+  direction: rtl;
+  text-align: right;
+  font-size: 10.5pt;
+  line-height: 1.75;
+}
+
+h1 {
+  color: #0d5c8f;
+  font-size: 24pt;
+  line-height: 1.35;
+  text-align: center;
+  margin: 0 0 14mm 0;
+  page-break-after: avoid;
+}
+
+h2 {
+  color: #0d5c8f;
+  font-size: 18pt;
+  line-height: 1.4;
+  margin-top: 11mm;
+  margin-bottom: 5mm;
+  padding-bottom: 2mm;
+  border-bottom: 1px solid #c8d7e2;
+  page-break-after: avoid;
+}
+
+h3 {
+  color: #18242d;
+  font-size: 14pt;
+  margin-top: 7mm;
+  margin-bottom: 3mm;
+  page-break-after: avoid;
+}
+
+h4 {
+  color: #18242d;
+  font-size: 12pt;
+  margin-top: 6mm;
+  margin-bottom: 2mm;
+  page-break-after: avoid;
+}
+
+p {
+  margin: 0 0 3.5mm 0;
+}
+
+ul, ol {
+  padding-right: 7mm;
+  padding-left: 0;
+  margin-top: 2mm;
+  margin-bottom: 4mm;
+}
+
+li {
+  margin-bottom: 1.5mm;
+}
+
+strong {
+  color: #173a52;
+}
+
+code {
+  font-family: "DejaVu Sans Mono", monospace;
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-size: 9pt;
+  background: #eef3f6;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 52mm;
+  max-height: 42mm;
+  object-fit: contain;
+  margin: 3mm auto 4mm auto;
+  padding: 4mm;
+  background: #202733;
+  border-radius: 4mm;
+  box-sizing: border-box;
+}
+
+h2 + h3,
+h3 + p,
+h4 + p {
+  page-break-before: avoid;
+}
+
+/* Keep each item together when possible */
+h3 {
+  break-after: avoid;
+}
+h3 + p,
+h3 + p + ul,
+h4 + p,
+h4 + p + ul {
+  break-inside: avoid;
+}
+
+/* Better mixed Arabic/English handling */
+[dir="ltr"] {
+  direction: ltr;
+  text-align: left;
+}
+
+a {
+  color: #0d5c8f;
+  text-decoration: none;
+}
+#img-block-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  justify-self: center;
+  gap: 4mm;
+  max-width: 40%;
+}
+</style>
+</head>
+<body>
+<h1>قوانين لعبة BrickBreakerBall - المرجع العربي</h1>
+<h2>1. القواعد الرئيسية</h2>
+<ul>
+<li>حرّك المضرب يمينًا ويسارًا أسفل ساحة اللعب.</li>
+<li>اصدّ الكرة بالمضرب حتى ترتد نحو صفوف القرميد.</li>
+<li>تنتهي المرحلة عند تدمير جميع القراميد التي تدخل ضمن هدف المرحلة.</li>
+<li>القرميد الفولاذي غير القابل للكسر لا يُحتسب عادةً ضمن شرط إنهاء المرحلة.</li>
+<li>إذا سقطت آخر كرة أسفل الشاشة تخسر حياة واحدة.</li>
+<li>عند وجود أكثر من كرة، لا تخسر حياة إلا بعد سقوط جميع الكرات.</li>
+<li>عند خسارة حياة تُزال أغلب التأثيرات النشطة، وتختفي التمائم الساقطة، وتعود الكرة والمضرب إلى وضع البداية.</li>
+<li>مكان اصطدام الكرة بالمضرب يغيّر زاوية الارتداد: المنتصف أكثر استقامة، واليسار يرسلها يسارًا، واليمين يرسلها يمينًا.</li>
+<li>تزداد سرعة الكرة تدريجيًا أثناء اللعب.</li>
+<li>بعض القراميد عند تدميرها تُسقط تمائم؛ ويمكن للاعب التقاطها أو تجنبها.</li>
+</ul>
+<h2>2. المضارب</h2>
+<h3>المضرب العادي</h3>
+<p><img src="assets/paddle/paddle_normal.png" alt="المضرب العادي" /></p>
+<p>المضرب الأساسي. يتحرك يمينًا ويسارًا، يصدّ الكرة، ولا يطلق أو يمسك الكرة، ويمكن تكبيره أو تصغيره عبر التمائم.</p>
+<h3>مضرب إطلاق الرصاص</h3>
+<p><img src="assets/paddle/paddle_laser.png" alt="مضرب إطلاق الرصاص" /></p>
+<p>مضرب مسلّح بمدفعين يطلق طلقة ليزر إلى الأعلى لكسر القرميد. ويمكن أن تتأثر الطلقات ببعض التأثيرات النشطة مثل النار أو الاختراق بحسب منطق اللعبة.</p>
+<h3>المضرب اللاصق</h3>
+<p><img src="assets/paddle/paddle_sticky.png" alt="المضرب اللاصق" /></p>
+<p>مضرب لاصق يمسك الكرة عند الاصطدام، ثم يطلقها اللاعب عند الضغط. ومفيد للتصويب الدقيق، ويمكنه الإمساك بأكثر من كرة عند تفعيل تعدد الكرات.</p>
+<h2>3. نظام الكور</h2>
+<h3>الأحجام</h3>
+<ul>
+<li><strong>صغير</strong> - حجم صغير: أصعب في الصد لكنه أفضل للفتحات الضيقة.</li>
+<li><strong>متوسط</strong> - الحجم الطبيعي القياسي.</li>
+<li><strong>كبير</strong> - حجم كبير: أسهل في الصد لكنه أقل مناسبة للفتحات الصغيرة.</li>
+</ul>
+<h3>الأنواع</h3>
+<ul>
+<li><strong>عادي</strong> - السلوك الأساسي: ترتد الكرة عن المضرب والجدران والقراميد العادية.</li>
+<li><strong>ناري</strong> - تأثير النار: القرميدة المصابة تنفجر وقد تتأثر القراميد القريبة، ويمكن دمجه مع الاختراق.</li>
+<li><strong>اختراق</strong> - تأثير الاختراق: تمر الكرة عبر القراميد وتواصل سيرها بدل أن ترتد عن كل قرميدة.</li>
+</ul>
+<h3>جميع Sprites الكور</h3>
+<h4>كرة نار صغيرة</h4>
+<p><img src="assets/ball/ball_fire_small.png" alt="كرة نار صغيرة" /></p>
+<ul>
+<li>الحجم: <strong>صغير</strong></li>
+<li>النوع: <strong>ناري</strong></li>
+<li>الوصف: حجم صغير: أصعب في الصد لكنه أفضل للفتحات الضيقة. تأثير النار: القرميدة المصابة تنفجر وقد تتأثر القراميد القريبة، ويمكن دمجه مع الاختراق.</li>
+</ul>
+<h4>الكرة الأساسية الصغيرة</h4>
+<p><img src="assets/ball/ball_normal_small.png" alt="الكرة الأساسية الصغيرة" /></p>
+<ul>
+<li>الحجم: <strong>صغير</strong></li>
+<li>النوع: <strong>عادي</strong></li>
+<li>الوصف: حجم صغير: أصعب في الصد لكنه أفضل للفتحات الضيقة. السلوك الأساسي: ترتد الكرة عن المضرب والجدران والقراميد العادية.</li>
+</ul>
+<h4>كرة اختراق صغيرة</h4>
+<p><img src="assets/ball/ball_piercing_small.png" alt="كرة اختراق صغيرة" /></p>
+<ul>
+<li>الحجم: <strong>صغير</strong></li>
+<li>النوع: <strong>اختراق</strong></li>
+<li>الوصف: حجم صغير: أصعب في الصد لكنه أفضل للفتحات الضيقة. تأثير الاختراق: تمر الكرة عبر القراميد وتواصل سيرها بدل أن ترتد عن كل قرميدة.</li>
+</ul>
+<h4>كرة نار متوسطة</h4>
+<p><img src="assets/ball/ball_fire_medium.png" alt="كرة نار متوسطة" /></p>
+<ul>
+<li>الحجم: <strong>متوسط</strong></li>
+<li>النوع: <strong>ناري</strong></li>
+<li>الوصف: الحجم الطبيعي القياسي. تأثير النار: القرميدة المصابة تنفجر وقد تتأثر القراميد القريبة، ويمكن دمجه مع الاختراق.</li>
+</ul>
+<h4>الكرة الأساسية المتوسطة</h4>
+<p><img src="assets/ball/ball_normal_medium.png" alt="الكرة الأساسية المتوسطة" /></p>
+<ul>
+<li>الحجم: <strong>متوسط</strong></li>
+<li>النوع: <strong>عادي</strong></li>
+<li>الوصف: الحجم الطبيعي القياسي. السلوك الأساسي: ترتد الكرة عن المضرب والجدران والقراميد العادية.</li>
+</ul>
+<h4>كرة اختراق متوسطة</h4>
+<p><img src="assets/ball/ball_piercing_medium.png" alt="كرة اختراق متوسطة" /></p>
+<ul>
+<li>الحجم: <strong>متوسط</strong></li>
+<li>النوع: <strong>اختراق</strong></li>
+<li>الوصف: الحجم الطبيعي القياسي. تأثير الاختراق: تمر الكرة عبر القراميد وتواصل سيرها بدل أن ترتد عن كل قرميدة.</li>
+</ul>
+<h4>كرة نار كبيرة</h4>
+<p><img src="assets/ball/ball_fire_large.png" alt="كرة نار كبيرة" /></p>
+<ul>
+<li>الحجم: <strong>كبير</strong></li>
+<li>النوع: <strong>ناري</strong></li>
+<li>الوصف: حجم كبير: أسهل في الصد لكنه أقل مناسبة للفتحات الصغيرة. تأثير النار: القرميدة المصابة تنفجر وقد تتأثر القراميد القريبة، ويمكن دمجه مع الاختراق.</li>
+</ul>
+<h4>الكرة الأساسية الكبيرة</h4>
+<p><img src="assets/ball/ball_normal_large.png" alt="الكرة الأساسية الكبيرة" /></p>
+<ul>
+<li>الحجم: <strong>كبير</strong></li>
+<li>النوع: <strong>عادي</strong></li>
+<li>الوصف: حجم كبير: أسهل في الصد لكنه أقل مناسبة للفتحات الصغيرة. السلوك الأساسي: ترتد الكرة عن المضرب والجدران والقراميد العادية.</li>
+</ul>
+<h4>كرة اختراق كبيرة</h4>
+<p><img src="assets/ball/ball_piercing_large.png" alt="كرة اختراق كبيرة" /></p>
+<ul>
+<li>الحجم: <strong>كبير</strong></li>
+<li>النوع: <strong>اختراق</strong></li>
+<li>الوصف: حجم كبير: أسهل في الصد لكنه أقل مناسبة للفتحات الصغيرة. تأثير الاختراق: تمر الكرة عبر القراميد وتواصل سيرها بدل أن ترتد عن كل قرميدة.</li>
+</ul>
+<h2>4. التمائم / الـ Power-Ups</h2>
+<h3>تعبئة الليزر السريعة</h3>
+<p><img src="assets/powerup/powerup_laser_auto_charge.png" alt="تعبئة الليزر السريعة" /></p>
+<ul>
+<li>التصنيف: <strong>إيجابية</strong></li>
+<li>التأثير: يعبّئ ماكينة/مؤشر الليزر تلقائيًا، ويتحرك المؤشر صعودًا ونزولًا بسرعة حسب ملاحظة الخريطة.</li>
+</ul>
+<h3>حياة إضافية</h3>
+<p><img src="assets/powerup/powerup_extra_life.png" alt="حياة إضافية" /></p>
+<ul>
+<li>التصنيف: <strong>إيجابية</strong></li>
+<li>التأثير: يزيد عدد حيوات اللاعب بمقدار حياة واحدة (+1).</li>
+</ul>
+<h3>قتل اللاعب</h3>
+<p><img src="assets/powerup/powerup_kill_player.png" alt="قتل اللاعب" /></p>
+<ul>
+<li>التصنيف: <strong>سلبية</strong></li>
+<li>التأثير: يقتل اللاعب/المضرب فور التقاطه ويخصم حياة وفق نظام اللعبة.</li>
+</ul>
+<h3>تكبير المضرب</h3>
+<p><img src="assets/powerup/powerup_expand_paddle.png" alt="تكبير المضرب" /></p>
+<ul>
+<li>التصنيف: <strong>إيجابية</strong></li>
+<li>التأثير: يزيد عرض المضرب لتسهيل صدّ الكرة.</li>
+</ul>
+<h3>نظام القنابل الموقوتة</h3>
+<p><img src="assets/powerup/powerup_timed_bomb_bricks.png" alt="نظام القنابل الموقوتة" /></p>
+<ul>
+<li>التصنيف: <strong>إيجابية</strong></li>
+<li>التأثير: يفعّل نظامًا يحوّل كل قرميدة تضربها الكرة إلى قنبلة موقوتة؛ عند انفجارها تدمّر القراميد القريبة منها.</li>
+</ul>
+<h3>تعزيزة إيجابية عشوائية</h3>
+<p><img src="assets/powerup/powerup_random_positive.png" alt="تعزيزة إيجابية عشوائية" /></p>
+<ul>
+<li>التصنيف: <strong>إيجابية</strong></li>
+<li>التأثير: يمنح اللاعب تعزيزة إيجابية واحدة يتم اختيارها عشوائيًا.</li>
+</ul>
+<h3>تصغير الكرة</h3>
+<p><img src="assets/powerup/powerup_shrink_ball.png" alt="تصغير الكرة" /></p>
+<ul>
+<li>التصنيف: <strong>سلبية</strong></li>
+<li>التأثير: يحوّل الكرة إلى حالة الحجم الصغير.</li>
+</ul>
+<h3>تصغير المضرب</h3>
+<p><img src="assets/powerup/powerup_shrink_paddle.png" alt="تصغير المضرب" /></p>
+<ul>
+<li>التصنيف: <strong>سلبية</strong></li>
+<li>التأثير: يقلل عرض المضرب ويجعل صدّ الكرة أصعب.</li>
+</ul>
+<h3>تفعيل كرة النار</h3>
+<p><img src="assets/powerup/powerup_fireball.png" alt="تفعيل كرة النار" /></p>
+<ul>
+<li>التصنيف: <strong>إيجابية</strong></li>
+<li>التأثير: يحوّل الكرة إلى كرة نارية؛ تستخدم Sprites كرة النار المناسبة لحجم الكرة.</li>
+</ul>
+<h3>المضرب المغناطيسي</h3>
+<p><img src="assets/powerup/powerup_magnet_paddle.png" alt="المضرب المغناطيسي" /></p>
+<ul>
+<li>التصنيف: <strong>إيجابية</strong></li>
+<li>التأثير: يجذب المضرب الكرة عندما تدخل نطاقه المغناطيسي القريب.</li>
+</ul>
+<h3>تبطيء الكرة</h3>
+<p><img src="assets/powerup/powerup_slow_ball.png" alt="تبطيء الكرة" /></p>
+<ul>
+<li>التصنيف: <strong>إيجابية</strong></li>
+<li>التأثير: يخفض سرعة حركة الكرة.</li>
+</ul>
+<h3>أربع كرات إضافية</h3>
+<p><img src="assets/powerup/powerup_multiball_plus_4.png" alt="أربع كرات إضافية" /></p>
+<ul>
+<li>التصنيف: <strong>إيجابية</strong></li>
+<li>التأثير: يضيف أربع كرات لعب إضافية إلى الكرات الموجودة.</li>
+</ul>
+<h3>المضرب الإضافي</h3>
+<p><img src="assets/powerup/powerup_dual_paddle.png" alt="المضرب الإضافي" /></p>
+<ul>
+<li>التصنيف: <strong>إيجابية</strong></li>
+<li>التأثير: يفعّل مضربًا إضافيًا بحيث يصبح لدى اللاعب مضربان.</li>
+</ul>
+<h3>تسريع الكرة</h3>
+<p><img src="assets/powerup/powerup_speed_ball.png" alt="تسريع الكرة" /></p>
+<ul>
+<li>التصنيف: <strong>سلبية</strong></li>
+<li>التأثير: يرفع سرعة حركة الكرة.</li>
+</ul>
+<h3>فخ قتل الكرة</h3>
+<p><img src="assets/powerup/powerup_instant_kill_ball.png" alt="فخ قتل الكرة" /></p>
+<ul>
+<li>التصنيف: <strong>سلبية</strong></li>
+<li>التأثير: يقتل الكرة فورًا عند تفعيله بحسب ملاحظة الخريطة.</li>
+</ul>
+<h3>الكرة الكبيرة</h3>
+<p><img src="assets/powerup/powerup_big_ball.png" alt="الكرة الكبيرة" /></p>
+<ul>
+<li>التصنيف: <strong>إيجابية</strong></li>
+<li>التأثير: يحوّل الكرة إلى حالة الحجم الكبير.</li>
+</ul>
+<h3>تفعيل المضرب اللاصق</h3>
+<p><img src="assets/powerup/powerup_sticky_paddle.png" alt="تفعيل المضرب اللاصق" /></p>
+<ul>
+<li>التصنيف: <strong>إيجابية</strong></li>
+<li>التأثير: يحوّل المضرب إلى paddle_sticky لالتقاط الكرة ثم إعادة إطلاقها.</li>
+</ul>
+<h3>كسر أي قرميدة بضربة واحدة</h3>
+<p><img src="assets/powerup/powerup_one_hit_any_brick.png" alt="كسر أي قرميدة بضربة واحدة" /></p>
+<ul>
+<li>التصنيف: <strong>إيجابية</strong></li>
+<li>التأثير: يجعل الكرة تكسر أي قرميدة قابلة للتأثر من أول ضربة، وفق استثناءات القراميد غير القابلة للكسر في كود اللعبة.</li>
+</ul>
+<h3>كرة الشبح</h3>
+<p><img src="assets/powerup/powerup_ghost_ball.png" alt="كرة الشبح" /></p>
+<ul>
+<li>التصنيف: <strong>خاصة</strong></li>
+<li>التأثير: يجعل الكرة شبحية تمر عبر القراميد دون أن تكسرها.</li>
+</ul>
+<h3>خمس عشرة كرة</h3>
+<p><img src="assets/powerup/powerup_multiball_15.png" alt="خمس عشرة كرة" /></p>
+<ul>
+<li>التصنيف: <strong>إيجابية</strong></li>
+<li>التأثير: يضبط/ينشئ مجموعة لعب مكوّنة من 15 كرة بحسب نظام تعدد الكرات.</li>
+</ul>
+<h2>5. القراميد</h2>
+<h3>قرميدة الحجر الخشن</h3>
+<p><img src="assets/brick/brick_rough_stone.png" alt="قرميدة الحجر الخشن" /></p>
+<ul>
+<li>الخامة: <strong>rough_stone</strong></li>
+<li>التأثير: تنكسر، وتعيد الكرة باتجاه عشوائي لأن سطحها غير مستوٍ حسب الملاحظة.</li>
+</ul>
+<h3>قرميدة الرعد الشفافة المسرّعة</h3>
+<p><img src="assets/brick/brick_lightning_speed_pass_through.png" alt="قرميدة الرعد الشفافة المسرّعة" /></p>
+<ul>
+<li>الخامة: <strong>transparent_lightning</strong></li>
+<li>نمط الاصطدام: <strong>pass_through</strong></li>
+<li>التأثير: تمر الكرة خلالها فتختفي القرميدة، وتصبح الكرة أخف/أسرع وفق نص الملاحظة.</li>
+</ul>
+<h3>قرميدة الكهرباء البيضاء السليمة</h3>
+<p><img src="assets/brick/brick_electric_white_intact.png" alt="قرميدة الكهرباء البيضاء السليمة" /></p>
+<ul>
+<li>الخامة: <strong>electric_crystal</strong></li>
+<li>الحالة: <strong>سليمة</strong></li>
+<li>الحالة التالية: <code>brick_electric_white_damaged</code></li>
+<li>التأثير: الحالة السليمة؛ عند الضربة الأولى تنتقل إلى الحالة المتضررة المحددة في nextState.</li>
+</ul>
+<h3>قرميدة الكريستال الزرقاء السليمة</h3>
+<p><img src="assets/brick/brick_crystal_blue_intact.png" alt="قرميدة الكريستال الزرقاء السليمة" /></p>
+<ul>
+<li>الخامة: <strong>crystal</strong></li>
+<li>الحالة: <strong>سليمة</strong></li>
+<li>الحالة التالية: <code>brick_crystal_blue_damaged</code></li>
+<li>التأثير: تتحمل ضربة أولى ثم تستخدم النسخة الزرقاء المتضررة.</li>
+</ul>
+<h3>قرميدة الكريستال الحمراء السليمة</h3>
+<p><img src="assets/brick/brick_crystal_red_intact.png" alt="قرميدة الكريستال الحمراء السليمة" /></p>
+<ul>
+<li>الخامة: <strong>crystal</strong></li>
+<li>الحالة: <strong>سليمة</strong></li>
+<li>الحالة التالية: <code>brick_crystal_red_damaged</code></li>
+<li>التأثير: تتحمل ضربة أولى ثم تستخدم النسخة الحمراء المتضررة.</li>
+</ul>
+<h3>قرميدة الكريستال البنفسجية السليمة</h3>
+<p><img src="assets/brick/brick_crystal_purple_intact.png" alt="قرميدة الكريستال البنفسجية السليمة" /></p>
+<ul>
+<li>الخامة: <strong>crystal</strong></li>
+<li>الحالة: <strong>سليمة</strong></li>
+<li>الحالة التالية: <code>brick_crystal_purple_damaged</code></li>
+<li>التأثير: تتحمل ضربة أولى ثم تستخدم النسخة البنفسجية المتضررة.</li>
+</ul>
+<h3>قرميدة الحجر الرمادية السليمة</h3>
+<p><img src="assets/brick/brick_stone_gray_intact.png" alt="قرميدة الحجر الرمادية السليمة" /></p>
+<ul>
+<li>الخامة: <strong>stone</strong></li>
+<li>الحالة: <strong>سليمة</strong></li>
+<li>الحالة التالية: <code>brick_stone_gray_damaged</code></li>
+<li>التأثير: تتحمل ضربة أولى ثم تظهر حالتها الحجرية المتشققة.</li>
+</ul>
+<h3>قرميدة الثقب الأسود</h3>
+<p><img src="assets/brick/brick_black_hole_teleporter.png" alt="قرميدة الثقب الأسود" /></p>
+<ul>
+<li>الخامة: <strong>black_hole</strong></li>
+<li>التأثير: تدخل الكرة فيها ثم تظهر من جهة عشوائية بزاوية ضمن 360 درجة.</li>
+</ul>
+<h3>قرميدة التعزيزة العشوائية</h3>
+<p><img src="assets/brick/brick_random_inventory_powerup.png" alt="قرميدة التعزيزة العشوائية" /></p>
+<ul>
+<li>الخامة: <strong>mystery</strong></li>
+<li>التأثير: تمنح تعزيزة عشوائية وتُحفظ التعزيزة في مخزون Items/Inventory.</li>
+</ul>
+<h3>قرميدة الكهرباء البيضاء المتضررة</h3>
+<p><img src="assets/brick/brick_electric_white_damaged.png" alt="قرميدة الكهرباء البيضاء المتضررة" /></p>
+<ul>
+<li>الخامة: <strong>electric_crystal</strong></li>
+<li>الحالة: <strong>متضررة</strong></li>
+<li>الحالة السابقة: <code>brick_electric_white_intact</code></li>
+<li>التأثير: الحالة المتضررة بعد الضربة الأولى؛ الضربة التالية تكسر القرميدة وفق توازن اللعبة.</li>
+</ul>
+<h3>قرميدة الكريستال الزرقاء المتضررة</h3>
+<p><img src="assets/brick/brick_crystal_blue_damaged.png" alt="قرميدة الكريستال الزرقاء المتضررة" /></p>
+<ul>
+<li>الخامة: <strong>crystal</strong></li>
+<li>الحالة: <strong>متضررة</strong></li>
+<li>الحالة السابقة: <code>brick_crystal_blue_intact</code></li>
+<li>التأثير: الحالة الزرقاء المتشققة بعد الضربة الأولى؛ الضربة التالية تكسرها.</li>
+</ul>
+<h3>قرميدة الكريستال الحمراء المتضررة</h3>
+<p><img src="assets/brick/brick_crystal_red_damaged.png" alt="قرميدة الكريستال الحمراء المتضررة" /></p>
+<ul>
+<li>الخامة: <strong>crystal</strong></li>
+<li>الحالة: <strong>متضررة</strong></li>
+<li>الحالة السابقة: <code>brick_crystal_red_intact</code></li>
+<li>التأثير: الحالة الحمراء المتشققة بعد الضربة الأولى؛ الضربة التالية تكسرها.</li>
+</ul>
+<h3>قرميدة الكريستال البنفسجية المتضررة</h3>
+<p><img src="assets/brick/brick_crystal_purple_damaged.png" alt="قرميدة الكريستال البنفسجية المتضررة" /></p>
+<ul>
+<li>الخامة: <strong>crystal</strong></li>
+<li>الحالة: <strong>متضررة</strong></li>
+<li>الحالة السابقة: <code>brick_crystal_purple_intact</code></li>
+<li>التأثير: الحالة البنفسجية المتشققة بعد الضربة الأولى؛ الضربة التالية تكسرها.</li>
+</ul>
+<h3>قرميدة الحجر الرمادية المتضررة</h3>
+<p><img src="assets/brick/brick_stone_gray_damaged.png" alt="قرميدة الحجر الرمادية المتضررة" /></p>
+<ul>
+<li>الخامة: <strong>stone</strong></li>
+<li>الحالة: <strong>متضررة</strong></li>
+<li>الحالة السابقة: <code>brick_stone_gray_intact</code></li>
+<li>التأثير: الحالة الحجرية المتشققة بعد الضربة الأولى؛ الضربة التالية تكسرها.</li>
+</ul>
+<h3>قرميدة الفولاذ غير القابلة للكسر</h3>
+<p><img src="assets/brick/brick_steel_unbreakable.png" alt="قرميدة الفولاذ غير القابلة للكسر" /></p>
+<ul>
+<li>الخامة: <strong>steel</strong></li>
+<li>قابلة للكسر بالاصطدام العادي: <strong>لا</strong></li>
+<li>التأثير: قرميدة فولاذية لا تنكسر بالاصطدام العادي.</li>
+</ul>
+<h3>قرميدة الكريستال السماوية السليمة</h3>
+<p><img src="assets/brick/brick_crystal_MAROON_intact.png" alt="قرميدة الكريستال السماوية السليمة" /></p>
+<ul>
+<li>الخامة: <strong>crystal</strong></li>
+<li>الحالة: <strong>سليمة</strong></li>
+<li>الحالة التالية: <code>brick_crystal_MAROON_damaged</code></li>
+<li>التأثير: الحالة السماوية السليمة؛ تنتقل إلى النسخة المتشققة عند الضربة الأولى.</li>
+</ul>
+<h3>قرميدة الدرع الداكنة السليمة</h3>
+<p><img src="assets/brick/brick_armored_dark_intact.png" alt="قرميدة الدرع الداكنة السليمة" /></p>
+<ul>
+<li>الخامة: <strong>armored_dark</strong></li>
+<li>الحالة: <strong>سليمة</strong></li>
+<li>الحالة التالية: <code>brick_armored_dark_damaged</code></li>
+<li>التأثير: قرميدة مدرعة سليمة؛ بعد الضربة الأولى تنتقل إلى حالتها المتوهجة المتضررة.</li>
+</ul>
+<h3>قرميدة الكريستال الوردية السليمة</h3>
+<p><img src="assets/brick/brick_crystal_pink_intact.png" alt="قرميدة الكريستال الوردية السليمة" /></p>
+<ul>
+<li>الخامة: <strong>crystal</strong></li>
+<li>الحالة: <strong>سليمة</strong></li>
+<li>الحالة التالية: <code>brick_crystal_pink_damaged</code></li>
+<li>التأثير: الحالة الوردية السليمة؛ تنتقل إلى النسخة المتشققة عند الضربة الأولى.</li>
+</ul>
+<h3>قرميدة الكريستال البرتقالية السليمة</h3>
+<p><img src="assets/brick/brick_crystal_orange_intact.png" alt="قرميدة الكريستال البرتقالية السليمة" /></p>
+<ul>
+<li>الخامة: <strong>crystal</strong></li>
+<li>الحالة: <strong>سليمة</strong></li>
+<li>الحالة التالية: <code>brick_crystal_orange_damaged</code></li>
+<li>التأثير: الحالة البرتقالية السليمة؛ تنتقل إلى النسخة المتشققة عند الضربة الأولى.</li>
+</ul>
+<h3>قرميدة الكريستال الخضراء السليمة</h3>
+<p><img src="assets/brick/brick_crystal_green_intact.png" alt="قرميدة الكريستال الخضراء السليمة" /></p>
+<ul>
+<li>الخامة: <strong>crystal</strong></li>
+<li>الحالة: <strong>سليمة</strong></li>
+<li>الحالة التالية: <code>brick_crystal_green_damaged</code></li>
+<li>التأثير: الحالة الخضراء السليمة؛ تنتقل إلى النسخة المتشققة عند الضربة الأولى.</li>
+</ul>
+<h3>القرميدة الأساسية</h3>
+<p><img src="assets/brick/brick_basic_one_hit.png" alt="القرميدة الأساسية" /></p>
+<ul>
+<li>الخامة: <strong>basic_metal</strong></li>
+<li>عدد الضربات للكسر: <strong>1</strong></li>
+<li>التأثير: القرميدة الأساسية؛ تنكسر من ضربة واحدة.</li>
+</ul>
+<h3>قرميدة الأشواك</h3>
+<p><img src="assets/brick/brick_spiked_hazard.png" alt="قرميدة الأشواك" /></p>
+<ul>
+<li>الخامة: <strong>spiked_metal</strong></li>
+<li>التأثير: قرميدة خطرة ذات أشواك؛ تُعامل كخطر خاص وفق قواعد الاصطدام في اللعبة.</li>
+</ul>
+<h3>قرميدة الكريستال السماوية المتضررة</h3>
+<p><img src="assets/brick/brick_crystal_MAROON_damaged.png" alt="قرميدة الكريستال السماوية المتضررة" /></p>
+<ul>
+<li>الخامة: <strong>crystal</strong></li>
+<li>الحالة: <strong>متضررة</strong></li>
+<li>الحالة السابقة: <code>brick_crystal_MAROON_intact</code></li>
+<li>التأثير: الحالة السماوية المتشققة بعد الضربة الأولى؛ الضربة التالية تكسرها.</li>
+</ul>
+<h3>قرميدة الدرع الداكنة المتضررة</h3>
+<p><img src="assets/brick/brick_armored_dark_damaged.png" alt="قرميدة الدرع الداكنة المتضررة" /></p>
+<ul>
+<li>الخامة: <strong>armored_dark</strong></li>
+<li>الحالة: <strong>متضررة</strong></li>
+<li>الحالة السابقة: <code>brick_armored_dark_intact</code></li>
+<li>التأثير: الحالة المتضررة المتوهجة بعد الضربة الأولى؛ الضربة التالية تكسرها وفق توازن اللعبة.</li>
+</ul>
+<h3>قرميدة الكريستال الوردية المتضررة</h3>
+<p><img src="assets/brick/brick_crystal_pink_damaged.png" alt="قرميدة الكريستال الوردية المتضررة" /></p>
+<ul>
+<li>الخامة: <strong>crystal</strong></li>
+<li>الحالة: <strong>متضررة</strong></li>
+<li>الحالة السابقة: <code>brick_crystal_pink_intact</code></li>
+<li>التأثير: الحالة الوردية المتشققة بعد الضربة الأولى؛ الضربة التالية تكسرها.</li>
+</ul>
+<h3>قرميدة الكريستال البرتقالية المتضررة</h3>
+<p><img src="assets/brick/brick_crystal_orange_damaged.png" alt="قرميدة الكريستال البرتقالية المتضررة" /></p>
+<ul>
+<li>الخامة: <strong>crystal</strong></li>
+<li>الحالة: <strong>متضررة</strong></li>
+<li>الحالة السابقة: <code>brick_crystal_orange_intact</code></li>
+<li>التأثير: الحالة البرتقالية المتشققة بعد الضربة الأولى؛ الضربة التالية تكسرها.</li>
+</ul>
+<h3>قرميدة الكريستال الخضراء المتضررة</h3>
+<p><img src="assets/brick/brick_crystal_green_damaged.png" alt="قرميدة الكريستال الخضراء المتضررة" /></p>
+<ul>
+<li>الخامة: <strong>crystal</strong></li>
+<li>الحالة: <strong>متضررة</strong></li>
+<li>الحالة السابقة: <code>brick_crystal_green_intact</code></li>
+<li>التأثير: الحالة الخضراء المتشققة بعد الضربة الأولى؛ الضربة التالية تكسرها.</li>
+</ul>
+<h3>القرميدة الشفافة المبطئة</h3>
+<p><img src="assets/brick/brick_transparent_slow_pass_through.png" alt="القرميدة الشفافة المبطئة" /></p>
+<ul>
+<li>الخامة: <strong>transparent_energy</strong></li>
+<li>نمط الاصطدام: <strong>pass_through</strong></li>
+<li>التأثير: لها نفس قيمة القرميدة الأساسية؛ تمر الكرة خلالها فتختفي القرميدة، لكن سرعة الكرة تنخفض.</li>
+</ul>
+<h2>6. عناصر إضافية</h2>
+<h3>طلقة الليزر</h3>
+<p><img src="assets/projectile/laser_bullet.png" alt="طلقة الليزر" /></p>
+<p>المقذوف الذي يطلقه مضرب الليزر إلى الأعلى.</p>
+<h3>سلك الكهرباء</h3>
+<p><img src="assets/hazard/electric_floor_wire.png" alt="سلك الكهرباء" /></p>
+<p>خطر كهربائي أسفل ساحة اللعب.</p>
+<h3>أنيميشن الشرر</h3>
+<p>
+  <div id="img-block-container">
+<img class="img-block" src="assets/effect/spark_frame_01.png" alt="إطار الشرر 1" />
+<img class="img-block" src="assets/effect/spark_frame_02.png" alt="إطار الشرر 2" />
+<img class="img-block" src="assets/effect/spark_frame_03.png" alt="إطار الشرر 3" />
+<img class="img-block" src="assets/effect/spark_frame_04.png" alt="إطار الشرر 4" />
+<img class="img-block" src="assets/effect/spark_frame_05.png" alt="إطار الشرر 5" />
+<img class="img-block" src="assets/effect/spark_frame_06.png" alt="إطار الشرر 6" />
+<img class="img-block" src="assets/effect/spark_frame_07.png" alt="إطار الشرر 7" />
+<img class="img-block" src="assets/effect/spark_frame_08.png" alt="إطار الشرر 8" />
+  </div>
+</p>
+<strong>ثمانية إطارات لمؤثر الشرر والاصطدام.</strong>
+
+</body>
+</html>

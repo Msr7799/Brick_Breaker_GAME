@@ -1,3 +1,10 @@
+/*
+ * ملاحظات صيانة الملف:
+ * المسار: app/src/main/java/com/example/brick_breaker_ball/GameScreen.kt
+ * المؤلف: mohamed alromaihi
+ * الدوال الموجودة: `render`، `brick`، `paddle`، `ball`، `aimGuide`، `hud`، `activeEffectsHud`، `drawHudCell`، `smallButton`، `pauseOverlay`، `pauseArtButton`، `overlayButton`، `input`، `pauseAndSave`، `resumeGame`، `inventoryOverlay`، `inventoryTab`، `inventoryEntries`، `selectedInventoryType`، `inventoryCardRect`، `drawInventoryCard`، `inventoryMaxScroll`، `beginInventoryClip`، `endInventoryClip`، `handleInventoryInput`، `openShopFromInventory`، `closeInventory`، `draw`، `drawRegionFit`، `drawBallSquare`، `drawBackgroundCover`، `drawDeathRail`، `updateResponsiveLayout`، `finishLevel`، `exitCustomTest`، `pause`، `resize`، `dispose`
+ */
+
 package com.example.brick_breaker_ball
 
 import com.badlogic.gdx.Gdx
@@ -15,6 +22,10 @@ import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.utils.Align
 import com.badlogic.gdx.utils.viewport.ExtendViewport
+import kotlin.math.abs
+
+internal fun requiresGameplayBallSprite(ball: Ball): Boolean =
+    ball.element != BallElement.NORMAL || ball.collisionMode == BallCollisionMode.PIERCING
 
 class GameScreen(
     private val game: BrickBreakerGame,
@@ -23,10 +34,10 @@ class GameScreen(
         level = level,
         baseBallSize = game.progress.settings.selectedBallBaseSize,
         selectedBallGroupName = game.progress.settings.selectedBallGroupName,
-        selectedBallSpriteName = game.progress.settings.selectedBallSpriteName,
+        selectedBallSpriteName = game.progress.settings.selectedBallSpriteName
     ),
     startPaused: Boolean = false,
-    private val customTestEditor: LevelEditorState? = null,
+    private val customTestEditor: LevelEditorState? = null
 ) : ScreenAdapter() {
     private val camera = OrthographicCamera()
     private val viewport = ExtendViewport(GameSession.WIDTH, GameSession.HEIGHT, camera)
@@ -38,21 +49,36 @@ class GameScreen(
     private var hitCount = 0
     private var feedbackText = ""
     private var feedbackTimer = 0f
+    private var aimHintTimer = AIM_HINT_DURATION_SECONDS
+    private var aimHintDismissed = false
+    private var levelCompleteTransitionTime = 0f
+    private var levelCompleteFinishStarted = false
     private var resumePhase = session.phase
     private var visibleLeft = 0f
     private var visibleBottom = 0f
     private var visibleWidth = GameSession.WIDTH
     private var visibleHeight = GameSession.HEIGHT
     private val hudPanelRect = Rectangle()
-    private val actionBarRect=Rectangle()
+    private val actionBarRect = Rectangle()
     private val pauseButton = Rectangle()
-    private val settingsButton = Rectangle()
-    private val shopButton=Rectangle()
-    private val inventoryButton=Rectangle()
-    private val customExitButton=Rectangle()
-    private val customizeButton=Rectangle()
-    private var inventoryOpen=false
-    private var selectedBooster=0
+    private val shopButton = Rectangle()
+    private val inventoryButton = Rectangle()
+    private val customExitButton = Rectangle()
+    private val customizeButton = Rectangle()
+    // Legacy overlay state remains private while all player-facing BAG entry points now route
+    // to CharmsBagScreen. Keeping these fields temporarily avoids mixing a large mechanical
+    // extraction with the navigation change in this already-modified gameplay file.
+    private var inventoryOpen = false
+    private var selectedBooster = 0
+    private var selectedGuidePowerUp = 0
+    private var inventoryGuideMode = false
+    private var inventoryScrollOffset = 0f
+    private var inventoryTouchActive = false
+    private var inventoryTouchMoved = false
+    private var inventoryTouchStartX = 0f
+    private var inventoryTouchStartY = 0f
+    private var inventoryTouchLastX = 0f
+    private var inventoryTouchLastY = 0f
     private val deathRailRect = Rectangle()
     private var deathRailTime = 0f
     private var deathRailZapTimer = 0f
@@ -61,14 +87,19 @@ class GameScreen(
     private var aimDragStartX = 0f
     private var aimDragCurrentX = 0f
     private var aimIntent = 0f
+    private var controlTouchActive = false
+    private var controlLastX = targetX
+
     // A menu tap can still be down during the first gameplay frame. Wait for
     // that pointer to be released so it cannot accidentally launch the serve.
     private var aimInputArmed = false
-    private val overlayResume = Rectangle(175f, 830f, 550f, 106f)
-    private val overlaySettings = Rectangle(175f, 694f, 550f, 100f)
-    private val overlayCustomize = Rectangle(175f, 564f, 550f, 100f)
-    private val overlayRestart = Rectangle(175f, 434f, 550f, 100f)
-    private val overlayMenu = Rectangle(175f, 304f, 550f, 100f)
+    private val overlayResume = Rectangle(150f, 1010f, 600f, 76f)
+    private val overlaySettings = Rectangle(150f, 865f, 600f, 76f)
+    private val overlayBag = Rectangle(150f, 720f, 600f, 76f)
+    private val overlayShop = Rectangle(150f, 575f, 600f, 76f)
+    private val overlayCustomize = Rectangle(150f, 430f, 600f, 76f)
+    private val overlayRestart = Rectangle(150f, 285f, 600f, 76f)
+    private val overlayMenu = Rectangle(150f, 140f, 600f, 76f)
     private val assets get() = game.assets
 
     init {
@@ -79,16 +110,35 @@ class GameScreen(
         }
     }
 
+    /** ملاحظة صيانة: الدالة `render` تنفّذ العقد الموروث وتربط دورة حياة المكوّن بسلوك هذا الملف؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     override fun render(delta: Float) {
-        WorldVideoBackgrounds.show(level.world)
+        if (game.progress.settings.quality == GraphicsQuality.LOW) {
+            WorldVideoBackgrounds.hide()
+        } else {
+            WorldVideoBackgrounds.show(level.world)
+        }
         input()
         deathRailTime += delta
         deathRailZapTimer = (deathRailZapTimer - delta).coerceAtLeast(0f)
         feedbackTimer = (feedbackTimer - delta).coerceAtLeast(0f)
+        if (!aimHintDismissed) {
+            if (session.phase == GamePhase.PLAYING) {
+                aimHintDismissed = true
+            } else if (session.phase == GamePhase.SERVING) {
+                aimHintTimer = (aimHintTimer - delta).coerceAtLeast(0f)
+                if (aimHintTimer <= 0f) aimHintDismissed = true
+            }
+        }
         val before = session.bricks.size
         loop.advance(delta) { dt ->
             if (session.phase != GamePhase.PAUSED) session.movePaddle(targetX, dt)
             session.update(dt)
+        }
+        if (session.phase == GamePhase.LEVEL_COMPLETE) {
+            levelCompleteTransitionTime = (levelCompleteTransitionTime + delta.coerceAtMost(.1f))
+                .coerceAtMost(LEVEL_COMPLETE_TRANSITION_SECONDS)
+        } else if (!levelCompleteFinishStarted) {
+            levelCompleteTransitionTime = 0f
         }
         session.consumeDeathRailZapX()?.let {
             deathRailZapX = it
@@ -96,17 +146,37 @@ class GameScreen(
         }
         session.consumeEvents().forEach { event ->
             when (event) {
-                is GameplayEvent.Feedback -> { feedbackText = event.text; feedbackTimer = 1.8f; assets.play(event.sound, game.progress.settings.masterVolume * game.progress.settings.sfxVolume) }
+                is GameplayEvent.Feedback -> {
+                    if (event.text.isNotBlank()) {
+                        feedbackText = event.text
+                        feedbackTimer = 1.8f
+                    } else {
+                        // Normal life loss intentionally has sound feedback only.
+                        feedbackText = ""
+                        feedbackTimer = 0f
+                    }
+                    assets.play(event.sound, game.progress.settings.masterVolume * game.progress.settings.sfxVolume)
+                }
+
                 GameplayEvent.Explosion -> assets.play("explosion", game.progress.settings.masterVolume * game.progress.settings.sfxVolume)
+
                 GameplayEvent.LaserFired -> assets.play("wall_hit", game.progress.settings.masterVolume * game.progress.settings.sfxVolume * .7f)
+
                 GameplayEvent.LaserHit -> assets.play("brick_hit", game.progress.settings.masterVolume * game.progress.settings.sfxVolume)
-                GameplayEvent.FallingWarning -> { feedbackText = "BRICKS ARE FALLING"; feedbackTimer = 1.5f; assets.play("wall_hit", game.progress.settings.masterVolume * game.progress.settings.sfxVolume) }
+
+                GameplayEvent.FallingWarning -> {
+                    feedbackText = "BRICKS ARE FALLING"
+                    feedbackTimer = 1.5f
+                    assets.play("wall_hit", game.progress.settings.masterVolume * game.progress.settings.sfxVolume)
+                }
             }
         }
         if (session.bricks.size < before) {
             hitCount++
-            assets.play(if (hitCount % 5 == 0) "explosion" else "brick_hit",
-                game.progress.settings.masterVolume * game.progress.settings.sfxVolume)
+            assets.play(
+                if (hitCount % 5 == 0) "explosion" else "brick_hit",
+                game.progress.settings.masterVolume * game.progress.settings.sfxVolume
+            )
             if (game.progress.settings.haptics) Gdx.input.vibrate(18)
         }
         val videoVisible = WorldVideoBackgrounds.isVideoVisible()
@@ -116,7 +186,7 @@ class GameScreen(
         batch.projectionMatrix = camera.combined
         batch.begin()
         if (!videoVisible) drawBackgroundCover(assets.worldFallbackBg(level.world), Color(.66f, .74f, .9f, .9f))
-        val playfieldBottom = 150f
+        val playfieldBottom = 0f
         val playfieldTop = actionBarRect.y - 8f
         draw(assets.ui.findRegion("panel"), 0f, playfieldBottom, 900f, playfieldTop - playfieldBottom, Color(0f, .006f, .02f, .46f))
         if (level.deathRailEnabled) drawDeathRail()
@@ -128,7 +198,7 @@ class GameScreen(
         paddle()
         aimGuide()
         session.balls.forEach(::ball)
-        session.laserShots.forEach { draw(assets.gameplayAtlas.laserProjectile, it.position.x - 8f, it.position.y, 16f, 42f, Color.CYAN) }
+        session.laserShots.forEach { draw(assets.gameplayAtlas.laserProjectile, it.position.x - 8f, it.position.y, 16f, 42f, Color.MAROON) }
         session.fallingPowerUps.forEach { power ->
             draw(assets.gameplayAtlas.powerUpIcon(power.type), power.position.x - 36f, power.position.y - 36f, 72f, 72f, Color.WHITE)
         }
@@ -138,15 +208,64 @@ class GameScreen(
             draw(assets.ui.findRegion("panel"), 150f, 360f, 600f, 64f, Color(.01f, .06f, .1f, .88f))
             assets.hudLabelFont.draw(batch, feedbackText, 160f, 402f, 580f, Align.center, false)
         }
-        if(inventoryOpen)inventoryOverlay() else if (session.phase == GamePhase.PAUSED) pauseOverlay()
+        if (session.phase == GamePhase.LEVEL_COMPLETE) drawLevelCompleteTransition()
+        if (session.phase == GamePhase.PAUSED) {
+            pauseOverlay()
+        }
         batch.end()
-        if (session.phase == GamePhase.LEVEL_COMPLETE) finishLevel()
+        if (
+            session.phase == GamePhase.LEVEL_COMPLETE &&
+            levelCompleteTransitionTime >= LEVEL_COMPLETE_TRANSITION_SECONDS &&
+            !levelCompleteFinishStarted
+        ) {
+            levelCompleteFinishStarted = true
+            finishLevel()
+        }
     }
 
+    /** Short in-game victory hold so the result screen never appears as a hard cut. */
+    private fun drawLevelCompleteTransition() {
+        val raw = (levelCompleteTransitionTime / LEVEL_COMPLETE_TRANSITION_SECONDS).coerceIn(0f, 1f)
+        val eased = raw * raw * (3f - 2f * raw)
+        val panelWidth = 720f
+        val panelHeight = 170f
+        val panelX = (GameSession.WIDTH - panelWidth) / 2f
+        val panelY = 690f
+        draw(
+            assets.ui.findRegion("panel"),
+            panelX,
+            panelY,
+            panelWidth,
+            panelHeight,
+            Color(ForgeUiPalette.glassPanel).also { it.a *= eased },
+        )
+
+        val font = assets.pauseTitleFont
+        val oldColor = Color(font.color)
+        val oldScaleX = font.data.scaleX
+        val oldScaleY = font.data.scaleY
+        val scale = .92f + .08f * eased
+        font.data.setScale(oldScaleX * scale, oldScaleY * scale)
+        font.color = Color(oldColor.r, oldColor.g, oldColor.b, eased)
+        font.draw(batch, "LEVEL COMPLETE", panelX, panelY + 108f, panelWidth, Align.center, false)
+        font.data.setScale(oldScaleX, oldScaleY)
+        font.color = oldColor
+    }
+
+    /** ملاحظة صيانة: الدالة `brick` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun brick(brick: Brick) {
         if (brick.type == BrickType.GHOST && !brick.ghostVisible) return
-        draw(assets.gameplayAtlas.brick(brick, level.world, useCampaignPalette = customTestEditor == null),
-            brick.bounds.x, brick.bounds.y, brick.bounds.width, brick.bounds.height, Color.WHITE)
+        val campaignTint =
+            if (customTestEditor == null) CampaignBrickPalette.tintFor(brick.type, level.world)
+            else Color.WHITE
+        draw(
+            assets.gameplayAtlas.brick(brick, level.world, useCampaignPalette = customTestEditor == null),
+            brick.bounds.x,
+            brick.bounds.y,
+            brick.bounds.width,
+            brick.bounds.height,
+            campaignTint
+        )
         if (brick.locked) draw(assets.ui.findRegion("panel"), brick.bounds.x, brick.bounds.y, brick.bounds.width, brick.bounds.height, Color(.05f, .1f, .18f, .68f))
         if (brick.type == BrickType.BOSS_CORE) {
             val ratio = brick.health.toFloat() / level.bossHealth.coerceAtLeast(1)
@@ -160,6 +279,7 @@ class GameScreen(
         }
     }
 
+    /** ملاحظة صيانة: الدالة `paddle` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun paddle() {
         val paddle = session.paddle
         val laserActive = PowerUpType.LASER_PADDLE in session.powerUps || PowerUpType.LASER_AUTO_CHARGE in session.powerUps
@@ -170,7 +290,7 @@ class GameScreen(
             game.progress.settings.selectedWeaponPaddleId,
             game.progress.settings.selectedStickyPaddleId,
             laserActive,
-            stickyActive,
+            stickyActive
         )
         val selected = assets.cosmetics.selectedPaddle(activePaddleId)
         val region = selected?.let(assets.cosmetics::paddleRegion) ?: assets.gameplayAtlas.paddleNormal.whole
@@ -178,63 +298,74 @@ class GameScreen(
         val dual = PowerUpType.DUAL_PADDLE in session.powerUps
         if (magneticActive) {
             val fieldWidth = GameplayTuning.MAGNET_HORIZONTAL_RANGE * 2f
-            draw(assets.particles.findRegion("glow"), paddle.x - fieldWidth / 2f, paddle.y,
-                fieldWidth, GameplayTuning.MAGNET_RANGE, Color(.1f, 1f, .55f, .13f))
+            draw(
+                assets.particles.findRegion("glow"),
+                paddle.x - fieldWidth / 2f,
+                paddle.y,
+                fieldWidth,
+                GameplayTuning.MAGNET_RANGE,
+                Color(.12f, .58f, 1f, .14f)
+            )
         }
         PaddleVisualLayout.slots(paddle.x, paddle.width, dual).forEach { slot ->
             val visualHeight = (slot.width * region.regionHeight.toFloat() / region.regionWidth.toFloat()).coerceAtMost(92f)
-            val glow = assets.particles.findRegion("glow")
-            draw(glow, slot.centerX - slot.width * .56f, drawY - 15f,
-                slot.width * 1.12f, visualHeight + 30f, Color(.08f, .78f, 1f, .24f))
-            draw(region, slot.centerX - slot.width / 2f, drawY - 8f,
-                slot.width, visualHeight, Color(.005f, .012f, .02f, .9f))
             draw(region, slot.centerX - slot.width / 2f, drawY, slot.width, visualHeight, Color.WHITE)
             if (laserActive) {
+                val glow = assets.particles.findRegion("glow")
                 val glowSize = 24f
                 draw(glow, slot.centerX - slot.width * .38f - glowSize / 2f, drawY + visualHeight - 10f, glowSize, glowSize, Color(.12f, .9f, 1f, .82f))
                 draw(glow, slot.centerX + slot.width * .38f - glowSize / 2f, drawY + visualHeight - 10f, glowSize, glowSize, Color(.12f, .9f, 1f, .82f))
             }
             if (stickyActive) draw(assets.particles.findRegion("glow"), slot.centerX - slot.width * .46f, drawY + visualHeight - 16f, slot.width * .92f, 20f, Color(.35f, 1f, .72f, .58f))
-            if (magneticActive) draw(assets.particles.findRegion("glow"), slot.centerX - slot.width * .48f,
-                drawY - 8f, slot.width * .96f, visualHeight + 16f, Color(.08f, 1f, .42f, .38f))
+            if (magneticActive) {
+                draw(
+                    assets.particles.findRegion("glow"),
+                    slot.centerX - slot.width * .48f,
+                    drawY - 8f,
+                    slot.width * .96f,
+                    visualHeight + 16f,
+                    Color(.48f, .34f, 1f, .42f)
+                )
+            }
         }
     }
 
+    /** ملاحظة صيانة: الدالة `ball` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun ball(ball: Ball) {
         val r = ball.radius
         val diameter = ball.visualDiameter
         val selected = assets.cosmetics.selectedBall(ball.cosmeticGroupName, ball.cosmeticSpriteName)
-        val region = selected?.let(assets.cosmetics::ballRegion) ?: assets.gameplayAtlas.ball(ball)
+        // Element/collision transformations have dedicated art. Size power-ups keep the
+        // currently equipped cosmetic and scale it to the ball's real collision diameter.
+        val region = if (requiresGameplayBallSprite(ball)) {
+            assets.gameplayAtlas.ball(ball)
+        } else {
+            selected?.let(assets.cosmetics::ballRegion) ?: assets.gameplayAtlas.ball(ball)
+        }
         val ghost = ball.collisionMode == BallCollisionMode.GHOST
         val trailTint = when {
             ghost -> Color(.72f, .48f, 1f, 1f)
             ball.element == BallElement.FIRE -> Color(1f, .3f, .05f, 1f)
             else -> Color(.45f, .9f, 1f, 1f)
         }
-        if (!game.progress.settings.reduceMotion) for (i in 1..3) {
-            val t = i / 4f
-            val trailR = r * .82f
-            val trailX = MathUtils.lerp(ball.position.x, ball.previousPosition.x, t)
-            val trailY = MathUtils.lerp(ball.position.y, ball.previousPosition.y, t)
-            drawBallSquare(region, trailX - trailR, trailY - trailR, trailR * 2f, Color(trailTint.r, trailTint.g, trailTint.b, .16f * (1f - t)))
+        if (!game.progress.settings.reduceMotion) {
+            for (i in 1..3) {
+                val t = i / 4f
+                val trailR = r * .82f
+                val trailX = MathUtils.lerp(ball.position.x, ball.previousPosition.x, t)
+                val trailY = MathUtils.lerp(ball.position.y, ball.previousPosition.y, t)
+                drawBallSquare(region, trailX - trailR, trailY - trailR, trailR * 2f, Color(trailTint.r, trailTint.g, trailTint.b, .16f * (1f - t)))
+            }
         }
         val ballTint = when {
             game.progress.settings.highContrastBall -> Color.YELLOW
             ghost -> Color(.72f, .72f, 1f, .58f)
             else -> Color.WHITE
         }
-        val ballGlow = when {
-            game.progress.settings.highContrastBall -> Color(1f, .92f, .08f, .38f)
-            ghost -> Color(.65f, .42f, 1f, .3f)
-            ball.element == BallElement.FIRE -> Color(1f, .28f, .04f, .36f)
-            else -> Color(.82f, .94f, 1f, .24f)
-        }
-        val glowDiameter = diameter * 1.42f
-        draw(assets.particles.findRegion("glow"), ball.position.x - glowDiameter / 2f,
-            ball.position.y - glowDiameter / 2f, glowDiameter, glowDiameter, ballGlow)
         drawBallSquare(region, ball.position.x - r, ball.position.y - r, diameter, ballTint)
     }
 
+    /** ملاحظة صيانة: الدالة `aimGuide` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun aimGuide() {
         if (!session.hasAttachedBalls()) return
         val direction = Vector2(aimIntent * 760f, 560f).nor()
@@ -251,7 +382,7 @@ class GameScreen(
                 if (x in 24f..876f && y < actionBarRect.y - 22f) {
                     val radius = (attachedBall.radius * .44f - index * .35f).coerceAtLeast(3f)
                     val alpha = .82f - index * .075f
-                    aimRenderer.color = Color(.12f, 1f, .38f, alpha)
+                    aimRenderer.color = Color(.86f, .88f, .90f, alpha)
                     aimRenderer.circle(x, y, radius, 18)
                 }
             }
@@ -260,30 +391,40 @@ class GameScreen(
         batch.begin()
     }
 
+    /** ملاحظة صيانة: الدالة `hud` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun hud() {
         draw(assets.ui.findRegion("panel"), hudPanelRect.x, hudPanelRect.y, hudPanelRect.width, hudPanelRect.height, Color(.01f, .04f, .09f, .96f))
-        draw(assets.ui.findRegion("panel"),actionBarRect.x,actionBarRect.y,actionBarRect.width,actionBarRect.height,Color(.01f,.04f,.09f,.96f))
+        draw(assets.ui.findRegion("panel"), actionBarRect.x, actionBarRect.y, actionBarRect.width, actionBarRect.height, Color(.01f, .04f, .09f, .96f))
         drawHudCell("WORLD", if (customTestEditor != null) "CUSTOM" else level.world.toString(), 24f, 110f)
         drawHudCell("LEVEL", if (customTestEditor != null) "TEST" else level.id.toString(), 150f, 110f)
         drawHudCell("SCORE", session.score.toString(), 282f, 255f)
         drawHudCell("LIVES", session.lives.toString(), 492f, 92f)
-        if (customTestEditor != null) smallButton(customExitButton,"EXIT TEST") else {
-            smallButton(inventoryButton,"ITEMS")
-            smallButton(shopButton,"SHOP")
+        if (customTestEditor != null) {
+            smallButton(customExitButton, "EXIT TEST", ForgeUiRenderer.GradientStyle.CRIMSON)
+        } else {
+            // Top gameplay action bar:
+            // - utility buttons stay dark/neutral
+            // - SHOP gets the main burnt-orange accent
+            // - PAUSE gets the deep-crimson accent
+            smallButton(inventoryButton, "BAG", ForgeUiRenderer.GradientStyle.NEUTRAL)
+            smallButton(shopButton, "SHOP", ForgeUiRenderer.GradientStyle.PRIMARY)
         }
-        smallButton(pauseButton, "II")
-        smallButton(settingsButton, "SET")
-        if (customTestEditor == null) smallButton(customizeButton, "CUSTOMIZE")
+        smallButton(pauseButton, "PAUSE", ForgeUiRenderer.GradientStyle.CRIMSON)
+        if (customTestEditor == null) {
+            smallButton(customizeButton, "CUSTOMIZE", ForgeUiRenderer.GradientStyle.NEUTRAL)
+        }
         activeEffectsHud()
         val message = when {
             session.phase == GamePhase.GAME_OVER -> "GAME OVER - TAP TO RETRY"
-            session.hasAttachedBalls() -> if (aimDragActive) "RELEASE TO LAUNCH" else "DRAG TO AIM - RELEASE TO LAUNCH"
+            !aimHintDismissed && aimHintTimer > 0f && session.phase == GamePhase.SERVING && session.hasAttachedBalls() ->
+                if (aimDragActive) "RELEASE TO LAUNCH" else "DRAG TO AIM - RELEASE TO LAUNCH"
             else -> ""
         }
         val launchTextY = session.paddle.y + 170f
         if (message.isNotEmpty()) assets.bodyFont.draw(batch, message, 0f, launchTextY, 900f, Align.center, false)
     }
 
+    /** ملاحظة صيانة: الدالة `activeEffectsHud` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun activeEffectsHud() {
         val effects = session.powerUps.activeEffects().take(4)
         effects.forEachIndexed { index, (type, remaining) ->
@@ -296,6 +437,7 @@ class GameScreen(
         }
     }
 
+    /** ملاحظة صيانة: الدالة `drawHudCell` ترسم العناصر المطلوبة مع الحفاظ على ترتيب طبقات العرض؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun drawHudCell(label: String, value: String, x: Float, width: Float) {
         val labelBaseline = hudPanelRect.y + 91f
         val valueBaseline = hudPanelRect.y + 43f
@@ -303,14 +445,33 @@ class GameScreen(
         assets.hudValueFont.draw(batch, value, x, valueBaseline, width, Align.center, false)
     }
 
-    private fun smallButton(rect: Rectangle, label: String) {
-        draw(assets.ui.findRegion("button_primary"), rect.x, rect.y, rect.width, rect.height, Color(.25f, .85f, 1f, .95f))
-        assets.hudLabelFont.draw(batch, label, rect.x, rect.y + rect.height*.67f, rect.width, Align.center, false)
+    /** ملاحظة صيانة: الدالة `smallButton` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    private fun smallButton(
+        rect: Rectangle,
+        label: String,
+        style: ForgeUiRenderer.GradientStyle = ForgeUiRenderer.GradientStyle.NEUTRAL,
+    ) {
+        // Real gradient: no color-multiplication against the pre-coloured button texture.
+        assets.uiRenderer.drawGradientButton(batch, rect, style)
+
+        assets.hudLabelFont.color = ForgeUiPalette.textPrimary
+        assets.hudLabelFont.draw(
+            batch,
+            label,
+            rect.x,
+            rect.y + rect.height * .67f,
+            rect.width,
+            Align.center,
+            false,
+        )
+        assets.hudLabelFont.color = Color.WHITE
     }
 
+    /** ملاحظة صيانة: الدالة `pauseOverlay` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun pauseOverlay() {
-        draw(assets.ui.findRegion("panel"), 92f, 240f, 716f, 894f, Color(.055f, .012f, .016f, .97f))
-        assets.pauseTitleFont.draw(batch, if (customTestEditor != null) "TEST PAUSED" else "PAUSED", 0f, 1060f, 900f, Align.center, false)
+        draw(assets.ui.findRegion("panel"), 0f, visibleBottom, 900f, visibleHeight, ForgeUiPalette.glassOverlay)
+        draw(assets.ui.findRegion("panel"), 10f, 55f, 880f, 1265f, ForgeUiPalette.glassPanel)
+        assets.pauseTitleFont.draw(batch, if (customTestEditor != null) "TEST PAUSED" else "PAUSED", 0f, 1200f, 900f, Align.center, false)
         if (customTestEditor != null) {
             overlayButton(overlayResume, "RESUME")
             overlayButton(overlaySettings, "RESTART TEST")
@@ -319,40 +480,64 @@ class GameScreen(
         } else {
             pauseArtButton(overlayResume, "resume")
             pauseArtButton(overlaySettings, "setting")
+            pauseArtButton(overlayBag, "charms-bag")
+            pauseArtButton(overlayShop, "shop")
             pauseArtButton(overlayCustomize, "customise")
             pauseArtButton(overlayRestart, "restart-level")
             pauseArtButton(overlayMenu, "main-menu")
-            assets.smallFont.draw(batch, "Progress is saved while paused", 0f, 292f, 900f, Align.center, false)
+            assets.smallFont.draw(batch, "Progress is saved while paused", 0f, 90f, 900f, Align.center, false)
         }
     }
 
+    /** ملاحظة صيانة: الدالة `pauseArtButton` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun pauseArtButton(rect: Rectangle, assetName: String) {
         batch.color = Color.WHITE
-        batch.draw(assets.pauseMenuTexture(assetName), 90f, rect.y - 32f, 720f, 168f)
+        batch.draw(assets.pauseMenuTexture(assetName), 90f, rect.y - 30f, 720f, 136f)
     }
 
+    /** ملاحظة صيانة: الدالة `overlayButton` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun overlayButton(rect: Rectangle, text: String) {
-        val tint = if (rect === overlayResume) Color(.2f, .95f, 1f, 1f) else Color(.72f, .9f, 1f, .96f)
+        val tint = if (rect === overlayResume) ForgeUiPalette.purple else ForgeUiPalette.button
         draw(assets.ui.findRegion("button_primary"), rect.x, rect.y, rect.width, rect.height, tint)
         assets.buttonFont.draw(batch, text, rect.x, rect.y + rect.height * .64f, rect.width, Align.center, false)
     }
 
+    /** ملاحظة صيانة: الدالة `input` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun input() {
         if (Gdx.input.isTouched || Gdx.input.justTouched()) {
             pointer.set(Gdx.input.x.toFloat(), Gdx.input.y.toFloat(), 0f)
             viewport.unproject(pointer)
         }
         val back = Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || Gdx.input.isKeyJustPressed(Input.Keys.BACK)
-        if(inventoryOpen){if(Gdx.input.justTouched())handleInventoryTap();if(back)closeInventory();return}
         if (session.phase == GamePhase.PAUSED) {
-            if (Gdx.input.justTouched()) when {
-                overlayResume.contains(pointer.x, pointer.y) -> resumeGame()
-                overlaySettings.contains(pointer.x, pointer.y) -> if (customTestEditor != null) game.playCustom(customTestEditor) else game.setScreen(SettingsScreen(game, returnToPausedGame = true))
-                customTestEditor == null && overlayCustomize.contains(pointer.x, pointer.y) -> game.setScreen(CustomizationScreen(game, returnToPausedGame = true))
-                overlayRestart.contains(pointer.x, pointer.y) -> if (customTestEditor != null) exitCustomTest() else { game.pausedSession.clear(); game.play(level.id) }
-                customTestEditor == null && overlayMenu.contains(pointer.x, pointer.y) -> game.openMenu()
+            if (Gdx.input.justTouched()) {
+                when {
+                    overlayResume.contains(pointer.x, pointer.y) -> resumeGame()
+
+                    overlaySettings.contains(pointer.x, pointer.y) -> if (customTestEditor != null) game.playCustom(customTestEditor) else game.setScreen(SettingsScreen(game, returnToPausedGame = true))
+
+                    customTestEditor == null && overlayBag.contains(pointer.x, pointer.y) -> game.setScreen(CharmsBagScreen(game, ShopReturnDestination.PAUSED_GAME))
+
+                    customTestEditor == null && overlayCustomize.contains(pointer.x, pointer.y) -> game.setScreen(CustomizationScreen(game, returnToPausedGame = true))
+
+                    customTestEditor == null && overlayShop.contains(pointer.x, pointer.y) -> game.setScreen(ShopScreen(game, ShopReturnDestination.PAUSED_GAME))
+
+                    overlayRestart.contains(pointer.x, pointer.y) -> if (customTestEditor != null) {
+                        exitCustomTest()
+                    } else {
+                        game.pausedSession.clear()
+                        game.play(level.id)
+                    }
+
+                    customTestEditor == null && overlayMenu.contains(pointer.x, pointer.y) -> game.openMenu()
+                }
             }
             if (back) resumeGame()
+            return
+        }
+        if (session.phase == GamePhase.LEVEL_COMPLETE) {
+            aimDragActive = false
+            controlTouchActive = false
             return
         }
         if (!aimInputArmed) {
@@ -361,31 +546,70 @@ class GameScreen(
         }
         if (Gdx.input.justTouched()) {
             when {
-                pauseButton.contains(pointer.x, pointer.y) -> { pauseAndSave(); return }
-                customTestEditor != null && customExitButton.contains(pointer.x, pointer.y) -> { exitCustomTest(); return }
-                inventoryButton.contains(pointer.x,pointer.y)->{resumePhase=session.phase;session.phase=GamePhase.PAUSED;inventoryOpen=true;return}
-                shopButton.contains(pointer.x,pointer.y)->{pauseAndSave();game.setScreen(ShopScreen(game,ShopReturnDestination.PAUSED_GAME));return}
-                settingsButton.contains(pointer.x, pointer.y) -> { pauseAndSave(); game.setScreen(SettingsScreen(game, returnToPausedGame = true)); return }
-                customTestEditor == null && customizeButton.contains(pointer.x, pointer.y) -> { pauseAndSave(); game.setScreen(CustomizationScreen(game, returnToPausedGame = true)); return }
-                actionBarRect.contains(pointer.x,pointer.y)||hudPanelRect.contains(pointer.x,pointer.y)->return
+                pauseButton.contains(pointer.x, pointer.y) -> {
+                    pauseAndSave()
+                    return
+                }
+
+                customTestEditor != null && customExitButton.contains(pointer.x, pointer.y) -> {
+                    exitCustomTest()
+                    return
+                }
+
+                inventoryButton.contains(pointer.x, pointer.y) -> {
+                    pauseAndSave()
+                    game.setScreen(CharmsBagScreen(game, ShopReturnDestination.PAUSED_GAME))
+                    return
+                }
+
+                shopButton.contains(pointer.x, pointer.y) -> {
+                    pauseAndSave()
+                    game.setScreen(ShopScreen(game, ShopReturnDestination.PAUSED_GAME))
+                    return
+                }
+
+                customTestEditor == null && customizeButton.contains(pointer.x, pointer.y) -> {
+                    pauseAndSave()
+                    game.setScreen(CustomizationScreen(game, returnToPausedGame = true))
+                    return
+                }
+
+                actionBarRect.contains(pointer.x, pointer.y) || hudPanelRect.contains(pointer.x, pointer.y) -> return
+
                 else -> if (session.hasAttachedBalls()) {
                     aimDragActive = true
                     aimDragStartX = pointer.x
                     aimDragCurrentX = pointer.x
                     aimIntent = 0f
-                } else session.action()
+                } else {
+                    session.action()
+                }
             }
         }
         if (Gdx.input.isTouched) {
-            targetX = pointer.x
             if (aimDragActive) {
                 aimDragCurrentX = pointer.x
                 aimIntent = ((aimDragCurrentX - aimDragStartX) / 220f).coerceIn(-1f, 1f)
+            } else if (game.progress.settings.relativeControl) {
+                if (!controlTouchActive) {
+                    controlTouchActive = true
+                    controlLastX = pointer.x
+                } else {
+                    val sensitivity = game.progress.settings.sensitivity.coerceIn(.5f, 2f)
+                    targetX += (pointer.x - controlLastX) * sensitivity
+                    controlLastX = pointer.x
+                }
+            } else {
+                controlTouchActive = false
+                targetX = pointer.x
             }
-        } else if (aimDragActive) {
-            aimDragActive = false
-            session.launchAttachedBalls(aimIntent)
-            aimIntent = 0f
+        } else {
+            controlTouchActive = false
+            if (aimDragActive) {
+                aimDragActive = false
+                session.launchAttachedBalls(aimIntent)
+                aimIntent = 0f
+            }
         }
         val distance = 700f * Gdx.graphics.deltaTime
         if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) targetX -= distance
@@ -395,6 +619,7 @@ class GameScreen(
         if (back) pauseAndSave()
     }
 
+    /** ملاحظة صيانة: الدالة `pauseAndSave` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun pauseAndSave() {
         if (session.phase == GamePhase.PAUSED) return
         resumePhase = session.phase
@@ -402,34 +627,469 @@ class GameScreen(
         session.phase = GamePhase.PAUSED
     }
 
+    /** ملاحظة صيانة: الدالة `resumeGame` تنفّذ انتقالًا أو تعرض التدفق المطلوب للمستخدم؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun resumeGame() {
         session.phase = resumePhase
         if (customTestEditor == null) game.pausedSession.clear()
     }
 
-    private fun inventoryOverlay(){
-        draw(assets.ui.findRegion("panel"),42f,235f,816f,1145f,Color(.005f,.025f,.07f,.98f));assets.pauseTitleFont.draw(batch,"MY ITEMS",0f,1310f,900f,Align.center,false)
-        SHOP_ELIGIBLE_TYPES.forEachIndexed{i,type->val col=i%2;val row=i/2;val x=105f+col*360f;val y=1130f-row*105f
-            val tint=if(i==selectedBooster)Color(.25f,.95f,1f,1f)else Color(.3f,.65f,.8f,.7f);draw(assets.ui.findRegion("button_primary"),x,y,330f,82f,tint)
-            draw(assets.gameplayAtlas.powerUpIcon(type),x+8f,y+15f,52f,52f,Color.WHITE);assets.hudLabelFont.draw(batch,PowerUpInfoRepository.info(type).shortName,x+68f,y+51f,205f,Align.left,false)
-            draw(assets.ui.findRegion("panel"),x+276f,y+13f,47f,54f,Color(.01f,.03f,.08f,.95f));assets.hudLabelFont.draw(batch,"x${game.boosterInventory.count(type)}",x+276f,y+50f,47f,Align.center,false)
+    /** Large scrollable Items / power-up guide overlay. */
+    private fun inventoryItemsTabRect(): Rectangle = Rectangle(82f, INVENTORY_TAB_Y, 345f, INVENTORY_TAB_HEIGHT)
+
+    private fun inventoryGuideTabRect(): Rectangle = Rectangle(473f, INVENTORY_TAB_Y, 345f, INVENTORY_TAB_HEIGHT)
+
+    private fun inventoryUseButtonRect(): Rectangle = Rectangle(90f, INVENTORY_ACTION_Y, 220f, INVENTORY_ACTION_HEIGHT)
+
+    private fun inventoryCloseButtonRect(): Rectangle = Rectangle(340f, INVENTORY_ACTION_Y, 220f, INVENTORY_ACTION_HEIGHT)
+
+    private fun inventoryShopButtonRect(): Rectangle = Rectangle(590f, INVENTORY_ACTION_Y, 220f, INVENTORY_ACTION_HEIGHT)
+
+    /** ملاحظة صيانة: الدالة `inventoryOverlay` ترسم شاشة "العناصر / دليل الباور-أب" الكاملة بما فيها التابات وبطاقة التفاصيل والأزرار؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    private fun inventoryOverlay() {
+        assets.uiRenderer.drawGradientPanel(
+            batch,
+            Rectangle(42f, 235f, 816f, 1145f),
+            ForgeUiRenderer.GradientStyle.NEUTRAL,
+        )
+
+        // Header: keep the title clear of the accent rule and leave a stronger gap before the tabs.
+        assets.pauseTitleFont.color = ForgeUiPalette.textPrimary
+        assets.pauseTitleFont.draw(
+            batch,
+            if (inventoryGuideMode) "POWER-UP GUIDE" else "MY ITEMS",
+            0f,
+            INVENTORY_TITLE_BASELINE,
+            900f,
+            Align.center,
+            false,
+        )
+        assets.pauseTitleFont.color = Color.WHITE
+        assets.uiRenderer.drawGradientProgress(
+            batch,
+            Rectangle(150f, INVENTORY_TITLE_RULE_Y, 600f, 4f),
+            ForgeUiRenderer.GradientStyle.PRIMARY,
+        )
+
+        val itemsTab = inventoryItemsTabRect()
+        val guideTab = inventoryGuideTabRect()
+        inventoryTab(itemsTab, "MY ITEMS 14", !inventoryGuideMode)
+        inventoryTab(guideTab, "GUIDE 20", inventoryGuideMode)
+
+        val entries = inventoryEntries()
+        inventoryScrollOffset = inventoryScrollOffset.coerceIn(0f, inventoryMaxScroll(entries.size))
+        beginInventoryClip()
+        entries.forEachIndexed { index, type -> drawInventoryCard(index, type) }
+        endInventoryClip()
+
+        // Selected-item details are separated from the scroll list so text never feels squeezed.
+        val selectedType = selectedInventoryType(entries)
+        val selectedCategory = PowerUpCatalog.definitions.getValue(selectedType).category
+        val info = PowerUpInfoRepository.info(selectedType)
+        val detailRect = Rectangle(82f, INVENTORY_DETAIL_Y, 736f, INVENTORY_DETAIL_HEIGHT)
+        assets.uiRenderer.drawGradientBorderPanel(
+            batch,
+            detailRect,
+            ForgeUiRenderer.GradientStyle.PRIMARY,
+            4f,
+        )
+
+        val detailIconPanel = Rectangle(detailRect.x + 14f, detailRect.y + 23f, 104f, 104f)
+        assets.uiRenderer.drawGradientPanel(batch, detailIconPanel, ForgeUiRenderer.GradientStyle.NEUTRAL)
+        draw(
+            assets.gameplayAtlas.powerUpIcon(selectedType),
+            detailIconPanel.x + 5f,
+            detailIconPanel.y + 5f,
+            94f,
+            94f,
+            Color.WHITE,
+        )
+
+        val detailTextX = detailRect.x + 138f
+        val detailTextWidth = detailRect.width - 158f
+        assets.hudLabelFont.color = ForgeUiPalette.primaryLight
+        assets.hudLabelFont.draw(
+            batch,
+            info.fullName,
+            detailTextX,
+            detailRect.y + 118f,
+            detailTextWidth,
+            Align.left,
+            false,
+        )
+        assets.hudLabelFont.color = Color.WHITE
+
+        assets.smallFont.color = ForgeUiPalette.textSecondary
+        drawInventoryDescription(
+            info.description,
+            detailTextX,
+            detailRect.y + 84f,
+            detailTextWidth,
+            .80f,
+        )
+        assets.smallFont.color = Color.WHITE
+
+        if (inventoryGuideMode) {
+            val availability = if (selectedType in SHOP_ELIGIBLE_TYPES) {
+                "POSITIVE ITEM • CAN BE OWNED / USED"
+            } else {
+                when (selectedCategory) {
+                    PowerUpCategory.BAD -> "HAZARD DROP • NOT SOLD"
+                    PowerUpCategory.SPECIAL -> "SPECIAL DROP • NOT SOLD"
+                    PowerUpCategory.GOOD -> "GAMEPLAY DROP"
+                }
+            }
+            assets.smallFont.color = when {
+                selectedType in SHOP_ELIGIBLE_TYPES -> ForgeUiPalette.successLight
+                selectedCategory == PowerUpCategory.BAD -> ForgeUiPalette.crimsonLight
+                selectedCategory == PowerUpCategory.SPECIAL -> ForgeUiPalette.primaryLight
+                else -> ForgeUiPalette.textSecondary
+            }
+            drawInventoryDescription(
+                availability,
+                detailTextX,
+                detailRect.y + 42f,
+                detailTextWidth,
+                .68f,
+            )
+            assets.smallFont.color = Color.WHITE
         }
-        val chosen=SHOP_ELIGIBLE_TYPES[selectedBooster];val info=PowerUpInfoRepository.info(chosen);draw(assets.ui.findRegion("panel"),105f,390f,690f,96f,Color(.03f,.1f,.17f,.96f));draw(assets.gameplayAtlas.powerUpIcon(chosen),118f,408f,60f,60f,Color.WHITE);assets.hudLabelFont.draw(batch,info.fullName,190f,456f,580f,Align.left,false);assets.smallFont.draw(batch,info.description,190f,421f,580f,Align.left,false)
-        val useRect=Rectangle(110f,300f,210f,85f);draw(assets.ui.findRegion("button_primary"),useRect.x,useRect.y,useRect.width,useRect.height,if(game.boosterInventory.count(chosen)>0)Color(.2f,.95f,1f,1f)else Color(.3f,.38f,.45f,.65f));assets.buttonFont.draw(batch,"USE",useRect.x,useRect.y+55f,useRect.width,Align.center,false)
-        overlayButton(Rectangle(345f,300f,210f,85f),"CLOSE");overlayButton(Rectangle(580f,300f,210f,85f),"SHOP")
-    }
-    private fun handleInventoryTap(){
-        SHOP_ELIGIBLE_TYPES.indices.firstOrNull{i->val x=105f+(i%2)*360f;val y=1130f-(i/2)*105f;Rectangle(x,y,330f,82f).contains(pointer.x,pointer.y)}?.let{selectedBooster=it;return}
-        when{Rectangle(110f,300f,210f,85f).contains(pointer.x,pointer.y)->{val type=SHOP_ELIGIBLE_TYPES[selectedBooster];if(session.useItem(type,game.boosterInventory) is BoosterUseResult.Applied)closeInventory()}
-            Rectangle(345f,300f,210f,85f).contains(pointer.x,pointer.y)->closeInventory()
-            Rectangle(580f,300f,210f,85f).contains(pointer.x,pointer.y)->{session.phase=resumePhase;game.pausedSession.save(level,session);session.phase=GamePhase.PAUSED;game.setScreen(ShopScreen(game,ShopReturnDestination.PAUSED_GAME))}}
-    }
-    private fun closeInventory(){inventoryOpen=false;session.phase=resumePhase}
 
+        val useRect = inventoryUseButtonRect()
+        if (!inventoryGuideMode) {
+            val enabled = game.boosterInventory.count(selectedType) > 0 && session.canActivatePowerUp(selectedType)
+            assets.uiRenderer.drawGradientButton(
+                batch,
+                useRect,
+                if (enabled) ForgeUiRenderer.GradientStyle.SUCCESS else ForgeUiRenderer.GradientStyle.DISABLED,
+            )
+            assets.buttonFont.color = ForgeUiPalette.textPrimary
+            assets.buttonFont.draw(batch, "USE", useRect.x, useRect.y + 55f, useRect.width, Align.center, false)
+            assets.buttonFont.color = Color.WHITE
+        } else {
+            assets.uiRenderer.drawGradientButton(batch, useRect, ForgeUiRenderer.GradientStyle.NEUTRAL)
+            assets.hudLabelFont.color = ForgeUiPalette.textSecondary
+            assets.hudLabelFont.draw(batch, "READ ONLY", useRect.x, useRect.y + 53f, useRect.width, Align.center, false)
+            assets.hudLabelFont.color = Color.WHITE
+        }
+
+        val closeRect = inventoryCloseButtonRect()
+        assets.uiRenderer.drawGradientButton(batch, closeRect, ForgeUiRenderer.GradientStyle.NEUTRAL)
+        assets.buttonFont.draw(batch, "CLOSE", closeRect.x, closeRect.y + 55f, closeRect.width, Align.center, false)
+
+        val shopRect = inventoryShopButtonRect()
+        assets.uiRenderer.drawGradientButton(batch, shopRect, ForgeUiRenderer.GradientStyle.PRIMARY)
+        assets.buttonFont.draw(batch, "SHOP", shopRect.x, shopRect.y + 55f, shopRect.width, Align.center, false)
+
+        assets.smallFont.color = ForgeUiPalette.muted
+        drawInventoryDescription(
+            "DRAG THE LIST TO SCROLL",
+            0f,
+            INVENTORY_SCROLL_HINT_BASELINE,
+            900f,
+            .72f,
+            Align.center,
+        )
+        assets.smallFont.color = Color.WHITE
+    }
+
+    /** ملاحظة صيانة: الدالة `inventoryTab` ترسم زر تبويب واحد ("MY ITEMS"/"GUIDE") وتموّنه حسب حالة التحديد؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    private fun inventoryTab(rect: Rectangle, label: String, selected: Boolean) {
+        assets.uiRenderer.drawGradientButton(
+            batch,
+            rect,
+            if (selected) ForgeUiRenderer.GradientStyle.PRIMARY else ForgeUiRenderer.GradientStyle.NEUTRAL,
+        )
+        assets.hudLabelFont.color = if (selected) ForgeUiPalette.textPrimary else ForgeUiPalette.textSecondary
+        assets.hudLabelFont.draw(batch, label, rect.x, rect.y + 47f, rect.width, Align.center, false)
+        assets.hudLabelFont.color = Color.WHITE
+    }
+
+    /** ملاحظة صيانة: الدالة `inventoryEntries` تُرجع قائمة أنواع الباور-أب المناسبة حسب الوضع الحالي (عناصر مملوكة أو الدليل الكامل)؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    private fun inventoryEntries(): List<PowerUpType> = if (inventoryGuideMode) PowerUpCatalog.classicOrderedTypes else SHOP_ELIGIBLE_TYPES
+
+    /** ملاحظة صيانة: الدالة `selectedInventoryType` تُرجع نوع الباور-أب المحدد حاليًا ضمن القائمة المعروضة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    private fun selectedInventoryType(entries: List<PowerUpType> = inventoryEntries()): PowerUpType {
+        val index = if (inventoryGuideMode) selectedGuidePowerUp else selectedBooster
+        return entries[index.coerceIn(entries.indices)]
+    }
+
+    /** ملاحظة صيانة: الدالة `inventoryCardRect` تحسب مستطيل الموضع والحجم الخاص ببطاقة عنصر معيّن ضمن القائمة القابلة للتمرير؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    private fun inventoryCardRect(index: Int): Rectangle = Rectangle(
+        80f,
+        ITEMS_LIST_TOP - ITEMS_CARD_HEIGHT - ITEMS_LIST_INSET - index * ITEMS_CARD_STEP + inventoryScrollOffset,
+        740f,
+        ITEMS_CARD_HEIGHT,
+    )
+
+    /** ملاحظة صيانة: الدالة `drawInventoryCard` ترسم بطاقة عنصر واحد ضمن القائمة القابلة للتمرير مع شريط التصنيف اللوني وشارة الملكية؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    private fun drawInventoryCard(index: Int, type: PowerUpType) {
+        val rect = inventoryCardRect(index)
+        val selectedIndex = if (inventoryGuideMode) selectedGuidePowerUp else selectedBooster
+        val selected = index == selectedIndex
+        val category = PowerUpCatalog.definitions.getValue(type).category
+        val stripeStyle = when (category) {
+            PowerUpCategory.BAD -> ForgeUiRenderer.GradientStyle.CRIMSON
+            PowerUpCategory.SPECIAL -> ForgeUiRenderer.GradientStyle.PRIMARY
+            PowerUpCategory.GOOD -> ForgeUiRenderer.GradientStyle.SUCCESS
+        }
+
+        if (selected) {
+            assets.uiRenderer.drawGradientBorderPanel(batch, rect, ForgeUiRenderer.GradientStyle.PRIMARY, 5f)
+        } else {
+            assets.uiRenderer.drawGradientPanel(batch, rect, ForgeUiRenderer.GradientStyle.NEUTRAL)
+        }
+
+        assets.uiRenderer.drawGradientProgress(batch, Rectangle(rect.x, rect.y, 9f, rect.height), stripeStyle)
+
+        // Icon gets a little more breathing room without changing the existing visual style.
+        val iconPanel = Rectangle(rect.x + 18f, rect.y + 24f, 100f, 100f)
+        assets.uiRenderer.drawGradientPanel(batch, iconPanel, ForgeUiRenderer.GradientStyle.NEUTRAL)
+        draw(
+            assets.gameplayAtlas.powerUpIcon(type),
+            iconPanel.x + 5f,
+            iconPanel.y + 5f,
+            90f,
+            90f,
+            Color.WHITE,
+        )
+
+        // Reserve a fixed right-side status column so every card lines up identically.
+        val chipWidth = 102f
+        val chipX = rect.x + rect.width - chipWidth - 18f
+        val textX = rect.x + 136f
+        val textWidth = chipX - textX - 14f
+
+        val info = PowerUpInfoRepository.info(type)
+        assets.hudLabelFont.color = if (selected) ForgeUiPalette.primaryLight else ForgeUiPalette.textPrimary
+        assets.hudLabelFont.draw(
+            batch,
+            info.shortName,
+            textX,
+            rect.y + 122f,
+            textWidth,
+            Align.left,
+            false,
+        )
+        assets.hudLabelFont.color = Color.WHITE
+
+        assets.smallFont.color = ForgeUiPalette.textSecondary
+        drawInventoryDescription(
+            info.description,
+            textX,
+            rect.y + 86f,
+            textWidth,
+            .78f,
+        )
+        assets.smallFont.color = Color.WHITE
+
+        val chipRect = Rectangle(chipX, rect.y + 34f, chipWidth, 80f)
+        assets.uiRenderer.drawGradientPanel(batch, chipRect, ForgeUiRenderer.GradientStyle.NEUTRAL)
+        assets.uiRenderer.drawGradientProgress(
+            batch,
+            Rectangle(chipRect.x, chipRect.y, chipRect.width, 4f),
+            stripeStyle,
+        )
+
+        if (type in SHOP_ELIGIBLE_TYPES) {
+            val owned = game.boosterInventory.count(type)
+            assets.hudLabelFont.color = if (owned > 0) ForgeUiPalette.successLight else ForgeUiPalette.muted
+            assets.hudLabelFont.draw(batch, "x$owned", chipRect.x, rect.y + 84f, chipRect.width, Align.center, false)
+            assets.hudLabelFont.color = Color.WHITE
+            assets.smallFont.color = ForgeUiPalette.muted
+            drawInventoryDescription("OWNED", chipRect.x, rect.y + 53f, chipRect.width, .64f, Align.center)
+            assets.smallFont.color = Color.WHITE
+        } else {
+            assets.smallFont.color = when (category) {
+                PowerUpCategory.BAD -> ForgeUiPalette.crimsonLight
+                PowerUpCategory.SPECIAL -> ForgeUiPalette.primaryLight
+                PowerUpCategory.GOOD -> ForgeUiPalette.textSecondary
+            }
+            drawInventoryDescription(
+                if (category == PowerUpCategory.BAD) "HAZARD" else "DROP",
+                chipRect.x,
+                rect.y + 78f,
+                chipRect.width,
+                .66f,
+                Align.center,
+            )
+            assets.smallFont.color = ForgeUiPalette.muted
+            drawInventoryDescription("ONLY", chipRect.x, rect.y + 49f, chipRect.width, .60f, Align.center)
+            assets.smallFont.color = Color.WHITE
+        }
+    }
+
+    /** ملاحظة صيانة: الدالة `inventoryMaxScroll` تحسب أقصى مسافة تمرير مسموحة لقائمة العناصر حسب عددها؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    private fun inventoryMaxScroll(count: Int): Float {
+        if (count <= 0) return 0f
+        val contentHeight = ITEMS_LIST_INSET * 2f + ITEMS_CARD_HEIGHT + (count - 1) * ITEMS_CARD_STEP
+        return (contentHeight - (ITEMS_LIST_TOP - ITEMS_LIST_BOTTOM)).coerceAtLeast(0f)
+    }
+
+    /** ملاحظة صيانة: الدالة `beginInventoryClip` تُفعّل قصّ الرسم (scissor) لحصر رسم القائمة داخل حدودها المرئية؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    private fun beginInventoryClip() {
+        batch.flush()
+        val bottom = Vector3(0f, ITEMS_LIST_BOTTOM, 0f)
+        val top = Vector3(GameSession.WIDTH, ITEMS_LIST_TOP, 0f)
+        viewport.project(bottom)
+        viewport.project(top)
+        Gdx.gl.glEnable(GL20.GL_SCISSOR_TEST)
+        Gdx.gl.glScissor(
+            bottom.x.toInt(),
+            bottom.y.toInt(),
+            (top.x - bottom.x).toInt().coerceAtLeast(1),
+            (top.y - bottom.y).toInt().coerceAtLeast(1),
+        )
+    }
+
+    /** ملاحظة صيانة: الدالة `endInventoryClip` تُلغي قصّ الرسم بعد الانتهاء من رسم القائمة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    private fun endInventoryClip() {
+        batch.flush()
+        Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST)
+    }
+
+    /** ملاحظة صيانة: الدالة `handleInventoryInput` تعالج لمسات المستخدم داخل شاشة العناصر (التابات، التمرير، الأزرار) وتحدّث الحالة تبعًا لذلك؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    private fun handleInventoryInput(back: Boolean) {
+        if (back) {
+            closeInventory()
+            return
+        }
+
+        // Use the exact same rectangles used by drawing so touch targets can never drift out of alignment.
+        val itemsTab = inventoryItemsTabRect()
+        val guideTab = inventoryGuideTabRect()
+        val useRect = inventoryUseButtonRect()
+        val closeRect = inventoryCloseButtonRect()
+        val shopRect = inventoryShopButtonRect()
+
+        if (Gdx.input.justTouched()) {
+            when {
+                itemsTab.contains(pointer.x, pointer.y) -> {
+                    inventoryGuideMode = false
+                    inventoryScrollOffset = 0f
+                    inventoryTouchActive = false
+                    return
+                }
+
+                guideTab.contains(pointer.x, pointer.y) -> {
+                    inventoryGuideMode = true
+                    inventoryScrollOffset = 0f
+                    inventoryTouchActive = false
+                    return
+                }
+
+                !inventoryGuideMode && useRect.contains(pointer.x, pointer.y) -> {
+                    val type = selectedInventoryType()
+                    val result = session.useItem(type, game.boosterInventory)
+                    if (result is BoosterUseResult.Applied) {
+                        closeInventory()
+                    } else if (result is BoosterUseResult.Rejected) {
+                        feedbackText = result.reason
+                        feedbackTimer = 1.8f
+                    }
+                    return
+                }
+
+                closeRect.contains(pointer.x, pointer.y) -> {
+                    closeInventory()
+                    return
+                }
+
+                shopRect.contains(pointer.x, pointer.y) -> {
+                    openShopFromInventory()
+                    return
+                }
+
+                pointer.y in ITEMS_LIST_BOTTOM..ITEMS_LIST_TOP -> {
+                    inventoryTouchActive = true
+                    inventoryTouchMoved = false
+                    inventoryTouchStartX = pointer.x
+                    inventoryTouchStartY = pointer.y
+                    inventoryTouchLastX = pointer.x
+                    inventoryTouchLastY = pointer.y
+                }
+            }
+        }
+
+        if (inventoryTouchActive && Gdx.input.isTouched) {
+            val dy = pointer.y - inventoryTouchLastY
+            inventoryScrollOffset = (inventoryScrollOffset + dy).coerceIn(0f, inventoryMaxScroll(inventoryEntries().size))
+            inventoryTouchLastX = pointer.x
+            inventoryTouchLastY = pointer.y
+            if (abs(pointer.y - inventoryTouchStartY) > 20f || abs(pointer.x - inventoryTouchStartX) > 20f) inventoryTouchMoved = true
+        } else if (inventoryTouchActive) {
+            if (!inventoryTouchMoved) {
+                val index = inventoryEntries().indices.firstOrNull {
+                    inventoryCardRect(it).contains(inventoryTouchLastX, inventoryTouchLastY)
+                }
+                if (index != null) {
+                    if (inventoryGuideMode) selectedGuidePowerUp = index else selectedBooster = index
+                }
+            }
+            inventoryTouchActive = false
+        }
+    }
+
+    /** ملاحظة صيانة: الدالة `openShopFromInventory` تحفظ حالة الجلسة وتنتقل إلى شاشة المتجر مباشرة من شاشة العناصر؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    private fun openShopFromInventory() {
+        session.phase = resumePhase
+        game.pausedSession.save(level, session)
+        session.phase = GamePhase.PAUSED
+        inventoryOpen = false
+        game.setScreen(ShopScreen(game, ShopReturnDestination.PAUSED_GAME))
+    }
+
+    /** ملاحظة صيانة: الدالة `closeInventory` تُغلق شاشة العناصر وتُعيد اللعبة إلى الحالة التي كانت عليها قبل فتحها؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    private fun closeInventory() {
+        inventoryOpen = false
+        inventoryTouchActive = false
+        session.phase = resumePhase
+    }
+
+    private companion object {
+        const val INVENTORY_TITLE_BASELINE = 1340f
+        const val INVENTORY_TITLE_RULE_Y = 1278f
+        const val INVENTORY_TAB_Y = 1185f
+        const val INVENTORY_TAB_HEIGHT = 70f
+
+        const val ITEMS_LIST_BOTTOM = 555f
+        const val ITEMS_LIST_TOP = 1158f
+        const val ITEMS_LIST_INSET = 12f
+        const val ITEMS_CARD_HEIGHT = 148f
+        const val ITEMS_CARD_STEP = 160f
+
+        const val INVENTORY_SCROLL_HINT_BASELINE = 536f
+        const val INVENTORY_DETAIL_Y = 360f
+        const val INVENTORY_DETAIL_HEIGHT = 150f
+        const val INVENTORY_ACTION_Y = 260f
+        const val INVENTORY_ACTION_HEIGHT = 82f
+
+        const val LEVEL_COMPLETE_TRANSITION_SECONDS = 1.0f
+        const val AIM_HINT_DURATION_SECONDS = 4f
+    }
+
+    private fun drawInventoryDescription(
+        text: String,
+        x: Float,
+        y: Float,
+        width: Float,
+        scale: Float,
+        align: Int = Align.left,
+    ) {
+        val oldX = assets.smallFont.data.scaleX
+        val oldY = assets.smallFont.data.scaleY
+        assets.smallFont.data.setScale(scale)
+        assets.smallFont.draw(batch, text, x, y, width, align, true)
+        assets.smallFont.data.setScale(oldX, oldY)
+    }
+
+    /** ملاحظة صيانة: الدالة `draw` ترسم العناصر المطلوبة مع الحفاظ على ترتيب طبقات العرض؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun draw(region: TextureRegion, x: Float, y: Float, width: Float, height: Float, color: Color) {
-        batch.color = color; batch.draw(region, x, y, width, height); batch.color = Color.WHITE
+        batch.color = color
+        batch.draw(region, x, y, width, height)
+        batch.color = Color.WHITE
     }
 
+    /** ملاحظة صيانة: الدالة `drawRegionFit` ترسم العناصر المطلوبة مع الحفاظ على ترتيب طبقات العرض؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun drawRegionFit(region: TextureRegion, x: Float, y: Float, width: Float, height: Float, color: Color) {
         val scale = minOf(width / region.regionWidth, height / region.regionHeight)
         val drawWidth = region.regionWidth * scale
@@ -438,9 +1098,16 @@ class GameScreen(
     }
 
     /** Ball physics are circular, so cosmetic source rectangles are normalized to a square at draw time. */
-    private fun drawBallSquare(region: TextureRegion, x: Float, y: Float, diameter: Float, color: Color) =
-        draw(region, x, y, diameter, diameter, color)
 
+    /** ملاحظة صيانة: الدالة `drawBallSquare` ترسم العناصر المطلوبة مع الحفاظ على ترتيب طبقات العرض؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    private fun drawBallSquare(region: TextureRegion, x: Float, y: Float, diameter: Float, color: Color) {
+        val scale = minOf(diameter / region.regionWidth, diameter / region.regionHeight)
+        val drawWidth = region.regionWidth * scale
+        val drawHeight = region.regionHeight * scale
+        draw(region, x + (diameter - drawWidth) / 2f, y + (diameter - drawHeight) / 2f, drawWidth, drawHeight, color)
+    }
+
+    /** ملاحظة صيانة: الدالة `drawBackgroundCover` ترسم العناصر المطلوبة مع الحفاظ على ترتيب طبقات العرض؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun drawBackgroundCover(region: TextureRegion, tint: Color) {
         val sourceAspect = region.regionWidth.toFloat() / region.regionHeight.toFloat()
         val targetAspect = visibleWidth / visibleHeight
@@ -458,6 +1125,7 @@ class GameScreen(
         draw(region, drawX, drawY, drawWidth, drawHeight, tint)
     }
 
+    /** ملاحظة صيانة: الدالة `drawDeathRail` ترسم العناصر المطلوبة مع الحفاظ على ترتيب طبقات العرض؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun drawDeathRail() {
         val energy = assets.gameplayAtlas.electricFloorWire
         val spark = assets.gameplayAtlas.sparkFrames[((deathRailTime * 16f).toInt()).mod(8)]
@@ -478,33 +1146,59 @@ class GameScreen(
         }
     }
 
+    /** ملاحظة صيانة: الدالة `updateResponsiveLayout` تحدّث الحالة المتغيرة خلال دورة التشغيل أو المحاكاة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun updateResponsiveLayout() {
         val visibleTop = visibleBottom + visibleHeight
         val hudTop = visibleTop - 18f
-        hudPanelRect.set(12f,hudTop-108f,876f,108f);actionBarRect.set(12f,hudPanelRect.y-72f,876f,62f)
-        inventoryButton.set(24f,actionBarRect.y+7f,190f,48f);shopButton.set(226f,actionBarRect.y+7f,170f,48f)
-        customizeButton.set(408f,actionBarRect.y+7f,284f,48f)
-        customExitButton.set(24f, actionBarRect.y + 7f, 372f, 48f)
-        pauseButton.set(704f,actionBarRect.y+7f,72f,48f);settingsButton.set(788f,actionBarRect.y+7f,88f,48f)
+        hudPanelRect.set(12f, hudTop - 108f, 876f, 108f)
+        actionBarRect.set(12f, hudPanelRect.y - 80f, 876f, 70f)
+        if (game.progress.settings.leftHanded && customTestEditor == null) {
+            pauseButton.set(24f, actionBarRect.y, 188f, actionBarRect.height)
+            customizeButton.set(220f, actionBarRect.y, 290f, actionBarRect.height)
+            shopButton.set(518f, actionBarRect.y, 160f, actionBarRect.height)
+            inventoryButton.set(686f, actionBarRect.y, 190f, actionBarRect.height)
+        } else {
+            inventoryButton.set(24f, actionBarRect.y, 190f, actionBarRect.height)
+            shopButton.set(222f, actionBarRect.y, 160f, actionBarRect.height)
+            customizeButton.set(390f, actionBarRect.y, 290f, actionBarRect.height)
+            pauseButton.set(688f, actionBarRect.y, 188f, actionBarRect.height)
+        }
+        customExitButton.set(24f, actionBarRect.y, 372f, actionBarRect.height)
         // Full-width kill rail between the two playfield walls, matching the
         // visible boundary instead of appearing as a short centered bar.
         deathRailRect.set(18f, visibleBottom + 54f, GameSession.WIDTH - 36f, 12f)
         session.deathRailTop = if (level.deathRailEnabled) deathRailRect.y + deathRailRect.height else -200f
     }
 
+    /** ملاحظة صيانة: الدالة `finishLevel` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun finishLevel() {
-        val stars = when { session.score >= level.threeStarScore -> 3; session.score >= level.threeStarScore / 2 -> 2; else -> 1 }
+        val stars = when {
+            session.score >= level.threeStarScore -> 3
+            session.score >= level.threeStarScore / 2 -> 2
+            else -> 1
+        }
         if (customTestEditor != null) {
-            game.setScreen(CustomTestResultScreen(game, customTestEditor, session.score, stars)); return
+            game.setScreen(CustomTestResultScreen(game, customTestEditor, session.score, stars))
+            return
         }
         game.pausedSession.clear()
+        val previousStars = game.progress.stars(level.id)
         game.progress.complete(level.id, session.score, stars)
-        game.setScreen(ResultsScreen(game, level, session.score, stars))
+        val cosmeticUnlocks = game.cosmeticProgression.onCampaignResult(level.id, previousStars, game.progress)
+        game.setScreen(ResultsScreen(game, level, session.score, stars, cosmeticUnlocks))
     }
 
-    private fun exitCustomTest() { customTestEditor?.let { game.setScreen(LevelEditorScreen(game, it)) } }
+    /** ملاحظة صيانة: الدالة `exitCustomTest` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    private fun exitCustomTest() {
+        customTestEditor?.let { game.setScreen(LevelEditorScreen(game, it)) }
+    }
 
-    override fun pause() { if (session.phase != GamePhase.PAUSED) pauseAndSave() }
+    /** ملاحظة صيانة: الدالة `pause` تنفّذ العقد الموروث وتربط دورة حياة المكوّن بسلوك هذا الملف؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    override fun pause() {
+        if (session.phase != GamePhase.PAUSED) pauseAndSave()
+    }
+
+    /** ملاحظة صيانة: الدالة `resize` تنفّذ العقد الموروث وتربط دورة حياة المكوّن بسلوك هذا الملف؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     override fun resize(width: Int, height: Int) {
         viewport.update(width, height, false)
         camera.position.set(GameSession.WIDTH / 2f, GameSession.HEIGHT / 2f, 0f)
@@ -515,5 +1209,11 @@ class GameScreen(
         visibleBottom = camera.position.y - visibleHeight / 2f
         updateResponsiveLayout()
     }
-    override fun dispose() { WorldVideoBackgrounds.hide(); batch.dispose(); aimRenderer.dispose() }
+
+    /** ملاحظة صيانة: الدالة `dispose` تنفّذ العقد الموروث وتربط دورة حياة المكوّن بسلوك هذا الملف؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    override fun dispose() {
+        WorldVideoBackgrounds.hide()
+        batch.dispose()
+        aimRenderer.dispose()
+    }
 }

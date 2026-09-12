@@ -1,3 +1,10 @@
+/*
+ * ملاحظات صيانة الملف:
+ * المسار: app/src/main/java/com/example/brick_breaker_ball/PowerUps.kt
+ * المؤلف: mohamed alromaihi
+ * الدوال الموجودة: `update`، `choose`، `activate`، `deactivate`، `clearLifeScoped`، `clear`، `persistentSnapshot`، `restorePersistent`، `activeEffects`، `contains`
+ */
+
 package com.example.brick_breaker_ball
 
 import java.util.Random
@@ -7,14 +14,47 @@ enum class EffectScope { INSTANT, TIMED, LIFE, LEVEL }
 enum class StackPolicy { IGNORE_IF_ACTIVE, REFRESH_DURATION, ADD_DURATION, INCREASE_STRENGTH, REPLACE, CANCEL_OPPOSITE }
 enum class CapsuleStyle { ROUND_GOOD, HEX_BAD }
 enum class PowerUpType {
-    EXPAND_PADDLE, STICKY_PADDLE, LASER_PADDLE, MAGNETIC_PADDLE, MULTI_BALL, TRIPLE_BALL, EXTRA_LIFE,
-    SLOW_BALL, FIRE_BALL, PIERCING_BALL, EXPLOSIVE_BALL, BOTTOM_SHIELD, SCORE_X2, SCORE_X3,
-    POWERUP_MAGNET, PADDLE_SHIELD, RANDOM_GOOD,
-    SHRINK_PADDLE, FAST_BALL, INVERT_CONTROLS, SLIPPERY_PADDLE, POWERUP_JAM, RANDOM_BAD,
-    KILL_PADDLE, SET_OFF_EXPLODING, LEVEL_WARP, SHRINK_BALL, ZAP_BRICKS, MEGA_BALL,
-    SUPER_SHRINK, EXPAND_EXPLODING, FALLING_BRICKS, EIGHT_BALL,
-    LASER_AUTO_CHARGE, TIMED_BOMB_BRICKS, MULTIBALL_PLUS_4, DUAL_PADDLE,
-    INSTANT_KILL_BALL, ONE_HIT_ANY_BRICK, GHOST_BALL, MULTIBALL_15
+    EXPAND_PADDLE,
+    STICKY_PADDLE,
+    LASER_PADDLE,
+    MAGNETIC_PADDLE,
+    MULTI_BALL,
+    TRIPLE_BALL,
+    EXTRA_LIFE,
+    SLOW_BALL,
+    FIRE_BALL,
+    PIERCING_BALL,
+    EXPLOSIVE_BALL,
+    BOTTOM_SHIELD,
+    SCORE_X2,
+    SCORE_X3,
+    POWERUP_MAGNET,
+    PADDLE_SHIELD,
+    RANDOM_GOOD,
+    SHRINK_PADDLE,
+    FAST_BALL,
+    INVERT_CONTROLS,
+    SLIPPERY_PADDLE,
+    POWERUP_JAM,
+    RANDOM_BAD,
+    KILL_PADDLE,
+    SET_OFF_EXPLODING,
+    LEVEL_WARP,
+    SHRINK_BALL,
+    ZAP_BRICKS,
+    MEGA_BALL,
+    SUPER_SHRINK,
+    EXPAND_EXPLODING,
+    FALLING_BRICKS,
+    EIGHT_BALL,
+    LASER_AUTO_CHARGE,
+    TIMED_BOMB_BRICKS,
+    MULTIBALL_PLUS_4,
+    DUAL_PADDLE,
+    INSTANT_KILL_BALL,
+    ONE_HIT_ANY_BRICK,
+    GHOST_BALL,
+    MULTIBALL_15
 }
 
 data class PowerUpDefinition(
@@ -28,28 +68,43 @@ data class PowerUpDefinition(
     val dropWeight: Float,
     val conflictsWith: Set<PowerUpType>,
     val icon: String,
-    val capsuleStyle: CapsuleStyle,
+    val capsuleStyle: CapsuleStyle
 )
 
 object PowerUpCatalog {
-    private val bad = setOf(PowerUpType.SHRINK_PADDLE, PowerUpType.FAST_BALL, PowerUpType.INVERT_CONTROLS,
+    private val bad = setOf(
+        PowerUpType.SHRINK_PADDLE, PowerUpType.FAST_BALL, PowerUpType.INVERT_CONTROLS,
         PowerUpType.SLIPPERY_PADDLE, PowerUpType.POWERUP_JAM, PowerUpType.RANDOM_BAD,
         PowerUpType.KILL_PADDLE, PowerUpType.SHRINK_BALL, PowerUpType.SUPER_SHRINK, PowerUpType.FALLING_BRICKS,
-        PowerUpType.INSTANT_KILL_BALL)
+        PowerUpType.INSTANT_KILL_BALL
+    )
     private val special = setOf(PowerUpType.GHOST_BALL)
-    private val instant = setOf(PowerUpType.MULTI_BALL, PowerUpType.TRIPLE_BALL, PowerUpType.EXTRA_LIFE,
+    private val instant = setOf(
+        PowerUpType.MULTI_BALL, PowerUpType.TRIPLE_BALL, PowerUpType.EXTRA_LIFE,
         PowerUpType.RANDOM_GOOD, PowerUpType.RANDOM_BAD,
         PowerUpType.KILL_PADDLE, PowerUpType.SET_OFF_EXPLODING, PowerUpType.LEVEL_WARP,
-        PowerUpType.ZAP_BRICKS, PowerUpType.EIGHT_BALL)
-    private val levelScoped = setOf(PowerUpType.EXPAND_PADDLE, PowerUpType.SHRINK_PADDLE,
-        PowerUpType.SUPER_SHRINK, PowerUpType.SHRINK_BALL, PowerUpType.EXPAND_EXPLODING, PowerUpType.FALLING_BRICKS)
+        PowerUpType.ZAP_BRICKS, PowerUpType.EIGHT_BALL
+    )
+    private val levelScoped = setOf(
+        PowerUpType.EXPAND_PADDLE,
+        PowerUpType.SHRINK_PADDLE,
+        PowerUpType.SUPER_SHRINK,
+        PowerUpType.SHRINK_BALL,
+        PowerUpType.EXPAND_EXPLODING,
+        PowerUpType.FALLING_BRICKS
+    )
     private val lifeScoped = setOf(PowerUpType.BOTTOM_SHIELD, PowerUpType.PADDLE_SHIELD)
-    val classicTypes = setOf(PowerUpType.LASER_AUTO_CHARGE, PowerUpType.EXTRA_LIFE, PowerUpType.KILL_PADDLE,
+
+    /** Stable order matching the annotated 20-talisman source sheet. */
+    val classicOrderedTypes = listOf(
+        PowerUpType.LASER_AUTO_CHARGE, PowerUpType.EXTRA_LIFE, PowerUpType.KILL_PADDLE,
         PowerUpType.EXPAND_PADDLE, PowerUpType.TIMED_BOMB_BRICKS, PowerUpType.RANDOM_GOOD, PowerUpType.SHRINK_BALL,
         PowerUpType.SHRINK_PADDLE, PowerUpType.FIRE_BALL, PowerUpType.MAGNETIC_PADDLE, PowerUpType.SLOW_BALL,
         PowerUpType.MULTIBALL_PLUS_4, PowerUpType.DUAL_PADDLE, PowerUpType.FAST_BALL, PowerUpType.INSTANT_KILL_BALL,
         PowerUpType.MEGA_BALL, PowerUpType.STICKY_PADDLE, PowerUpType.ONE_HIT_ANY_BRICK,
-        PowerUpType.GHOST_BALL, PowerUpType.MULTIBALL_15)
+        PowerUpType.GHOST_BALL, PowerUpType.MULTIBALL_15
+    )
+    val classicTypes = classicOrderedTypes.toSet()
     private val icons = mapOf(
         PowerUpType.LASER_AUTO_CHARGE to "powerup_laser_auto_charge", PowerUpType.LASER_PADDLE to "powerup_laser_auto_charge",
         PowerUpType.EXTRA_LIFE to "powerup_extra_life", PowerUpType.KILL_PADDLE to "powerup_kill_player",
@@ -74,7 +129,11 @@ object PowerUpCatalog {
         PowerUpType.EXPAND_EXPLODING to "powerup_timed_bomb_bricks"
     )
     val definitions: Map<PowerUpType, PowerUpDefinition> = PowerUpType.entries.associateWith { type ->
-        val category = when (type) { in bad -> PowerUpCategory.BAD; in special -> PowerUpCategory.SPECIAL; else -> PowerUpCategory.GOOD }
+        val category = when (type) {
+            in bad -> PowerUpCategory.BAD
+            in special -> PowerUpCategory.SPECIAL
+            else -> PowerUpCategory.GOOD
+        }
         val conflicts = when (type) {
             PowerUpType.EXPAND_PADDLE -> setOf(PowerUpType.SHRINK_PADDLE, PowerUpType.SUPER_SHRINK)
             PowerUpType.SHRINK_PADDLE -> setOf(PowerUpType.EXPAND_PADDLE, PowerUpType.SUPER_SHRINK)
@@ -91,11 +150,25 @@ object PowerUpCatalog {
             PowerUpType.SCORE_X3 -> setOf(PowerUpType.SCORE_X2)
             else -> emptySet()
         }
-        val scope = when (type) { in instant -> EffectScope.INSTANT; in levelScoped -> EffectScope.LEVEL; in lifeScoped -> EffectScope.LIFE; else -> EffectScope.TIMED }
-        PowerUpDefinition(type.name.lowercase(), type, category, scope, if (scope == EffectScope.TIMED) 16f else null,
+        val scope = when (type) {
+            in instant -> EffectScope.INSTANT
+            in levelScoped -> EffectScope.LEVEL
+            in lifeScoped -> EffectScope.LIFE
+            else -> EffectScope.TIMED
+        }
+        PowerUpDefinition(
+            type.name.lowercase(), type, category, scope, if (scope == EffectScope.TIMED) GameplayTuning.TIMED_POWERUP_DURATION else null,
             if (conflicts.isEmpty()) StackPolicy.REFRESH_DURATION else StackPolicy.CANCEL_OPPOSITE,
             1, if (category == PowerUpCategory.GOOD) 1f else .32f, conflicts,
-            icons[type] ?: "powerup_random_positive", if (category == PowerUpCategory.BAD) CapsuleStyle.HEX_BAD else CapsuleStyle.ROUND_GOOD)
+            icons[type] ?: "powerup_random_positive",
+            if (category ==
+                PowerUpCategory.BAD
+            ) {
+                CapsuleStyle.HEX_BAD
+            } else {
+                CapsuleStyle.ROUND_GOOD
+            }
+        )
     }
 }
 
@@ -104,17 +177,32 @@ class PowerUpDropDirector(seed: Long) {
     private var elapsedSinceDrop = 0f
     private var budget = 18
     private var last: PowerUpType? = null
-    fun update(dt: Float) { elapsedSinceDrop += dt }
+
+    /** ملاحظة صيانة: الدالة `update` تحدّث الحالة المتغيرة خلال دورة التشغيل أو المحاكاة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    fun update(dt: Float) {
+        elapsedSinceDrop += dt
+    }
+
+    /** ملاحظة صيانة: الدالة `choose` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun choose(lives: Int, activeFalling: Int, forced: Boolean = false, baseChance: Float = .16f): PowerUpType? {
         if (budget <= 0 || activeFalling >= 3 || (!forced && elapsedSinceDrop < 5f)) return null
-        if (!forced && random.nextFloat() > if (elapsedSinceDrop > 18f) maxOf(.72f, baseChance) else baseChance.coerceIn(0f, 1f)) return null
+        if (!forced &&
+            random.nextFloat() > if (elapsedSinceDrop > 18f) maxOf(.72f, baseChance) else baseChance.coerceIn(0f, 1f)
+        ) {
+            return null
+        }
         val pool = PowerUpCatalog.definitions.values.filter {
             it.type in PowerUpCatalog.classicTypes && it.type != last && (lives > 1 || it.category == PowerUpCategory.GOOD)
         }
         val total = pool.sumOf { it.dropWeight.toDouble() }.toFloat()
         var roll = random.nextFloat() * total
-        val selected = pool.firstOrNull { roll -= it.dropWeight; roll <= 0f }?.type ?: pool.last().type
-        last = selected; elapsedSinceDrop = 0f; budget--
+        val selected = pool.firstOrNull {
+            roll -= it.dropWeight
+            roll <= 0f
+        }?.type ?: pool.last().type
+        last = selected
+        elapsedSinceDrop = 0f
+        budget--
         return selected
     }
 }
@@ -123,13 +211,18 @@ class PowerUpManager {
     val timers = linkedMapOf<PowerUpType, Float>()
     private val lifeScoped = linkedSetOf<PowerUpType>()
     private val levelScoped = linkedSetOf<PowerUpType>()
+
+    /** ملاحظة صيانة: الدالة `activate` تعالج الحدث أو الطلب وتحدّث الحالة المرتبطة به؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun activate(type: PowerUpType) {
         val definition = PowerUpCatalog.definitions.getValue(type)
         definition.conflictsWith.forEach(::deactivate)
         when (definition.scope) {
             EffectScope.INSTANT -> Unit
+
             EffectScope.LEVEL -> levelScoped += type
+
             EffectScope.LIFE -> lifeScoped += type
+
             EffectScope.TIMED -> {
                 val duration = requireNotNull(definition.durationSeconds)
                 timers[type] = when (definition.stackPolicy) {
@@ -140,21 +233,54 @@ class PowerUpManager {
             }
         }
     }
+
+    /** ملاحظة صيانة: الدالة `update` تحدّث الحالة المتغيرة خلال دورة التشغيل أو المحاكاة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun update(dt: Float): List<PowerUpType> {
         val expired = mutableListOf<PowerUpType>()
         timers.replaceAll { type, value -> (value - dt).also { if (it <= 0f) expired += type } }
         expired.forEach(timers::remove)
         return expired
     }
-    fun deactivate(type: PowerUpType) { timers.remove(type); lifeScoped.remove(type); levelScoped.remove(type) }
-    fun clearLifeScoped() { lifeScoped.clear() }
-    fun clear() { timers.clear(); lifeScoped.clear(); levelScoped.clear() }
+
+    /** ملاحظة صيانة: الدالة `deactivate` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    fun deactivate(type: PowerUpType) {
+        timers.remove(type)
+        lifeScoped.remove(type)
+        levelScoped.remove(type)
+    }
+
+    /** ملاحظة صيانة: الدالة `clearLifeScoped` تنظّف الحالة أو الموارد المرتبطة بهذه المسؤولية بأمان؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    fun clearLifeScoped() {
+        lifeScoped.clear()
+    }
+
+    /** ملاحظة صيانة: الدالة `clear` تنظّف الحالة أو الموارد المرتبطة بهذه المسؤولية بأمان؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    fun clear() {
+        timers.clear()
+        lifeScoped.clear()
+        levelScoped.clear()
+    }
+
+    /** ملاحظة صيانة: الدالة `persistentSnapshot` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun persistentSnapshot() = (lifeScoped + levelScoped).toSet()
+
+    /** ملاحظة صيانة: الدالة `restorePersistent` تقرأ البيانات المطلوبة أو تسترجعها بصيغة مناسبة للاستخدام؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun restorePersistent(types: Collection<PowerUpType>) {
         types.filter { PowerUpCatalog.definitions.getValue(it).scope in setOf(EffectScope.LIFE, EffectScope.LEVEL) }
-            .forEach { type -> if (PowerUpCatalog.definitions.getValue(type).scope == EffectScope.LIFE) lifeScoped += type else levelScoped += type }
+            .forEach { type ->
+                if (PowerUpCatalog.definitions.getValue(type).scope ==
+                    EffectScope.LIFE
+                ) {
+                    lifeScoped += type
+                } else {
+                    levelScoped += type
+                }
+            }
     }
-    fun activeEffects(): List<Pair<PowerUpType, Float?>> =
-        timers.map { it.key to it.value } + lifeScoped.map { it to null } + levelScoped.map { it to null }
+
+    /** ملاحظة صيانة: الدالة `activeEffects` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    fun activeEffects(): List<Pair<PowerUpType, Float?>> = timers.map { it.key to it.value } + lifeScoped.map { it to null } + levelScoped.map { it to null }
+
+    /** ملاحظة صيانة: الدالة `contains` تتحقق من الشرط المطلوب وتعيد نتيجة يمكن لبقية النظام الاعتماد عليها؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     operator fun contains(type: PowerUpType) = timers.containsKey(type) || type in lifeScoped || type in levelScoped
 }

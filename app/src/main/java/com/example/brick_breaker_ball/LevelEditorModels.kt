@@ -1,3 +1,10 @@
+/*
+ * ملاحظات صيانة الملف:
+ * المسار: app/src/main/java/com/example/brick_breaker_ball/LevelEditorModels.kt
+ * المؤلف: mohamed alromaihi
+ * الدوال الموجودة: `symbol`، `type`، `key`، `from`، `beginStroke`، `paint`، `endStroke`، `fill`، `clear`، `mutateProperties`، `undo`، `redo`، `markSaved`، `toLevelDefinition`، `snapshot`، `restore`، `pushUndo`، `list`، `save`، `saveAs`، `load`، `delete`، `duplicate`، `read`، `uniqueId`، `safeId`، `ensureDirectory`
+ */
+
 package com.example.brick_breaker_ball
 
 import com.badlogic.gdx.Gdx
@@ -18,12 +25,18 @@ object BrickCodec {
         BrickType.ROUGH_STONE to 'A', BrickType.LIGHTNING_SPEED_PASS_THROUGH to 'D',
         BrickType.ELECTRIC_WHITE to 'F', BrickType.CRYSTAL_BLUE to 'J', BrickType.CRYSTAL_RED to 'M',
         BrickType.CRYSTAL_PURPLE to 'Q', BrickType.STONE_GRAY to 'T', BrickType.BLACK_HOLE_TELEPORTER to 'U',
-        BrickType.RANDOM_INVENTORY_POWERUP to 'W', BrickType.CRYSTAL_CYAN to 'X', BrickType.ARMORED_DARK to 'Y',
+        BrickType.RANDOM_INVENTORY_POWERUP to 'W', BrickType.CRYSTAL_MAROON to 'X', BrickType.ARMORED_DARK to 'Y',
         BrickType.CRYSTAL_PINK to 'Z', BrickType.CRYSTAL_ORANGE to '4', BrickType.CRYSTAL_GREEN to '5',
-        BrickType.SPIKED_HAZARD to '6', BrickType.TRANSPARENT_SLOW_PASS_THROUGH to '7',
+        BrickType.SPIKED_HAZARD to '6', BrickType.TRANSPARENT_SLOW_PASS_THROUGH to '7'
     )
+
+    /** ملاحظة صيانة: الدالة `symbol` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun symbol(type: BrickType) = symbols.getValue(type)
+
+    /** ملاحظة صيانة: الدالة `type` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun type(symbol: Char) = if (symbol == '1') BrickType.NORMAL_ONE_HIT else symbols.entries.firstOrNull { it.value == symbol }?.key
+
+    /** ملاحظة صيانة: الدالة `key` تحوّل البيانات أو تبني المعرّف المتوافق مع بقية النظام؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun key(row: Int, column: Int) = "$row:$column"
 }
 
@@ -50,22 +63,41 @@ object BrickInfoRepository {
         BrickType.SWITCH to BrickInfo("SWITCH", "Unlocks and toggles its linked group.", PaletteSection.PUZZLE),
         BrickType.CHAIN_BRICK to BrickInfo("CHAIN", "Damage propagates through its group once.", PaletteSection.PUZZLE),
         BrickType.BOSS_CORE to BrickInfo("BOSS CORE", "Configurable high-HP completion target.", PaletteSection.DANGER_BOSS),
-        BrickType.ROUGH_STONE to BrickInfo("ROUGH STONE", "Breaks and deflects the ball at an irregular angle.", PaletteSection.BASIC),
-        BrickType.LIGHTNING_SPEED_PASS_THROUGH to BrickInfo("LIGHTNING SPEED", "The ball passes through, destroys it, and accelerates.", PaletteSection.SPECIAL),
-        BrickType.ELECTRIC_WHITE to BrickInfo("ELECTRIC WHITE", "Two-state electric brick.", PaletteSection.BASIC),
-        BrickType.CRYSTAL_BLUE to BrickInfo("BLUE CRYSTAL", "Two-state blue crystal.", PaletteSection.BASIC),
-        BrickType.CRYSTAL_RED to BrickInfo("RED CRYSTAL", "Two-state red crystal.", PaletteSection.BASIC),
-        BrickType.CRYSTAL_PURPLE to BrickInfo("PURPLE CRYSTAL", "Two-state purple crystal.", PaletteSection.BASIC),
-        BrickType.STONE_GRAY to BrickInfo("GRAY STONE", "Two-state gray stone.", PaletteSection.BASIC),
-        BrickType.BLACK_HOLE_TELEPORTER to BrickInfo("BLACK HOLE", "Teleports the ball to a safe location and new angle.", PaletteSection.SPECIAL),
+        BrickType.ROUGH_STONE to
+            BrickInfo("ROUGH STONE", "Never breaks; reflects the ball in an irregular random direction.", PaletteSection.SPECIAL),
+        BrickType.LIGHTNING_SPEED_PASS_THROUGH to
+            BrickInfo("LIGHTNING SPEED", "Persistent transparent field; the ball passes through and accelerates.", PaletteSection.SPECIAL),
+        BrickType.ELECTRIC_WHITE to
+            BrickInfo("ELECTRIC WHITE", "2 HP: first hit shows the damaged state; second hit breaks it.", PaletteSection.BASIC),
+        BrickType.CRYSTAL_BLUE to
+            BrickInfo("BLUE CRYSTAL", "2 HP: first hit shows the damaged state; second hit breaks it.", PaletteSection.BASIC),
+        BrickType.CRYSTAL_RED to
+            BrickInfo("RED CRYSTAL", "2 HP: first hit shows the damaged state; second hit breaks it.", PaletteSection.BASIC),
+        BrickType.CRYSTAL_PURPLE to
+            BrickInfo("PURPLE CRYSTAL", "2 HP: first hit shows the damaged state; second hit breaks it.", PaletteSection.BASIC),
+        BrickType.STONE_GRAY to
+            BrickInfo("GRAY STONE", "2 HP: first hit shows the damaged state; second hit breaks it.", PaletteSection.BASIC),
+        BrickType.BLACK_HOLE_TELEPORTER to
+            BrickInfo("BLACK HOLE", "Teleports the ball to a safe location and new angle.", PaletteSection.SPECIAL),
         BrickType.RANDOM_INVENTORY_POWERUP to BrickInfo("ITEM CACHE", "Adds one random positive reward to Items.", PaletteSection.SPECIAL),
-        BrickType.CRYSTAL_CYAN to BrickInfo("CYAN CRYSTAL", "Two-state cyan crystal.", PaletteSection.BASIC),
-        BrickType.ARMORED_DARK to BrickInfo("DARK ARMOR", "Two-state dark armored brick.", PaletteSection.BASIC),
-        BrickType.CRYSTAL_PINK to BrickInfo("PINK CRYSTAL", "Two-state pink crystal.", PaletteSection.BASIC),
-        BrickType.CRYSTAL_ORANGE to BrickInfo("ORANGE CRYSTAL", "Two-state orange crystal.", PaletteSection.BASIC),
-        BrickType.CRYSTAL_GREEN to BrickInfo("GREEN CRYSTAL", "Two-state green crystal.", PaletteSection.BASIC),
-        BrickType.SPIKED_HAZARD to BrickInfo("SPIKED HAZARD", "Hazard response is controlled by gameplay tuning.", PaletteSection.DANGER_BOSS),
-        BrickType.TRANSPARENT_SLOW_PASS_THROUGH to BrickInfo("SLOW FIELD", "The ball passes through, destroys it, and slows down.", PaletteSection.SPECIAL),
+        BrickType.CRYSTAL_MAROON to
+            BrickInfo("MAROON CRYSTAL", "2 HP: first hit shows the damaged state; second hit breaks it.", PaletteSection.BASIC),
+        BrickType.ARMORED_DARK to
+            BrickInfo("DARK ARMOR", "2 HP: first hit shows the damaged state; second hit breaks it.", PaletteSection.BASIC),
+        BrickType.CRYSTAL_PINK to
+            BrickInfo("PINK CRYSTAL", "2 HP: first hit shows the damaged state; second hit breaks it.", PaletteSection.BASIC),
+        BrickType.CRYSTAL_ORANGE to
+            BrickInfo("ORANGE CRYSTAL", "2 HP: first hit shows the damaged state; second hit breaks it.", PaletteSection.BASIC),
+        BrickType.CRYSTAL_GREEN to
+            BrickInfo("GREEN CRYSTAL", "2 HP: first hit shows the damaged state; second hit breaks it.", PaletteSection.BASIC),
+        BrickType.SPIKED_HAZARD to
+            BrickInfo(
+                "SPIKED HAZARD",
+                "Kills a ball on contact; campaign use is temporary through the Ball Kill power-up.",
+                PaletteSection.DANGER_BOSS
+            ),
+        BrickType.TRANSPARENT_SLOW_PASS_THROUGH to
+            BrickInfo("SLOW FIELD", "Persistent transparent field; the ball passes through and slows down.", PaletteSection.SPECIAL)
     )
 }
 
@@ -81,36 +113,46 @@ data class LevelProperties(
     var deathRailEnabled: Boolean = true,
     var threeStarScore: Int = 5000,
     var modifiers: MutableSet<String> = mutableSetOf(),
-    var bossHealth: Int = 5,
+    var bossHealth: Int = 5
 )
 
 private data class EditorSnapshot(val cells: List<List<EditorCell>>, val properties: LevelProperties)
 
 class LevelEditorState(
     val cells: MutableList<MutableList<EditorCell>> = MutableList(ROWS) { MutableList(COLUMNS) { EditorCell() } },
-    var properties: LevelProperties = LevelProperties(),
+    var properties: LevelProperties = LevelProperties()
 ) {
     companion object {
-        const val COLUMNS = 9; const val ROWS = 8; const val HISTORY_LIMIT = 50
+        const val COLUMNS = 9
+        const val ROWS = 8
+        const val HISTORY_LIMIT = 50
+
+        /** ملاحظة صيانة: الدالة `from` تحوّل البيانات أو تبني المعرّف المتوافق مع بقية النظام؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
         fun from(level: LevelDefinition): LevelEditorState {
-            val state = LevelEditorState(properties = LevelProperties(
-                customId = level.customId ?: "custom-001", name = level.name, world = level.world,
-                ballSpeed = level.ballSpeed, lives = level.lives, dropRate = level.dropRate,
-                deathRailEnabled = level.deathRailEnabled, threeStarScore = level.threeStarScore,
-                modifiers = level.modifiers.toMutableSet(), bossHealth = level.bossHealth,
-            ))
-            level.layout.take(ROWS).forEachIndexed { r, line -> line.take(COLUMNS).forEachIndexed { c, symbol ->
-                val key = BrickCodec.key(r, c)
-                val canonical = level.brickIds[key]?.let { runCatching { BrickType.valueOf(it) }.getOrNull() }
-                state.cells[r][c] = EditorCell(canonical ?: BrickCodec.type(symbol), level.brickGroups[key] ?: 0)
-            } }
-            state.markSaved(); return state
+            val state = LevelEditorState(
+                properties = LevelProperties(
+                    customId = level.customId ?: "custom-001", name = level.name, world = level.world,
+                    ballSpeed = level.ballSpeed, lives = level.lives, dropRate = level.dropRate,
+                    deathRailEnabled = level.deathRailEnabled, threeStarScore = level.threeStarScore,
+                    modifiers = level.modifiers.toMutableSet(), bossHealth = level.bossHealth
+                )
+            )
+            level.layout.take(ROWS).forEachIndexed { r, line ->
+                line.take(COLUMNS).forEachIndexed { c, symbol ->
+                    val key = BrickCodec.key(r, c)
+                    val canonical = level.brickIds[key]?.let { runCatching { BrickType.valueOf(it) }.getOrNull() }
+                    state.cells[r][c] = EditorCell(canonical ?: BrickCodec.type(symbol), level.brickGroups[key] ?: 0)
+                }
+            }
+            state.markSaved()
+            return state
         }
     }
     var tool = EditorTool.PAINT
     var brush = BrickType.NORMAL_ONE_HIT
     var groupId = 0
-    var dirty = false; private set
+    var dirty = false
+        private set
     private val undo = ArrayDeque<EditorSnapshot>()
     private val redo = ArrayDeque<EditorSnapshot>()
     private var strokeSnapshot: EditorSnapshot? = null
@@ -118,103 +160,210 @@ class LevelEditorState(
     val undoCount get() = undo.size
     val redoCount get() = redo.size
 
-    fun beginStroke() { if (strokeSnapshot == null) strokeSnapshot = snapshot() }
+    /** ملاحظة صيانة: الدالة `beginStroke` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    fun beginStroke() {
+        if (strokeSnapshot == null) strokeSnapshot = snapshot()
+    }
+
+    /** ملاحظة صيانة: الدالة `paint` ترسم العناصر المطلوبة مع الحفاظ على ترتيب طبقات العرض؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun paint(row: Int, column: Int): Boolean {
         if (row !in 0 until ROWS || column !in 0 until COLUMNS) return false
         if (strokeSnapshot == null) beginStroke()
         val replacement = if (tool == EditorTool.ERASE) EditorCell() else EditorCell(brush, groupId.coerceAtLeast(0))
         if (cells[row][column] == replacement) return false
-        cells[row][column] = replacement; dirty = true; return true
+        cells[row][column] = replacement
+        dirty = true
+        return true
     }
+
+    /** ملاحظة صيانة: الدالة `endStroke` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun endStroke(): Boolean {
         val before = strokeSnapshot ?: return false
         strokeSnapshot = null
         if (before == snapshot()) return false
-        pushUndo(before); redo.clear(); return true
+        pushUndo(before)
+        redo.clear()
+        return true
     }
+
+    /** ملاحظة صيانة: الدالة `fill` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun fill(row: Int, column: Int): Boolean {
         if (row !in 0 until ROWS || column !in 0 until COLUMNS) return false
-        val before = snapshot(); val target = cells[row][column].copy()
+        val before = snapshot()
+        val target = cells[row][column].copy()
         val replacement = if (tool == EditorTool.ERASE) EditorCell() else EditorCell(brush, groupId.coerceAtLeast(0))
         if (target == replacement) return false
-        val pending = ArrayDeque<Pair<Int, Int>>(); pending.add(row to column)
+        val pending = ArrayDeque<Pair<Int, Int>>()
+        pending.add(row to column)
         while (pending.isNotEmpty()) {
             val (r, c) = pending.removeFirst()
             if (r !in 0 until ROWS || c !in 0 until COLUMNS || cells[r][c] != target) continue
             cells[r][c] = replacement.copy()
-            pending.add(r - 1 to c); pending.add(r + 1 to c); pending.add(r to c - 1); pending.add(r to c + 1)
+            pending.add(r - 1 to c)
+            pending.add(r + 1 to c)
+            pending.add(r to c - 1)
+            pending.add(r to c + 1)
         }
-        pushUndo(before); redo.clear(); dirty = true; return true
+        pushUndo(before)
+        redo.clear()
+        dirty = true
+        return true
     }
+
+    /** ملاحظة صيانة: الدالة `clear` تنظّف الحالة أو الموارد المرتبطة بهذه المسؤولية بأمان؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun clear(): Boolean {
         if (cells.all { row -> row.all { it.type == null } }) return false
-        pushUndo(snapshot()); redo.clear(); cells.forEach { row -> row.indices.forEach { row[it] = EditorCell() } }; dirty = true; return true
+        pushUndo(snapshot())
+        redo.clear()
+        cells.forEach { row -> row.indices.forEach { row[it] = EditorCell() } }
+        dirty = true
+        return true
     }
+
+    /** ملاحظة صيانة: الدالة `mutateProperties` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun mutateProperties(change: (LevelProperties) -> Unit) {
-        val before = snapshot(); change(properties)
-        if (before != snapshot()) { pushUndo(before); redo.clear(); dirty = true }
+        val before = snapshot()
+        change(properties)
+        if (before != snapshot()) {
+            pushUndo(before)
+            redo.clear()
+            dirty = true
+        }
     }
+
+    /** ملاحظة صيانة: الدالة `undo` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun undo(): Boolean {
         val previous = undo.pollLast() ?: return false
-        redo.addLast(snapshot()); restore(previous); dirty = true; return true
+        redo.addLast(snapshot())
+        restore(previous)
+        dirty = true
+        return true
     }
+
+    /** ملاحظة صيانة: الدالة `redo` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun redo(): Boolean {
         val next = redo.pollLast() ?: return false
-        pushUndo(snapshot()); restore(next); dirty = true; return true
+        pushUndo(snapshot())
+        restore(next)
+        dirty = true
+        return true
     }
-    fun markSaved() { dirty = false }
+
+    /** ملاحظة صيانة: الدالة `markSaved` تحفظ البيانات أو تضيفها إلى الحالة المعتمدة في النظام؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    fun markSaved() {
+        dirty = false
+    }
+
+    /** ملاحظة صيانة: الدالة `toLevelDefinition` تحوّل البيانات أو تبني المعرّف المتوافق مع بقية النظام؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun toLevelDefinition(): LevelDefinition {
         val layout = cells.map { row -> String(CharArray(COLUMNS) { c -> row[c].type?.let(BrickCodec::symbol) ?: '.' }) }
-        val groups = buildMap { cells.forEachIndexed { r, row -> row.forEachIndexed { c, cell -> if (cell.type != null && cell.groupId > 0) put(BrickCodec.key(r, c), cell.groupId) } } }
-        val brickIds = buildMap { cells.forEachIndexed { r, row -> row.forEachIndexed { c, cell -> cell.type?.let { put(BrickCodec.key(r, c), it.name) } } } }
+        val groups = buildMap {
+            cells.forEachIndexed { r, row ->
+                row.forEachIndexed { c, cell ->
+                    if (cell.type != null &&
+                        cell.groupId > 0
+                    ) {
+                        put(BrickCodec.key(r, c), cell.groupId)
+                    }
+                }
+            }
+        }
+        val brickIds =
+            buildMap {
+                cells.forEachIndexed { r, row -> row.forEachIndexed { c, cell -> cell.type?.let { put(BrickCodec.key(r, c), it.name) } } }
+            }
         return LevelDefinition(
             id = -1, world = properties.world, name = properties.name.trim().ifBlank { "UNTITLED CUSTOM LEVEL" },
             rows = ROWS, columns = COLUMNS, layout = layout, ballSpeed = properties.ballSpeed,
             lives = properties.lives, threeStarScore = properties.threeStarScore,
             modifiers = properties.modifiers.toSet(), customId = properties.customId.trim(),
             dropRate = properties.dropRate, deathRailEnabled = properties.deathRailEnabled,
-            bossHealth = properties.bossHealth, brickGroups = groups, brickIds = brickIds,
+            bossHealth = properties.bossHealth, brickGroups = groups, brickIds = brickIds
         )
     }
-    private fun snapshot() = EditorSnapshot(cells.map { row -> row.map(EditorCell::copy) }, properties.copy(modifiers = properties.modifiers.toMutableSet()))
+
+    /** ملاحظة صيانة: الدالة `snapshot` تقرأ البيانات المطلوبة أو تسترجعها بصيغة مناسبة للاستخدام؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    private fun snapshot() = EditorSnapshot(
+        cells.map { row ->
+            row.map(EditorCell::copy)
+        },
+        properties.copy(modifiers = properties.modifiers.toMutableSet())
+    )
+
+    /** ملاحظة صيانة: الدالة `restore` تقرأ البيانات المطلوبة أو تسترجعها بصيغة مناسبة للاستخدام؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun restore(snapshot: EditorSnapshot) {
         cells.indices.forEach { r -> cells[r].indices.forEach { c -> cells[r][c] = snapshot.cells[r][c].copy() } }
         properties = snapshot.properties.copy(modifiers = snapshot.properties.modifiers.toMutableSet())
     }
-    private fun pushUndo(snapshot: EditorSnapshot) { undo.addLast(snapshot); while (undo.size > HISTORY_LIMIT) undo.removeFirst() }
+
+    /** ملاحظة صيانة: الدالة `pushUndo` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    private fun pushUndo(snapshot: EditorSnapshot) {
+        undo.addLast(snapshot)
+        while (undo.size > HISTORY_LIMIT) undo.removeFirst()
+    }
 }
 
 data class StoredCustomLevel(var version: Int = CustomLevelRepository.CURRENT_VERSION, var level: LevelDefinition? = null)
 
 class CustomLevelRepository(private val directory: FileHandle = Gdx.files.local("custom-levels")) {
-    companion object { const val CURRENT_VERSION = 2 }
-    private val json = Json().apply { setOutputType(JsonWriter.OutputType.json); setIgnoreUnknownFields(true) }
+    companion object {
+        const val CURRENT_VERSION = 2
+    }
+    private val json = Json().apply {
+        setOutputType(JsonWriter.OutputType.json)
+        setIgnoreUnknownFields(true)
+    }
+
+    /** ملاحظة صيانة: الدالة `list` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun list(): List<LevelDefinition> {
         ensureDirectory()
         return directory.list("json").mapNotNull { runCatching { read(it) }.getOrNull() }.sortedBy { it.name }
     }
+
+    /** ملاحظة صيانة: الدالة `save` تحفظ البيانات أو تضيفها إلى الحالة المعتمدة في النظام؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun save(level: LevelDefinition): LevelDefinition {
         val id = safeId(level.customId ?: level.name)
         val saved = level.copy(customId = id)
-        ensureDirectory(); directory.child("$id.json").writeString(json.prettyPrint(StoredCustomLevel(level = saved)), false, "UTF-8")
+        ensureDirectory()
+        directory.child("$id.json").writeString(json.prettyPrint(StoredCustomLevel(level = saved)), false, "UTF-8")
         return saved
     }
+
+    /** ملاحظة صيانة: الدالة `saveAs` تحفظ البيانات أو تضيفها إلى الحالة المعتمدة في النظام؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun saveAs(level: LevelDefinition, requestedId: String): LevelDefinition = save(level.copy(customId = uniqueId(requestedId)))
+
+    /** ملاحظة صيانة: الدالة `load` تقرأ البيانات المطلوبة أو تسترجعها بصيغة مناسبة للاستخدام؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun load(id: String): LevelDefinition? = directory.child("${safeId(id)}.json").takeIf(FileHandle::exists)?.let(::read)
+
+    /** ملاحظة صيانة: الدالة `delete` تنظّف الحالة أو الموارد المرتبطة بهذه المسؤولية بأمان؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun delete(id: String): Boolean = directory.child("${safeId(id)}.json").let { it.exists() && it.delete() }
+
+    /** ملاحظة صيانة: الدالة `duplicate` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun duplicate(id: String): LevelDefinition? = load(id)?.let { source ->
         save(source.copy(customId = uniqueId("${source.customId}-copy"), name = "${source.name} COPY"))
     }
+
+    /** ملاحظة صيانة: الدالة `read` تقرأ البيانات المطلوبة أو تسترجعها بصيغة مناسبة للاستخدام؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun read(file: FileHandle): LevelDefinition? {
         val stored = json.fromJson(StoredCustomLevel::class.java, file)
         require(stored.version in 1..CURRENT_VERSION) { "Unsupported custom level version ${stored.version}" }
         return stored.level
     }
+
+    /** ملاحظة صيانة: الدالة `uniqueId` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun uniqueId(raw: String): String {
-        val base = safeId(raw); var candidate = base; var suffix = 2
+        val base = safeId(raw)
+        var candidate = base
+        var suffix = 2
         while (directory.child("$candidate.json").exists()) candidate = "$base-$suffix".also { suffix++ }
         return candidate
     }
+
+    /** ملاحظة صيانة: الدالة `safeId` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun safeId(raw: String) = raw.trim().lowercase().replace(Regex("[^a-z0-9_-]+"), "-").trim('-').ifBlank { "custom-level" }.take(48)
-    private fun ensureDirectory() { if (!directory.exists()) directory.mkdirs() }
+
+    /** ملاحظة صيانة: الدالة `ensureDirectory` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
+    private fun ensureDirectory() {
+        if (!directory.exists()) directory.mkdirs()
+    }
 }

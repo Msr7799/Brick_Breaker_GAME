@@ -510,15 +510,15 @@
       "action": "قرميدة فولاذية لا تنكسر بالاصطدام العادي."
     },
     {
-      "id": "brick_crystal_cyan_intact",
+      "id": "brick_crystal_MAROON_intact",
       "sourceDetection": "sprite83",
       "category": "brick",
       "arabicName": "قرميدة الكريستال السماوية السليمة",
       "rect": { "x": 188, "y": 1079, "width": 160, "height": 79 },
       "material": "crystal",
-      "color": "cyan",
+      "color": "MAROON",
       "damageState": "intact",
-      "nextState": "brick_crystal_cyan_damaged",
+      "nextState": "brick_crystal_MAROON_damaged",
       "action": "الحالة السماوية السليمة؛ تنتقل إلى النسخة المتشققة عند الضربة الأولى."
     },
     {
@@ -589,15 +589,15 @@
       "action": "قرميدة خطرة ذات أشواك؛ تُعامل كخطر خاص وفق قواعد الاصطدام في اللعبة."
     },
     {
-      "id": "brick_crystal_cyan_damaged",
+      "id": "brick_crystal_MAROON_damaged",
       "sourceDetection": "sprite91",
       "category": "brick",
       "arabicName": "قرميدة الكريستال السماوية المتضررة",
       "rect": { "x": 191, "y": 1163, "width": 157, "height": 85 },
       "material": "crystal",
-      "color": "cyan",
+      "color": "MAROON",
       "damageState": "damaged",
-      "previousState": "brick_crystal_cyan_intact",
+      "previousState": "brick_crystal_MAROON_intact",
       "action": "الحالة السماوية المتشققة بعد الضربة الأولى؛ الضربة التالية تكسرها."
     },
     {
