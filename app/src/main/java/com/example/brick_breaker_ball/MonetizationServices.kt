@@ -21,6 +21,9 @@ interface PurchaseGateway {
     /** يعيد السعر المحلي الموثوق من Play؛ null تعني أن الشراء غير متاح. */
     fun price(product: ShopProduct): String? = null
 
+    /** يعيد طلب ProductDetails من المتجر، مثلاً عند فتح شاشة المتجر من جديد. */
+    fun refreshProducts() {}
+
     /** يستعلم عن مشتريات Play المكتملة التي لم تستهلك بعد لإعادة منحها بشكل آمن. */
     fun reconcile(callback: (RecoveredPurchase) -> Unit = {}) {}
 
@@ -43,6 +46,15 @@ interface RewardedAdGateway {
 
     /** يحمّل الإعلان التالي أو يعيد المحاولة بعد فشل الشبكة. */
     fun preload() {}
+
+    /** يظهر فقط عندما تطلب منصة الخصوصية من الناشر توفير نقطة دخول للمستخدم. */
+    val privacyOptionsRequired: Boolean get() = false
+
+    /** يفتح خيارات الخصوصية الخاصة بالإعلانات عندما تكون مطلوبة. */
+    fun showPrivacyOptions(callback: (String?) -> Unit = {}) { callback(null) }
+
+    /** يحدّث حالة الموافقة عند بداية جلسة التطبيق. */
+    fun refreshConsent() {}
 
     /** يلغي المراجع والطلبات المرتبطة بالنشاط. */
     fun dispose() {}
@@ -67,20 +79,35 @@ class RewardOpportunity(private val token: String) {
     }
 }
 
-data class MonetizationServices(val purchaseGateway: PurchaseGateway, val rewardedAdGateway: RewardedAdGateway) {
+data class MonetizationServices(
+    val purchaseGateway: PurchaseGateway,
+    val rewardedReviveAdGateway: RewardedAdGateway,
+    val rewardedTalismanAdGateway: RewardedAdGateway,
+) {
+    /** Privacy settings use the revive gateway as the primary AdMob/UMP owner. */
+    val rewardedAdGateway: RewardedAdGateway get() = rewardedReviveAdGateway
+
     fun dispose() {
         purchaseGateway.dispose()
-        rewardedAdGateway.dispose()
+        rewardedReviveAdGateway.dispose()
+        rewardedTalismanAdGateway.dispose()
     }
+
     companion object {
         /** الفشل الآمن هو الافتراضي، ولا توجد بوابة تمنح نجاحاً وهمياً في التطبيق. */
-        fun unavailable() = MonetizationServices(
-            object : PurchaseGateway {
-                override fun purchase(product: ShopProduct, callback: (PurchaseResult) -> Unit) = callback(PurchaseResult.Failed("Store unavailable"))
-            },
-            object : RewardedAdGateway {
-                override fun show(callback: (RewardedAdResult) -> Unit) = callback(RewardedAdResult.Failed("Ads unavailable"))
+        fun unavailable(): MonetizationServices {
+            val unavailableAds = object : RewardedAdGateway {
+                override fun show(callback: (RewardedAdResult) -> Unit) =
+                    callback(RewardedAdResult.Failed("Ads unavailable"))
             }
-        )
+            return MonetizationServices(
+                purchaseGateway = object : PurchaseGateway {
+                    override fun purchase(product: ShopProduct, callback: (PurchaseResult) -> Unit) =
+                        callback(PurchaseResult.Failed("Store unavailable"))
+                },
+                rewardedReviveAdGateway = unavailableAds,
+                rewardedTalismanAdGateway = unavailableAds,
+            )
+        }
     }
 }

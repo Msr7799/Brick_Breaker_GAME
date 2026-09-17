@@ -2,6 +2,7 @@ package com.example.brick_breaker_ball
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
+import com.badlogic.gdx.graphics.g2d.TextureRegion
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Rectangle
 import com.badlogic.gdx.utils.Align
@@ -52,7 +53,15 @@ class CosmeticUnlockRevealScreen(game: BrickBreakerGame, private val unlocks: Li
                 title("NEW BALL UNLOCKED", 1470f)
                 revealPanel(unlock.ball.name.uppercase(), "NEW BALL AVAILABLE")
                 drawBall(unlock.ball)
-                equipButton = button("EQUIP NOW", 85f, 210f, 340f, 92f)
+                val equipped = isBallEquipped(unlock.ball)
+                equipButton = button(
+                    if (equipped) "EQUIPPED" else "EQUIP NOW",
+                    85f,
+                    210f,
+                    340f,
+                    92f,
+                    if (equipped) ForgeUiRenderer.GradientStyle.SUCCESS else ForgeUiRenderer.GradientStyle.PRIMARY,
+                )
                 continueButton = button("CONTINUE", 475f, 210f, 340f, 92f)
             }
 
@@ -61,7 +70,15 @@ class CosmeticUnlockRevealScreen(game: BrickBreakerGame, private val unlocks: Li
                 title("NEW PADDLE STYLE UNLOCKED", 1470f)
                 revealPanel(unlock.style.displayName.uppercase(), "STYLE SET UNLOCKED  •  3 FORMS INCLUDED")
                 drawPaddleStyle(unlock.style)
-                equipButton = button("EQUIP NOW", 85f, 210f, 340f, 92f)
+                val equipped = isStyleEquipped(unlock.style)
+                equipButton = button(
+                    if (equipped) "EQUIPPED" else "EQUIP NOW",
+                    85f,
+                    210f,
+                    340f,
+                    92f,
+                    if (equipped) ForgeUiRenderer.GradientStyle.SUCCESS else ForgeUiRenderer.GradientStyle.PRIMARY,
+                )
                 continueButton = button("CONTINUE", 475f, 210f, 340f, 92f)
             }
 
@@ -106,34 +123,70 @@ class CosmeticUnlockRevealScreen(game: BrickBreakerGame, private val unlocks: Li
     private fun drawBall(ball: BallSpriteDefinition) {
         val appearAt = if (flow.reducedMotion) 0f else .18f
         val alpha = ((elapsed - appearAt) / .35f).coerceIn(0f, 1f)
-        val size = 260f * (.82f + .18f * alpha)
+        val size = 248f * (.84f + .16f * alpha)
+        val centerX = 450f
+        val centerY = 830f
         batch.color = Color(1f, 1f, 1f, alpha)
-        game.assets.cosmetics.ballRegion(ball)?.let {
-            batch.draw(it, 450f - size / 2f, 700f, size, size)
+        game.assets.cosmetics.ballRegion(ball)?.let { region ->
+            drawBallPreview(region, centerX, centerY, size)
         }
         batch.color = Color.WHITE
-        fittedText(game.assets.smallFont, ball.name.uppercase(), 150f, 650f, 600f, .72f)
-        fittedText(game.assets.smallFont, "THIS BALL IS NOW READY TO EQUIP", 120f, 545f, 660f, .60f)
+        fittedText(game.assets.smallFont, ball.name.uppercase(), 150f, 630f, 600f, .76f)
+        val ability = BallAbilityCatalog.profileForBall(ball)
+        game.assets.smallFont.color = ForgeUiPalette.primaryLight
+        fittedText(game.assets.smallFont, "${ability.title} • TIER ${ability.tier} • ${ability.shortStat()}", 105f, 590f, 690f, .56f)
+        game.assets.smallFont.color = ForgeUiPalette.textSecondary
+        fittedText(game.assets.smallFont, "THIS BALL IS NOW READY TO EQUIP", 120f, 548f, 660f, .54f)
+        game.assets.smallFont.color = Color.WHITE
     }
 
     private fun drawPaddleStyle(style: PaddleStyleSet) {
         val forms = listOf("NORMAL" to style.normal, "WEAPON" to style.weapon, "STICKY" to style.sticky)
         forms.forEachIndexed { index, (label, paddle) ->
-            val appearAt = if (flow.reducedMotion) 0f else .2f + index * .28f
+            val appearAt = if (flow.reducedMotion) 0f else .2f + index * .22f
             val alpha = ((elapsed - appearAt) / .35f).coerceIn(0f, 1f)
-            val y = 890f - index * 205f
+            val cardY = 865f - index * 180f
+            val cardX = 125f
+            val cardWidth = 650f
+            val cardHeight = 120f
+            batch.color = Color(ForgeUiPalette.glassPanel.r, ForgeUiPalette.glassPanel.g, ForgeUiPalette.glassPanel.b, .35f + .35f * alpha)
+            batch.draw(game.assets.ui.findRegion("panel"), cardX, cardY, cardWidth, cardHeight)
+
+            game.assets.smallFont.color = Color(ForgeUiPalette.maroon.r, ForgeUiPalette.maroon.g, ForgeUiPalette.maroon.b, alpha)
+            fittedText(game.assets.smallFont, label, cardX + 20f, cardY + 84f, 170f, .58f)
+            game.assets.smallFont.color = Color.WHITE
+
             batch.color = Color(1f, 1f, 1f, alpha)
             game.assets.cosmetics.paddleRegion(paddle)?.let { region ->
-                val scale = min(520f / region.regionWidth, 90f / region.regionHeight)
+                val availableWidth = 420f
+                val availableHeight = 68f
+                val scale = min(availableWidth / region.regionWidth, availableHeight / region.regionHeight)
                 val w = region.regionWidth * scale
                 val h = region.regionHeight * scale
-                batch.draw(region, (900f - w) / 2f, y, w, h)
+                val drawX = cardX + 205f + (availableWidth - w) / 2f
+                val drawY = cardY + (cardHeight - h) / 2f
+                batch.draw(region, drawX, drawY, w, h)
             }
             batch.color = Color.WHITE
-            game.assets.smallFont.color = ForgeUiPalette.maroon
-            fittedText(game.assets.smallFont, label, 80f, y + 58f, 150f, .58f)
-            game.assets.smallFont.color = Color.WHITE
         }
+        val ability = PaddleAbilityCatalog.profileForNormalPaddle(style.normal.id)
+        game.assets.smallFont.color = ForgeUiPalette.primaryLight
+        fittedText(game.assets.smallFont, "${ability.title} • TIER ${ability.tier}", 120f, 505f, 660f, .56f)
+        game.assets.smallFont.color = ForgeUiPalette.textSecondary
+        fittedText(game.assets.smallFont, ability.description.uppercase(), 120f, 465f, 660f, .46f)
+        game.assets.smallFont.color = Color.WHITE
+    }
+
+    private fun drawBallPreview(region: TextureRegion, centerX: Float, centerY: Float, diameter: Float) {
+        val previewRegion = croppedBallPreviewRegion(region)
+        batch.draw(previewRegion, centerX - diameter / 2f, centerY - diameter / 2f, diameter, diameter)
+    }
+
+    private fun croppedBallPreviewRegion(region: TextureRegion): TextureRegion {
+        val side = min(region.regionWidth, region.regionHeight)
+        val xOffset = ((region.regionWidth - side) / 2).coerceAtLeast(0)
+        val yOffset = ((region.regionHeight - side) / 2).coerceAtLeast(0)
+        return TextureRegion(region, xOffset, yOffset, side, side)
     }
 
     private fun drawEnergy() {
@@ -153,14 +206,35 @@ class CosmeticUnlockRevealScreen(game: BrickBreakerGame, private val unlocks: Li
         batch.color = Color.WHITE
     }
 
+    private fun isBallEquipped(ball: BallSpriteDefinition): Boolean =
+        game.progress.settings.selectedBallGroupName == ball.groupName &&
+            game.progress.settings.selectedBallSpriteName == ball.spriteName
+
+    private fun isStyleEquipped(style: PaddleStyleSet): Boolean =
+        game.progress.settings.selectedPaddleId == style.normal.id &&
+            game.progress.settings.selectedWeaponPaddleId == style.weapon.id &&
+            game.progress.settings.selectedStickyPaddleId == style.sticky.id
+
     private fun equipCurrent() {
         when (flow.current) {
             CosmeticRevealKind.BALL -> ballUnlock?.ball?.let {
-                game.cosmeticProgression.equipBall(game.progress.settings, it)
+                if (isBallEquipped(it)) {
+                    game.cosmeticProgression.firstOwnedBall()?.let { starter ->
+                        game.cosmeticProgression.equipBall(game.progress.settings, starter)
+                    }
+                } else {
+                    game.cosmeticProgression.equipBall(game.progress.settings, it)
+                }
             }
 
             CosmeticRevealKind.PADDLE_STYLE -> paddleUnlock?.style?.let {
-                game.cosmeticProgression.equipStyle(game.progress.settings, it)
+                if (isStyleEquipped(it)) {
+                    game.cosmeticProgression.firstOwnedPaddle()?.let { starter ->
+                        game.cosmeticProgression.equipStyle(game.progress.settings, starter)
+                    }
+                } else {
+                    game.cosmeticProgression.equipStyle(game.progress.settings, it)
+                }
             }
 
             else -> Unit

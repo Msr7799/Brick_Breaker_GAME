@@ -1,10 +1,3 @@
-/*
- * ملاحظات صيانة الملف:
- * المسار: app/src/test/java/com/example/brick_breaker_ball/DevelopmentAccessTest.kt
- * المؤلف: mohamed alromaihi
- * الدوال الموجودة: `everyCampaignLevelAndWorldCanBeSelectedWithoutChangingProgress`
- */
-
 package com.example.brick_breaker_ball
 
 import org.junit.Assert.assertFalse
@@ -12,10 +5,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DevelopmentAccessTest {
-    /** ملاحظة صيانة: الدالة `everyCampaignLevelAndWorldCanBeSelectedWithoutChangingProgress` توثّق حالة اختبار أو تهيئة آلية وتحمي السلوك المتوقع من التراجع؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
-    @Test fun everyCampaignLevelAndWorldCanBeSelectedWithoutChangingProgress() {
+    @Test
+    fun debugModeBypassesSelectionLocksWithoutChangingProgress() {
         val savedUnlockedLevel = 1
-        val access = DevelopmentAccess(TestPreferences())
+        val access = DevelopmentAccess(TestPreferences(), available = true)
 
         assertFalse(access.enabled)
         assertFalse(access.canSelectLevel(2, savedUnlockedLevel))
@@ -31,8 +24,21 @@ class DevelopmentAccessTest {
         assertTrue(access.canUseCosmetic(owned = false))
         assertTrue(access.canMakeTestPurchase(productAvailable = false, busy = false))
         assertFalse(access.canMakeTestPurchase(productAvailable = true, busy = true))
-
         assertFalse(access.toggle())
         assertFalse(access.canSelectLevel(2, savedUnlockedLevel))
+    }
+
+    @Test
+    fun releaseModeIgnoresPreviouslyEnabledPreference() {
+        val prefs = TestPreferences().putBoolean("enabled", true)
+        val access = DevelopmentAccess(prefs, available = false)
+
+        assertFalse(access.enabled)
+        assertFalse(access.toggle())
+        assertFalse(access.canSelectLevel(2, 1))
+        assertFalse(access.canSelectWorld(2, 1))
+        assertFalse(access.canUseCosmetic(owned = false))
+        assertFalse(access.canMakeTestPurchase(productAvailable = false, busy = false))
+        assertTrue(access.canMakeTestPurchase(productAvailable = true, busy = false))
     }
 }

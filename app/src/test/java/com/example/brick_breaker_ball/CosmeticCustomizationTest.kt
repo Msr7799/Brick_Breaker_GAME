@@ -8,7 +8,6 @@
 
 package com.example.brick_breaker_ball
 
-import com.badlogic.gdx.utils.JsonReader
 import java.io.File
 import javax.imageio.ImageIO
 import org.junit.Assert.assertEquals
@@ -21,8 +20,7 @@ import org.junit.Test
 class CosmeticCustomizationTest {
     private val root = generateSequence(File(requireNotNull(System.getProperty("user.dir")))) { it.parentFile }
         .first { File(it, "app/src/main/assets/sprites").isDirectory }
-    private val ballJson = File(root, "app/src/main/assets/sprites/balls-sprites/balls-sprites-7groups-named.json")
-    private val ballPng = File(root, "app/src/main/assets/sprites/balls-sprites/balls-sprites-7.png")
+    private val ballDirectory = File(root, "app/src/main/assets/sprites/balls-sprites/balls_set")
     private val paddleDirectory = File(root, "app/src/main/assets/sprites/paddles-sprites")
 
     /** ملاحظة صيانة: الدالة `hiddenPaddleCardsCannotInterceptSaveAndBack` توثّق حالة اختبار أو تهيئة آلية وتحمي السلوك المتوقع من التراجع؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
@@ -49,20 +47,20 @@ class CosmeticCustomizationTest {
         assertEquals(85f, requireNotNull(CustomizationHitTesting.visibleBallCard(partiallyVisibleTop)).height)
     }
 
-    /** ملاحظة صيانة: الدالة `ballCatalogContainsAllGroupsSpritesAndValidUniqueBounds` توثّق حالة اختبار أو تهيئة آلية وتحمي السلوك المتوقع من التراجع؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
-    @Test fun ballCatalogContainsAllGroupsSpritesAndValidUniqueBounds() {
-        val image = ImageIO.read(ballPng)
-        val groups = CosmeticSpriteCatalogParser.balls(ballJson.readText(), image.width, image.height)
-        val balls = groups.flatMap { it.sprites }
-        assertEquals(40, groups.size)
-        assertEquals(271, balls.size)
-        assertEquals(271, balls.map { it.id }.toSet().size)
-        assertTrue(
-            balls.all {
-                it.x >= 0 && it.y >= 0 && it.width > 0 && it.height > 0 && it.x + it.width <= image.width &&
-                    it.y + it.height <= image.height
-            }
-        )
+    /** يضمن أن نسخة الإنتاج تحتوي 60 كرة مستقلة فقط بلا الشيت/المجموعات القديمة. */
+    @Test fun ballCatalogContainsExactlySixtyIndividualPngs() {
+        val files = ballDirectory.listFiles().orEmpty()
+            .filter { it.extension.equals("png", ignoreCase = true) }
+            .sortedBy { it.name }
+        assertEquals(60, files.size)
+        assertEquals(60, files.map { it.name.substringBefore('_') }.toSet().size)
+        assertTrue(files.all { it.name.matches(Regex("\\d{2}_.+\\.png")) })
+        assertTrue(files.any { it.name == "38_chrome_mirror.png" })
+        assertTrue(files.any { it.name == "39_black_gloss.png" })
+        assertTrue(files.any { it.name == "43_amber_glass.png" })
+        assertTrue(files.any { it.name == "44_orange_glass.png" })
+        assertTrue(files.any { it.name == "42_smoky_stone.png" })
+        assertTrue(files.any { it.name == "41_pearl_white.png" })
     }
 
     /** ملاحظة صيانة: يتحقق الاختبار من اكتشاف مجموعات البادلز الست وتكوين 36 عائلة كاملة وفريدة. */
@@ -137,9 +135,7 @@ class CosmeticCustomizationTest {
     @Test fun corruptValuesUseSafeDefaultsWithoutThrowing() {
         val prefs = TestPreferences().putString("selected_ball_size", "BROKEN")
         assertEquals(BallSize.DEFAULT, ProgressStore(prefs).settings.selectedBallBaseSize)
-        assertTrue(runCatching { CosmeticSpriteCatalogParser.balls("{broken", 1536, 1024) }.isFailure)
-        val rootJson = JsonReader().parse(ballJson.readText())
-        assertNotNull(rootJson.get("groups"))
+        assertEquals(60, ballDirectory.listFiles().orEmpty().count { it.extension.equals("png", ignoreCase = true) })
     }
 
     /** ملاحظة صيانة: الدالة `sizesDriveTheSameVisualAndCollisionRadius` توثّق حالة اختبار أو تهيئة آلية وتحمي السلوك المتوقع من التراجع؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
@@ -227,8 +223,8 @@ class CosmeticCustomizationTest {
         repeat(3) { session.activatePowerUp(PowerUpType.EXPAND_PADDLE) }
         store.save(level, session)
         val restored = requireNotNull(store.restore()).second
-        assertEquals(BallSize.DEFAULT, restored.baseBallSize)
-        assertEquals(BallSize.DEFAULT, restored.ball.baseSize)
+        assertEquals(BallSize.LARGE, restored.baseBallSize)
+        assertEquals(BallSize.LARGE, restored.ball.baseSize)
         assertEquals(BallSize.SMALL, restored.ball.size)
         assertEquals("monsters", restored.ball.cosmeticGroupName)
         assertEquals("monsters_skull", restored.ball.cosmeticSpriteName)

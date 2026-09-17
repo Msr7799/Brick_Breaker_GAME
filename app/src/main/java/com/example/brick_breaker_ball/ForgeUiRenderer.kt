@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Pixmap
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.math.Rectangle
+import kotlin.math.sqrt
 
 /**
  * Generated UI gradients. Accent colors are never multiplied into pre-colored UI textures,
@@ -30,11 +31,59 @@ class ForgeUiRenderer {
     private val gradients = GradientStyle.entries.associateWith { style ->
         createGradientTexture(colorsFor(style))
     }
+    private val roundedGradients = GradientStyle.entries.associateWith { style ->
+        createRoundedGradientTexture(colorsFor(style), radius = 8f)
+    }
+    private val compactRoundedGradients = GradientStyle.entries.associateWith { style ->
+        createRoundedGradientTexture(colorsFor(style), radius = 2f)
+    }
 
     fun drawGradientButton(batch: SpriteBatch, rect: Rectangle, style: GradientStyle) {
         // Dark foundation gives the button a subtle forged/raised silhouette.
         drawGradient(batch, rect.x, rect.y - 3f, rect.width, rect.height + 3f, GradientStyle.NEUTRAL, .96f)
         drawGradient(batch, rect.x + 2f, rect.y + 2f, rect.width - 4f, rect.height - 5f, style)
+    }
+
+    fun drawRoundedGradientButton(batch: SpriteBatch, rect: Rectangle, style: GradientStyle) {
+        drawRoundedGradient(batch, rect.x, rect.y - 3f, rect.width, rect.height + 3f, GradientStyle.NEUTRAL, .96f)
+        drawRoundedGradient(batch, rect.x + 2f, rect.y + 2f, rect.width - 4f, rect.height - 5f, style)
+    }
+
+    /** Settings/footer action button with a clear forged border and compact corner radius. */
+    fun drawCompactRoundedGradientButton(batch: SpriteBatch, rect: Rectangle, style: GradientStyle) {
+        // Outer dark metallic border.
+        drawCompactRoundedGradient(
+            batch,
+            rect.x,
+            rect.y - 2f,
+            rect.width,
+            rect.height + 2f,
+            GradientStyle.NEUTRAL,
+            1f,
+        )
+
+        // Thin inner rim: visible enough to frame the button without making the
+        // orange actions look heavier than the GitHub control.
+        drawCompactRoundedGradient(
+            batch,
+            rect.x + 2f,
+            rect.y + 2f,
+            rect.width - 4f,
+            rect.height - 4f,
+            GradientStyle.DISABLED,
+            .92f,
+        )
+
+        // Main button face.
+        drawCompactRoundedGradient(
+            batch,
+            rect.x + 4f,
+            rect.y + 4f,
+            rect.width - 8f,
+            rect.height - 8f,
+            style,
+            1f,
+        )
     }
 
     fun drawGradientPanel(batch: SpriteBatch, rect: Rectangle, style: GradientStyle = GradientStyle.NEUTRAL) {
@@ -73,6 +122,8 @@ class ForgeUiRenderer {
 
     fun dispose() {
         gradients.values.forEach(Texture::dispose)
+        roundedGradients.values.forEach(Texture::dispose)
+        compactRoundedGradients.values.forEach(Texture::dispose)
     }
 
     private fun drawGradient(
@@ -90,11 +141,76 @@ class ForgeUiRenderer {
         batch.color = Color.WHITE
     }
 
+    private fun drawRoundedGradient(
+        batch: SpriteBatch,
+        x: Float,
+        y: Float,
+        width: Float,
+        height: Float,
+        style: GradientStyle,
+        alpha: Float = 1f,
+    ) {
+        if (width <= 0f || height <= 0f) return
+        batch.setColor(1f, 1f, 1f, alpha)
+        batch.draw(roundedGradients.getValue(style), x, y, width, height)
+        batch.color = Color.WHITE
+    }
+
+    private fun drawCompactRoundedGradient(
+        batch: SpriteBatch,
+        x: Float,
+        y: Float,
+        width: Float,
+        height: Float,
+        style: GradientStyle,
+        alpha: Float = 1f,
+    ) {
+        if (width <= 0f || height <= 0f) return
+        batch.setColor(1f, 1f, 1f, alpha)
+        batch.draw(compactRoundedGradients.getValue(style), x, y, width, height)
+        batch.color = Color.WHITE
+    }
+
     private fun createGradientTexture(colors: List<Color>): Texture {
         val pixmap = Pixmap(1, colors.size, Pixmap.Format.RGBA8888)
         colors.forEachIndexed { index, color ->
             // First palette color renders at the lower edge and the lightest at the upper edge.
             pixmap.drawPixel(0, colors.lastIndex - index, Color.rgba8888(color))
+        }
+        return Texture(pixmap).also {
+            it.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
+            pixmap.dispose()
+        }
+    }
+
+    private fun createRoundedGradientTexture(colors: List<Color>, radius: Float): Texture {
+        val width = 64
+        val height = 32
+        val pixmap = Pixmap(width, height, Pixmap.Format.RGBA8888)
+        for (y in 0 until height) {
+            val progress = y.toFloat() / (height - 1)
+            val lower = colors[0]
+            val upper = colors[colors.lastIndex]
+            val color = Color(
+                lower.r + (upper.r - lower.r) * progress,
+                lower.g + (upper.g - lower.g) * progress,
+                lower.b + (upper.b - lower.b) * progress,
+                1f,
+            )
+            for (x in 0 until width) {
+                val cornerX = when {
+                    x < radius -> radius
+                    x >= width - radius -> width - radius - 1f
+                    else -> x.toFloat()
+                }
+                val cornerY = when {
+                    y < radius -> radius
+                    y >= height - radius -> height - radius - 1f
+                    else -> y.toFloat()
+                }
+                val distance = sqrt((x - cornerX) * (x - cornerX) + (y - cornerY) * (y - cornerY))
+                pixmap.drawPixel(x, y, Color.rgba8888(Color(color.r, color.g, color.b, if (distance <= radius) 1f else 0f)))
+            }
         }
         return Texture(pixmap).also {
             it.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)

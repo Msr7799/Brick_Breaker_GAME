@@ -4,5 +4,9 @@
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowActionModeOverlay">true</item>
     </style>
-    <style name="Theme.BrickBreakerBall" parent="Base.Theme.BrickBreakerBall" />
+    <style name="Theme.BrickBreakerBall" parent="Base.Theme.BrickBreakerBall">
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
 </resources>

@@ -92,7 +92,7 @@ object CosmeticSpriteCatalogParser {
 class CosmeticSpriteRepository {
     private companion object {
         const val PADDLE_DIRECTORY = "sprites/paddles-sprites"
-        const val BALL_DIRECTORY = "sprites/balls-sprites/balls_set"
+        const val BALL_DIRECTORY = "sprites/balls-sprites"
 
         val PRIMARY_BALL_SPRITES = listOf(
             "38_chrome_mirror",
@@ -103,7 +103,7 @@ class CosmeticSpriteRepository {
             "41_pearl_white"
         )
 
-        val numberedBallPattern = Regex("^(\\d{2})_(.+)\\.png$", RegexOption.IGNORE_CASE)
+        val numberedBallPattern = Regex("^(\\d{2,3})_(.+)\\.png$", RegexOption.IGNORE_CASE)
     }
 
     private data class BallFile(val spriteName: String, val displayName: String, val assetPath: String)

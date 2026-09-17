@@ -26,7 +26,9 @@ class GameSession(
     val level: LevelDefinition = LevelRepository.level(1),
     var baseBallSize: BallSize = BallSize.DEFAULT,
     var selectedBallGroupName: String = CosmeticDefaults.BALL_GROUP,
-    var selectedBallSpriteName: String = CosmeticDefaults.BALL_SPRITE
+    var selectedBallSpriteName: String = CosmeticDefaults.BALL_SPRITE,
+    var paddleAbility: PaddleAbilityProfile = PaddleAbilityCatalog.default,
+    var ballAbility: BallAbilityProfile = BallAbilityCatalog.default
 ) {
     companion object {
         const val WIDTH = 900f
@@ -39,8 +41,10 @@ class GameSession(
         const val ABSOLUTE_MAX_BALLS = 15
         const val MAX_LASER_SHOTS = 8
         const val BASE_PADDLE_WIDTH = 244f
-        const val PADDLE_EXPAND_STEP = 54f
+        const val PADDLE_EXPAND_STEP = 72f
         const val MAX_EXPAND_STACKS = 4
+        const val MAX_REWARDED_REVIVES = 3
+        const val REWARDED_REVIVE_LIVES = 3
         val PADDLE_SIZE_LEVELS = floatArrayOf(110f, 145f, 208f, 244f, 280f)
     }
 
@@ -53,7 +57,7 @@ class GameSession(
     val laserShots = mutableListOf<LaserShot>()
     val powerUps = PowerUpManager()
     val replay = ReplayRecorder(seed, 1)
-    private val dropDirector = PowerUpDropDirector(seed)
+    private val dropDirector = PowerUpDropDirector(seed, level.world)
     private val effectRandom = Random(seed xor 0x50A3_E77L)
     private val events = ArrayDeque<GameplayEvent>()
     internal var nextBallId = 1
@@ -72,6 +76,13 @@ class GameSession(
         private set
     private var pendingDeathRailZapX: Float? = null
     var itemRewardSink: (PowerUpType) -> Unit = {}
+    internal var paddleAbilityHitCount = 0
+    internal var ballAbilityHitCount = 0
+    internal var ballAbilityBreakCount = 0
+    internal var abilityTapWindowRemaining = 0f
+    var rewardedRevivesUsed = 0
+        internal set
+    val rewardedRevivesRemaining: Int get() = (MAX_REWARDED_REVIVES - rewardedRevivesUsed).coerceAtLeast(0)
 
     init {
         newLevel()
@@ -88,6 +99,11 @@ class GameSession(
         explosionExpansion = 1
         fallingBricksMode = false
         expandPaddleStacks = 0
+        paddleAbilityHitCount = 0
+        ballAbilityHitCount = 0
+        ballAbilityBreakCount = 0
+        abilityTapWindowRemaining = 0f
+        rewardedRevivesUsed = 0
         paddle.targetWidth = BASE_PADDLE_WIDTH
         paddle.width = BASE_PADDLE_WIDTH
         paddle.mode = PaddleMode.NORMAL
@@ -153,7 +169,8 @@ class GameSession(
                 PowerUpType.PIERCING_BALL in powerUps -> BallCollisionMode.PIERCING
                 else -> BallCollisionMode.NORMAL
             },
-            baseSpeed = source?.baseSpeed ?: velocity.len()
+            baseSpeed = source?.baseSpeed ?: velocity.len(),
+            abilityFireCharge = false
         )
         return ball
     }
@@ -170,6 +187,19 @@ class GameSession(
         baseBallSize = settings.selectedBallBaseSize
         selectedBallGroupName = settings.selectedBallGroupName
         selectedBallSpriteName = settings.selectedBallSpriteName
+        val nextBallAbility = BallAbilityCatalog.profileForSprite(settings.selectedBallSpriteName)
+        if (nextBallAbility != ballAbility) {
+            ballAbility = nextBallAbility
+            ballAbilityHitCount = 0
+            ballAbilityBreakCount = 0
+        }
+        val nextAbility = PaddleAbilityCatalog.profileForNormalPaddle(settings.selectedPaddleId)
+        if (nextAbility != paddleAbility) {
+            paddleAbility = nextAbility
+            paddleAbilityHitCount = 0
+            abilityTapWindowRemaining = 0f
+            balls.forEach { it.abilityFireCharge = false }
+        }
         balls.forEach { ball ->
             ball.baseSize = baseBallSize
             ball.cosmeticGroupName = selectedBallGroupName
@@ -200,6 +230,8 @@ class GameSession(
                     launchAttachedBalls(0f)
                 } else if (PowerUpType.LASER_PADDLE in powerUps || PowerUpType.LASER_AUTO_CHARGE in powerUps) {
                     fireLasers()
+                } else {
+                    armPaddleAbility()
                 }
             }
 
@@ -213,6 +245,20 @@ class GameSession(
             GamePhase.LOADING, GamePhase.READY, GamePhase.RESOLVING, GamePhase.PAUSED -> Unit
         }
         replay.record(elapsed, paddle.x, "ACTION")
+    }
+
+    /** Arms timing-based paddle abilities without stealing Sticky/Laser actions. */
+    private fun armPaddleAbility() {
+        if (paddleAbility.kind == PaddleAbilityKind.IMPACT_BOOST) {
+            abilityTapWindowRemaining = paddleAbility.perfectWindowSeconds
+        }
+    }
+
+    fun paddleAbilityStatus(): String = when (paddleAbility.kind) {
+        PaddleAbilityKind.PRECISION_CORE -> "STEADY +${((paddleAbility.moveResponseMultiplier - 1f) * 100f).toInt()}%"
+        PaddleAbilityKind.HYPER_GLIDE -> "MOVE +${((paddleAbility.moveResponseMultiplier - 1f) * 100f).toInt()}%"
+        PaddleAbilityKind.IMPACT_BOOST -> if (abilityTapWindowRemaining > 0f) "PERFECT WINDOW" else "TAP ON IMPACT"
+        PaddleAbilityKind.INFERNO_RHYTHM -> "CHARGE ${paddleAbilityHitCount % paddleAbility.fireEveryHits.coerceAtLeast(1)}/${paddleAbility.fireEveryHits}"
     }
 
     /** ملاحظة صيانة: الدالة `hasAttachedBalls` تتحقق من الشرط المطلوب وتعيد نتيجة يمكن لبقية النظام الاعتماد عليها؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
@@ -259,7 +305,8 @@ class GameSession(
     fun movePaddle(rawTargetX: Float, dt: Float) {
         val targetX = if (PowerUpType.INVERT_CONTROLS in powerUps) WIDTH - rawTargetX else rawTargetX
         val oldX = paddle.x
-        val response = if (PowerUpType.SLIPPERY_PADDLE in powerUps) 5f else 18f
+        val baseResponse = if (PowerUpType.SLIPPERY_PADDLE in powerUps) 5f else 18f
+        val response = baseResponse * paddleAbility.moveResponseMultiplier
         val halfExtent = if (PowerUpType.DUAL_PADDLE in powerUps) paddle.width + 3f else paddle.width / 2f
         val wanted = targetX.coerceIn(halfExtent, WIDTH - halfExtent)
         paddle.x += (wanted - paddle.x) * (dt * response).coerceAtMost(1f)
@@ -279,6 +326,7 @@ class GameSession(
         if (phase == GamePhase.PAUSED) return
         elapsed += dt
         laserCooldown = (laserCooldown - dt).coerceAtLeast(0f)
+        abilityTapWindowRemaining = (abilityTapWindowRemaining - dt).coerceAtLeast(0f)
         if (phase == GamePhase.PLAYING && PowerUpType.LASER_AUTO_CHARGE in powerUps) fireLasers()
         dropDirector.update(dt)
         updateBricks(dt)
@@ -510,6 +558,26 @@ class GameSession(
         ball.velocity.set(MathUtils.cosDeg(angle), MathUtils.sinDeg(angle)).scl(speed)
         ball.velocity.x += paddle.velocityX.coerceIn(-500f, 500f) * .12f
         ensureVelocityBounds(ball)
+        paddleAbilityHitCount++
+        when (paddleAbility.kind) {
+            PaddleAbilityKind.IMPACT_BOOST -> if (abilityTapWindowRemaining > 0f) {
+                val currentBase = ball.baseSpeed.coerceAtLeast(ball.velocity.len() / speedMultiplier())
+                ball.baseSpeed = (currentBase * paddleAbility.perfectSpeedMultiplier).coerceIn(MIN_SPEED, MAX_SPEED)
+                syncBallSpeed(ball)
+                abilityTapWindowRemaining = 0f
+                events += GameplayEvent.Feedback("PERFECT +${((paddleAbility.perfectSpeedMultiplier - 1f) * 100f).toInt()}%")
+            }
+
+            PaddleAbilityKind.INFERNO_RHYTHM -> {
+                val every = paddleAbility.fireEveryHits.coerceAtLeast(1)
+                if (paddleAbilityHitCount % every == 0) {
+                    ball.abilityFireCharge = true
+                    events += GameplayEvent.Feedback("FIRE CHARGED")
+                }
+            }
+
+            else -> Unit
+        }
         if (fallingBricksMode) applyFallingBricksStep()
     }
 
@@ -522,10 +590,13 @@ class GameSession(
     }
 
     /** ملاحظة صيانة: الدالة `speedMultiplier` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
-    private fun speedMultiplier() = when {
-        PowerUpType.FAST_BALL in powerUps -> 1.25f
-        PowerUpType.SLOW_BALL in powerUps -> GameplayTuning.SLOW_BALL_MULTIPLIER
-        else -> 1f
+    private fun speedMultiplier(): Float {
+        val effectMultiplier = when {
+            PowerUpType.FAST_BALL in powerUps -> 1.25f
+            PowerUpType.SLOW_BALL in powerUps -> GameplayTuning.SLOW_BALL_MULTIPLIER
+            else -> 1f
+        }
+        return effectMultiplier * ballAbility.speedMultiplier
     }
 
     /** ملاحظة صيانة: الدالة `syncBallSpeed` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
@@ -565,6 +636,12 @@ class GameSession(
             return false
         }
         if (brick.type == BrickType.SPIKED_HAZARD) return false
+
+        val directBallHit = ball != null
+        if (directBallHit) ballAbilityHitCount++
+        val abilityTriggered = directBallHit && ballAbility.triggerEveryHits > 0 &&
+            ballAbilityHitCount % ballAbility.triggerEveryHits == 0
+
         if (ball != null && PowerUpType.TIMED_BOMB_BRICKS in powerUps && brick.timedBombSeconds == null) {
             brick.timedBombSeconds = GameplayTuning.TIMED_BOMB_DURATION
             events += GameplayEvent.Feedback("TIMED BOMB ARMED")
@@ -572,16 +649,42 @@ class GameSession(
         }
         val sourceType = brick.type
         val directFire = ball?.element == BallElement.FIRE || fireSplashOverride
-        val oneHit = forceBreak || (ball != null && (
+        val paddleAbilityFire = ball?.abilityFireCharge == true
+        val catalogInferno = abilityTriggered && ballAbility.kind == BallAbilityKind.INFERNO_BURST
+        val abilityFire = paddleAbilityFire || catalogInferno
+        val voidPhase = abilityTriggered && ballAbility.kind == BallAbilityKind.VOID_PHASE
+        val armorBreak = abilityTriggered && ballAbility.kind == BallAbilityKind.ARMOR_BREAKER
+        val oneHit = forceBreak || abilityFire || voidPhase || (ball != null && (
             PowerUpType.ONE_HIT_ANY_BRICK in powerUps ||
                 PowerUpType.MEGA_BALL in powerUps
             ))
-        brick.health -= if (directFire || oneHit) brick.health else 1
+        val normalDamage = 1 + if (armorBreak) ballAbility.bonusDamage else 0
+        brick.health -= if (directFire || oneHit) brick.health else normalDamage
+        if (paddleAbilityFire) ball?.abilityFireCharge = false
+        if (abilityFire) events += GameplayEvent.Feedback(if (catalogInferno) "INFERNO BURST" else "INFERNO HIT")
+        if (armorBreak) events += GameplayEvent.Feedback("ARMOR BREAK +${ballAbility.bonusDamage}")
+        if (voidPhase) events += GameplayEvent.Feedback("VOID PHASE")
         if (brick.health > 0) return true
         val cx = brick.bounds.x + brick.bounds.width / 2f
         val cy = brick.bounds.y + brick.bounds.height / 2f
         bricks.remove(brick)
-        score += 100 * scoreMultiplier()
+        val baseBrickScore = 100 * scoreMultiplier()
+        val impactBonus = if (ball != null && ballAbility.kind == BallAbilityKind.IMPACT_CORE) {
+            (baseBrickScore * ballAbility.scoreBonusPercent) / 100
+        } else {
+            0
+        }
+        score += baseBrickScore + impactBonus
+        if (ball != null) {
+            ballAbilityBreakCount++
+            if (ballAbility.kind == BallAbilityKind.FORTUNE_CORE &&
+                ballAbility.fortuneEveryBreaks > 0 &&
+                ballAbilityBreakCount % ballAbility.fortuneEveryBreaks == 0
+            ) {
+                score += ballAbility.fortuneBonusScore
+                events += GameplayEvent.Feedback("FORTUNE +${ballAbility.fortuneBonusScore}")
+            }
+        }
         val forced = sourceType == BrickType.POWERUP_CARRIER
         dropDirector.choose(lives, fallingPowerUps.size, forced, level.dropRate)?.let {
             fallingPowerUps += FallingPowerUp(nextPowerUpId++, it, Vector2(cx, brick.bounds.y))
@@ -599,8 +702,19 @@ class GameSession(
                 events += GameplayEvent.Feedback("${PowerUpInfoRepository.info(reward).shortName} ADDED TO BAG")
             }
         }
+        if (ball != null && abilityTriggered && ballAbility.kind == BallAbilityKind.ARC_CHAIN) {
+            val target = bricks.asSequence()
+                .filter { it.type.breakable && !it.locked && it.type != BrickType.SPIKED_HAZARD }
+                .minByOrNull { candidate ->
+                    Vector2.dst(cx, cy, candidate.bounds.x + candidate.bounds.width / 2f, candidate.bounds.y + candidate.bounds.height / 2f)
+                }
+            if (target != null) {
+                events += GameplayEvent.Feedback("ARC CHAIN")
+                damageBrick(target, null, chain)
+            }
+        }
         val explosion = sourceType == BrickType.EXPLOSIVE || ball?.element == BallElement.EXPLOSIVE
-        val fireSplash = directFire
+        val fireSplash = directFire || abilityFire
         if (explosion || fireSplash) {
             events += GameplayEvent.Explosion
             val normalRadius = when {
@@ -754,10 +868,16 @@ class GameSession(
                 )
             }
             capsule.position.mulAdd(capsule.velocity, dt)
-            val bounds = Rectangle(capsule.position.x - 24f, capsule.position.y - 15f, 48f, 30f)
+            val bounds = Rectangle(
+                capsule.position.x - GameplayTuning.POWERUP_PICKUP_WIDTH / 2f,
+                capsule.position.y - GameplayTuning.POWERUP_PICKUP_HEIGHT / 2f,
+                GameplayTuning.POWERUP_PICKUP_WIDTH,
+                GameplayTuning.POWERUP_PICKUP_HEIGHT,
+            )
             if (paddleCollisionBounds().any(bounds::overlaps)) {
-                activatePowerUp(capsule.type)
+                val collectedType = capsule.type
                 iterator.remove()
+                activatePowerUp(collectedType)
             } else {
                 val passedPaddle = capsule.position.y < paddle.y - paddle.height / 2f - GameplayTuning.POWERUP_PADDLE_CLEARANCE
                 val leftPlayfield = capsule.position.y < GameplayTuning.POWERUP_DESPAWN_Y
@@ -1158,14 +1278,17 @@ class GameSession(
         bricks.forEach { it.timedBombSeconds = null }
 
         powerUps.clear()
-        // Do not clear fallingPowerUps here: a talisman dropped from a brick should
-        // survive a normal life loss and keep falling until caught or below the paddle.
+        fallingPowerUps.clear()
         laserShots.clear()
         bottomShield = false
         explosionExpansion = 1
         fallingBricksMode = false
         expandPaddleStacks = 0
         laserCooldown = 0f
+        paddleAbilityHitCount = 0
+        ballAbilityHitCount = 0
+        ballAbilityBreakCount = 0
+        abilityTapWindowRemaining = 0f
         paddle.targetWidth = BASE_PADDLE_WIDTH
         paddle.width = BASE_PADDLE_WIDTH
         paddle.mode = PaddleMode.NORMAL
@@ -1186,6 +1309,21 @@ class GameSession(
         resetEffectsAfterLifeLoss()
         events += GameplayEvent.Feedback(feedback, if (force) "explosion" else "wall_hit")
         if (lives <= 0) phase = GamePhase.GAME_OVER else serve()
+    }
+
+    /**
+     * Grants a rewarded continue without rebuilding the level. The ad layer must call this only
+     * after [RewardedAdResult.Earned]. Each level attempt can use at most three rewarded continues.
+     */
+    fun reviveFromRewardedAd(): Boolean {
+        if (phase != GamePhase.GAME_OVER || lives > 0 || rewardedRevivesUsed >= MAX_REWARDED_REVIVES) return false
+        rewardedRevivesUsed++
+        lives = REWARDED_REVIVE_LIVES
+        pendingDeathRailZapX = null
+        abilityTapWindowRemaining = 0f
+        events += GameplayEvent.Feedback("CONTINUE • $REWARDED_REVIVE_LIVES LIVES RESTORED")
+        serve()
+        return true
     }
 
     /** ملاحظة صيانة: الدالة `completeLevel` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */

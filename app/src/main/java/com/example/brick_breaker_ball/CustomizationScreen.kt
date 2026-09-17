@@ -18,7 +18,7 @@ import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.utils.Align
 import kotlin.math.abs
 
-private enum class CustomizationTab { BALLS, PADDLES }
+enum class CustomizationTab { BALLS, PADDLES }
 private enum class PaddleFilter { NORMAL, WEAPON, STICKY }
 
 internal object CustomizationHitTesting {
@@ -44,7 +44,11 @@ internal object CustomizationHitTesting {
     }
 }
 
-class CustomizationScreen(game: BrickBreakerGame, private val returnToPausedGame: Boolean = false) : ForgeScreen(game) {
+class CustomizationScreen(
+    game: BrickBreakerGame,
+    private val returnToPausedGame: Boolean = false,
+    initialTab: CustomizationTab = CustomizationTab.BALLS,
+) : ForgeScreen(game) {
     private companion object {
         val WEAPON_PREVIEW_EXPAND_SCALE =
             (GameSession.BASE_PADDLE_WIDTH + GameSession.PADDLE_EXPAND_STEP) / GameSession.BASE_PADDLE_WIDTH
@@ -53,7 +57,7 @@ class CustomizationScreen(game: BrickBreakerGame, private val returnToPausedGame
         const val BALL_START_Y = 995f
     }
 
-    private var tab = CustomizationTab.BALLS
+    private var tab = initialTab
     private var paddleFilter = PaddleFilter.NORMAL
     private var ballScrollOffset = 0f
     private var paddleScrollOffset = 0f
@@ -64,6 +68,14 @@ class CustomizationScreen(game: BrickBreakerGame, private val returnToPausedGame
     private var touchStartY = 0f
     private var touchLastX = 0f
     private var touchLastY = 0f
+
+    override fun show() {
+        installMouseWheelHandler(::handleMouseWheel)
+    }
+
+    override fun hide() {
+        removeMouseWheelHandler()
+    }
 
     /** ملاحظة صيانة: الدالة `render` تنفّذ العقد الموروث وتربط دورة حياة المكوّن بسلوك هذا الملف؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     override fun render(delta: Float) {
@@ -131,32 +143,30 @@ class CustomizationScreen(game: BrickBreakerGame, private val returnToPausedGame
                 settings.selectedBallSpriteName == definition.spriteName
 
             panel(rect, selected)
+            val previewX = rect.x + (rect.width - 92f) / 2f
+            game.assets.cosmetics.ballRegion(definition)?.let {
+                drawBallSquare(it, previewX, rect.y + 72f, 92f)
+            }
+            if (!owned) drawLockBadge(previewX + 54f, rect.y + 126f, 38f)
+            drawSmallScaled(definition.name.uppercase(), rect.x + 10f, rect.y + 54f, rect.width - 20f, .54f)
             if (owned) {
-                game.assets.cosmetics.ballRegion(definition)?.let {
-                    drawBallSquare(it, rect.x + (rect.width - 92f) / 2f, rect.y + 72f, 92f)
-                }
-                drawSmallScaled(definition.name.uppercase(), rect.x + 10f, rect.y + 54f, rect.width - 20f, .54f)
                 game.assets.smallFont.color = if (selected) ForgeUiPalette.primaryLight else ForgeUiPalette.textSecondary
-                drawSmallScaled(if (selected) "EQUIPPED" else "TAP TO EQUIP", rect.x + 10f, rect.y + 23f, rect.width - 20f, .44f)
+                drawSmallScaled(if (selected) "EQUIPPED • TAP FOR POWER" else "TAP FOR POWER", rect.x + 10f, rect.y + 23f, rect.width - 20f, .44f)
                 game.assets.smallFont.color = Color.WHITE
                 CustomizationHitTesting.visibleBallCard(rect)?.let { hitRect ->
                     actions += hitRect to {
-                        game.cosmeticProgression.equipBall(settings, definition, game.developmentAccess.enabled)
-                        game.progress.saveSettings()
+                        game.setScreen(BallPowerDetailScreen(game, definition, returnToPausedGame))
                     }
                 }
             } else {
-                batch.color = ForgeUiPalette.glassPanel
-                batch.draw(game.assets.ui.findRegion("panel"), rect.x + 8f, rect.y + 8f, rect.width - 16f, rect.height - 16f)
-                batch.color = Color.WHITE
-                game.assets.bodyFont.color = ForgeUiPalette.muted
-                fittedText(game.assets.bodyFont, "?", rect.x + 70f, rect.y + 130f, rect.width - 140f, .92f)
-                game.assets.bodyFont.color = Color.WHITE
-                game.assets.smallFont.color = ForgeUiPalette.primaryLight
-                drawSmallScaled("LOCKED", rect.x + 10f, rect.y + 65f, rect.width - 20f, .58f)
                 game.assets.smallFont.color = ForgeUiPalette.textSecondary
-                drawSmallScaled(game.cosmeticProgression.ballRequirement(definition), rect.x + 10f, rect.y + 29f, rect.width - 20f, .44f)
+                drawSmallScaled(game.cosmeticProgression.ballRequirement(definition), rect.x + 10f, rect.y + 23f, rect.width - 20f, .44f)
                 game.assets.smallFont.color = Color.WHITE
+                CustomizationHitTesting.visibleBallCard(rect)?.let { hitRect ->
+                    actions += hitRect to {
+                        game.setScreen(BallPowerDetailScreen(game, definition, returnToPausedGame))
+                    }
+                }
             }
         }
 
@@ -171,6 +181,10 @@ class CustomizationScreen(game: BrickBreakerGame, private val returnToPausedGame
         if (region != null && selected != null) {
             drawBallSquare(region, 105f, 315f, 110f)
             drawSmallScaled(selected.name.uppercase(), 35f, 285f, 250f, .62f)
+            val selectedAbility = BallAbilityCatalog.profileForBall(selected)
+            game.assets.smallFont.color = ForgeUiPalette.primaryLight
+            drawSmallScaled("${selectedAbility.title} • TIER ${selectedAbility.tier}", 35f, 255f, 250f, .46f)
+            game.assets.smallFont.color = Color.WHITE
         }
         drawSmallScaled("REAL SIZE COMPARISON", 305f, 490f, 560f, .76f)
         drawSmallScaled("POWER-UP SIZE PREVIEW", 305f, 450f, 560f, .64f)
@@ -227,47 +241,39 @@ class CustomizationScreen(game: BrickBreakerGame, private val returnToPausedGame
             val row = index / 2
             val rect = Rectangle(40f + col * 430f, 980f - row * 190f + paddleScrollOffset, 390f, 164f)
             val style = game.cosmeticProgression.styleForPaddle(definition.id)
-            val owned = style != null && game.developmentAccess.canUseCosmetic(game.cosmeticProgression.ownsPaddle(style))
+            val owned = style != null &&
+                game.developmentAccess.canUseCosmetic(game.cosmeticProgression.ownsPaddle(style))
             val selected = owned && selectedPaddleId(settings) == definition.id
             panel(rect, selected)
 
+            batch.color = Color.WHITE
+            game.assets.cosmetics.paddleRegion(definition)?.let {
+                drawFit(
+                    it,
+                    rect.x + 24f,
+                    rect.y + 70f,
+                    rect.width - 48f,
+                    68f,
+                    horizontalScale = if (definition.groupId == "weapon") WEAPON_PREVIEW_EXPAND_SCALE else 1f
+                )
+            }
+            if (!owned) drawLockBadge(rect.x + rect.width - 73f, rect.y + 91f, 46f)
+            drawSmallScaled(definition.displayNameEn.uppercase(), rect.x + 12f, rect.y + 48f, rect.width - 24f, .64f)
             if (owned) {
-                batch.color = Color.WHITE
-                game.assets.cosmetics.paddleRegion(definition)?.let {
-                    drawFit(
-                        it,
-                        rect.x + 24f,
-                        rect.y + 70f,
-                        rect.width - 48f,
-                        68f,
-                        horizontalScale = if (definition.groupId == "weapon") WEAPON_PREVIEW_EXPAND_SCALE else 1f
-                    )
-                }
-                drawSmallScaled(definition.displayNameEn.uppercase(), rect.x + 12f, rect.y + 48f, rect.width - 24f, .64f)
                 game.assets.smallFont.color = if (selected) ForgeUiPalette.primaryLight else ForgeUiPalette.textSecondary
-                drawSmallScaled(if (selected) "EQUIPPED STYLE" else "TAP TO EQUIP STYLE", rect.x + 12f, rect.y + 21f, rect.width - 24f, .50f)
+                drawSmallScaled(if (selected) "EQUIPPED • TAP FOR POWER" else "TAP FOR POWER", rect.x + 12f, rect.y + 21f, rect.width - 24f, .50f)
                 game.assets.smallFont.color = Color.WHITE
             } else {
-                // Hide the real locked paddle artwork; show only a dark silhouette slot and the milestone.
-                batch.color = ForgeUiPalette.glassPanel
-                batch.draw(game.assets.ui.findRegion("panel"), rect.x + 8f, rect.y + 8f, rect.width - 16f, rect.height - 16f)
-                batch.color = Color.WHITE
-                game.assets.hudLabelFont.color = ForgeUiPalette.muted
-                fittedText(game.assets.hudLabelFont, "LOCKED STYLE", rect.x + 24f, rect.y + 104f, rect.width - 48f, .78f)
-                game.assets.hudLabelFont.color = Color.WHITE
                 game.assets.smallFont.color = ForgeUiPalette.primaryLight
                 val requirement = style?.let(game.cosmeticProgression::paddleRequirement) ?: "LOCKED"
-                drawSmallScaled(requirement, rect.x + 20f, rect.y + 50f, rect.width - 40f, .58f)
-                game.assets.smallFont.color = ForgeUiPalette.textSecondary
-                drawSmallScaled("WIN CAMPAIGN STAGES TO UNLOCK", rect.x + 20f, rect.y + 24f, rect.width - 40f, .46f)
+                drawSmallScaled(requirement, rect.x + 20f, rect.y + 21f, rect.width - 40f, .50f)
                 game.assets.smallFont.color = Color.WHITE
             }
 
             CustomizationHitTesting.visiblePaddleCard(rect)?.let { hitRect ->
-                if (owned && style != null) {
+                if (style != null) {
                     actions += hitRect to {
-                        game.cosmeticProgression.equipStyle(settings, style, game.developmentAccess.enabled)
-                        game.progress.saveSettings()
+                        game.setScreen(PaddlePowerDetailScreen(game, style, returnToPausedGame))
                     }
                 }
             }
@@ -290,6 +296,12 @@ class CustomizationScreen(game: BrickBreakerGame, private val returnToPausedGame
                     )
                 }
                 game.assets.smallFont.draw(batch, definition.displayNameEn.uppercase(), 100f, 320f, 700f, Align.center, false)
+                val ability = PaddleAbilityCatalog.profileForNormalPaddle(style.normal.id)
+                game.assets.smallFont.color = ForgeUiPalette.primaryLight
+                drawSmallScaled("${ability.title}  •  TIER ${ability.tier}", 100f, 275f, 700f, .62f)
+                game.assets.smallFont.color = ForgeUiPalette.textSecondary
+                drawSmallScaled(ability.description.uppercase(), 85f, 235f, 730f, .50f)
+                game.assets.smallFont.color = Color.WHITE
             }
         }
         return actions
@@ -423,6 +435,24 @@ class CustomizationScreen(game: BrickBreakerGame, private val returnToPausedGame
             touchActive = false
             touchScrollEnabled = false
         }
+    }
+
+    private fun handleMouseWheel(amountY: Float): Boolean {
+        if (amountY == 0f) return false
+        val point = touchPoint()
+        when (tab) {
+            CustomizationTab.BALLS -> {
+                if (point.y !in CustomizationHitTesting.BALL_LIST_BOTTOM..CustomizationHitTesting.BALL_LIST_TOP) return false
+                val rows = (game.assets.cosmetics.balls.size + 2) / 3
+                ballScrollOffset = (ballScrollOffset + amountY * 230f).coerceIn(0f, maxBallScroll(rows))
+            }
+            CustomizationTab.PADDLES -> {
+                if (point.y !in CustomizationHitTesting.PADDLE_LIST_BOTTOM..CustomizationHitTesting.PADDLE_LIST_TOP) return false
+                val filteredCount = game.cosmeticProgression.paddleStyles.size
+                paddleScrollOffset = (paddleScrollOffset + amountY * 190f).coerceIn(0f, maxPaddleScroll(filteredCount))
+            }
+        }
+        return true
     }
 
 

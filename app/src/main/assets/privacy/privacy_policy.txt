@@ -2,13 +2,13 @@ BRICK BREAKER BALL PRIVACY POLICY
 Effective date: September 12, 2026
 
 1. OVERVIEW
-Brick Breaker Ball is a mobile game. The game does not require an account and does not ask you to provide your name, email address, phone number, or password to play.
+Brick Breaker Ball is a mobile game published by ForgePulse Games. The game does not require an account and does not ask you to provide your name, email address, phone number, or password to play.
 
 2. GAME DATA STORED ON YOUR DEVICE
-The game stores gameplay progress, settings, unlocked cosmetics, inventory, scores, and similar game state locally on your device. Clearing the app's storage or uninstalling the game may remove locally stored game data unless the platform restores it from a device backup.
+The game stores gameplay progress, settings, unlocked cosmetics, inventory, scores, and similar game state locally on your device. Android backup is disabled for this app. Clearing the app's storage or uninstalling the game removes locally stored game data.
 
 3. ADS
-If advertising is enabled in a production build, Brick Breaker Ball may use Google Mobile Ads to show rewarded advertisements. Google and its advertising partners may process device identifiers, ad interaction information, approximate location derived from network information, diagnostics, and other data as described in Google's own privacy documentation and according to the consent choices available to you.
+If advertising is enabled in a production build, Brick Breaker Ball may use Google Mobile Ads to show rewarded advertisements. Google and its advertising partners may process device identifiers, ad interaction information, approximate location derived from network information, diagnostics, and other data as described in Google's own privacy documentation. When required, Google's User Messaging Platform presents consent choices before ads are requested, and the Settings screen provides an Ad Privacy entry point when Google requires one for your region/session.
 
 4. IN-APP PURCHASES
 If you make a purchase, payment is processed by Google Play. The developer does not receive your full payment-card details. The game may receive purchase identifiers, product information, purchase state, and transaction information needed to unlock purchased content, prevent duplicate grants, and restore eligible purchases.
@@ -32,5 +32,5 @@ Reasonable technical measures are used to limit the amount of data handled direc
 This policy may be updated when the game, its services, or legal requirements change. The effective date shown at the top will be updated when material changes are made.
 
 11. CONTACT
-For questions about this privacy policy, contact the developer through:
+For questions about this privacy policy, contact ForgePulse Games through:
 https://github.com/msr7799

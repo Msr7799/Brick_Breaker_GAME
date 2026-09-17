@@ -25,20 +25,24 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport
 import kotlin.math.abs
 
 internal fun requiresGameplayBallSprite(ball: Ball): Boolean =
-    ball.element != BallElement.NORMAL || ball.collisionMode == BallCollisionMode.PIERCING
+    ball.abilityFireCharge || ball.element != BallElement.NORMAL || ball.collisionMode == BallCollisionMode.PIERCING
 
 class GameScreen(
     private val game: BrickBreakerGame,
     private val level: LevelDefinition,
     private val session: GameSession = GameSession(
+        seed = kotlin.random.Random.Default.nextLong(),
         level = level,
         baseBallSize = game.progress.settings.selectedBallBaseSize,
         selectedBallGroupName = game.progress.settings.selectedBallGroupName,
-        selectedBallSpriteName = game.progress.settings.selectedBallSpriteName
+        selectedBallSpriteName = game.progress.settings.selectedBallSpriteName,
+        paddleAbility = PaddleAbilityCatalog.profileForNormalPaddle(game.progress.settings.selectedPaddleId),
+        ballAbility = BallAbilityCatalog.profileForSprite(game.progress.settings.selectedBallSpriteName)
     ),
     startPaused: Boolean = false,
     private val customTestEditor: LevelEditorState? = null
 ) : ScreenAdapter() {
+    internal val musicWorld: Int = level.world
     private val camera = OrthographicCamera()
     private val viewport = ExtendViewport(GameSession.WIDTH, GameSession.HEIGHT, camera)
     private val batch = SpriteBatch()
@@ -89,6 +93,12 @@ class GameScreen(
     private var aimIntent = 0f
     private var controlTouchActive = false
     private var controlLastX = targetX
+    private var gameOverOverlayTime = 0f
+    private var rewardedContinueInFlight = false
+    private var rewardedContinueMessage = ""
+    private val rewardedContinueButton = Rectangle(150f, 655f, 600f, 100f)
+    private val gameOverRestartButton = Rectangle(150f, 525f, 600f, 88f)
+    private val gameOverMenuButton = Rectangle(150f, 410f, 600f, 82f)
 
     // A menu tap can still be down during the first gameplay frame. Wait for
     // that pointer to be released so it cannot accidentally launch the serve.
@@ -103,7 +113,10 @@ class GameScreen(
     private val assets get() = game.assets
 
     init {
-        if (customTestEditor == null) session.itemRewardSink = { game.boosterInventory.add(it, 1) }
+        if (customTestEditor == null) {
+            session.itemRewardSink = { game.boosterInventory.add(it, 1) }
+            game.monetization.rewardedReviveAdGateway.preload()
+        }
         if (startPaused) {
             resumePhase = session.phase
             session.phase = GamePhase.PAUSED
@@ -121,6 +134,11 @@ class GameScreen(
         deathRailTime += delta
         deathRailZapTimer = (deathRailZapTimer - delta).coerceAtLeast(0f)
         feedbackTimer = (feedbackTimer - delta).coerceAtLeast(0f)
+        if (session.phase == GamePhase.GAME_OVER) {
+            gameOverOverlayTime = (gameOverOverlayTime + delta.coerceAtMost(.1f)).coerceAtMost(10f)
+        } else if (!rewardedContinueInFlight) {
+            gameOverOverlayTime = 0f
+        }
         if (!aimHintDismissed) {
             if (session.phase == GamePhase.PLAYING) {
                 aimHintDismissed = true
@@ -200,7 +218,26 @@ class GameScreen(
         session.balls.forEach(::ball)
         session.laserShots.forEach { draw(assets.gameplayAtlas.laserProjectile, it.position.x - 8f, it.position.y, 16f, 42f, Color.MAROON) }
         session.fallingPowerUps.forEach { power ->
-            draw(assets.gameplayAtlas.powerUpIcon(power.type), power.position.x - 36f, power.position.y - 36f, 72f, 72f, Color.WHITE)
+            val wave = if (game.progress.settings.reduceMotion) 0f else MathUtils.sin(deathRailTime * 5.2f + power.id * .73f)
+            val size = GameplayTuning.POWERUP_VISUAL_SIZE * (1f + wave * .045f)
+            val bob = wave * 3.5f
+            val glowSize = size * 1.28f
+            draw(
+                assets.particles.findRegion("glow"),
+                power.position.x - glowSize / 2f,
+                power.position.y + bob - glowSize / 2f,
+                glowSize,
+                glowSize,
+                Color(.35f, .78f, 1f, .18f + (wave + 1f) * .035f),
+            )
+            draw(
+                assets.gameplayAtlas.powerUpIcon(power.type),
+                power.position.x - size / 2f,
+                power.position.y + bob - size / 2f,
+                size,
+                size,
+                Color.WHITE,
+            )
         }
         if (session.bottomShield) repeat(10) { draw(assets.particles.findRegion("glow"), it * 90f, 12f, 110f, 24f, Color(.1f, .9f, 1f, .7f)) }
         hud()
@@ -208,6 +245,7 @@ class GameScreen(
             draw(assets.ui.findRegion("panel"), 150f, 360f, 600f, 64f, Color(.01f, .06f, .1f, .88f))
             assets.hudLabelFont.draw(batch, feedbackText, 160f, 402f, 580f, Align.center, false)
         }
+        if (session.phase == GamePhase.GAME_OVER) drawGameOverOverlay()
         if (session.phase == GamePhase.LEVEL_COMPLETE) drawLevelCompleteTransition()
         if (session.phase == GamePhase.PAUSED) {
             pauseOverlay()
@@ -256,10 +294,16 @@ class GameScreen(
     private fun brick(brick: Brick) {
         if (brick.type == BrickType.GHOST && !brick.ghostVisible) return
         val campaignTint =
-            if (customTestEditor == null) CampaignBrickPalette.tintFor(brick.type, level.world)
+            if (customTestEditor == null) CampaignBrickPalette.tintFor(brick.type, level.world, game.progress.settings.colorBlind)
             else Color.WHITE
         draw(
-            assets.gameplayAtlas.brick(brick, level.world, useCampaignPalette = customTestEditor == null),
+            assets.gameplayAtlas.brick(
+                brick,
+                level.world,
+                useCampaignPalette = customTestEditor == null,
+                colorBlind = game.progress.settings.colorBlind,
+                levelId = level.id,
+            ),
             brick.bounds.x,
             brick.bounds.y,
             brick.bounds.width,
@@ -316,7 +360,6 @@ class GameScreen(
                 draw(glow, slot.centerX - slot.width * .38f - glowSize / 2f, drawY + visualHeight - 10f, glowSize, glowSize, Color(.12f, .9f, 1f, .82f))
                 draw(glow, slot.centerX + slot.width * .38f - glowSize / 2f, drawY + visualHeight - 10f, glowSize, glowSize, Color(.12f, .9f, 1f, .82f))
             }
-            if (stickyActive) draw(assets.particles.findRegion("glow"), slot.centerX - slot.width * .46f, drawY + visualHeight - 16f, slot.width * .92f, 20f, Color(.35f, 1f, .72f, .58f))
             if (magneticActive) {
                 draw(
                     assets.particles.findRegion("glow"),
@@ -345,7 +388,7 @@ class GameScreen(
         val ghost = ball.collisionMode == BallCollisionMode.GHOST
         val trailTint = when {
             ghost -> Color(.72f, .48f, 1f, 1f)
-            ball.element == BallElement.FIRE -> Color(1f, .3f, .05f, 1f)
+            ball.abilityFireCharge || ball.element == BallElement.FIRE -> Color(1f, .3f, .05f, 1f)
             else -> Color(.45f, .9f, 1f, 1f)
         }
         if (!game.progress.settings.reduceMotion) {
@@ -415,7 +458,6 @@ class GameScreen(
         }
         activeEffectsHud()
         val message = when {
-            session.phase == GamePhase.GAME_OVER -> "GAME OVER - TAP TO RETRY"
             !aimHintDismissed && aimHintTimer > 0f && session.phase == GamePhase.SERVING && session.hasAttachedBalls() ->
                 if (aimDragActive) "RELEASE TO LAUNCH" else "DRAG TO AIM - RELEASE TO LAUNCH"
             else -> ""
@@ -426,10 +468,24 @@ class GameScreen(
 
     /** ملاحظة صيانة: الدالة `activeEffectsHud` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun activeEffectsHud() {
+        val abilityY = actionBarRect.y - 52f
+        draw(assets.ui.findRegion("panel"), 18f, abilityY, 864f, 44f, Color(.01f, .055f, .1f, .9f))
+        assets.hudLabelFont.color = ForgeUiPalette.primaryLight
+        assets.hudLabelFont.draw(
+            batch,
+            "PADDLE • ${session.paddleAbility.title} • ${session.paddleAbilityStatus()}",
+            32f,
+            abilityY + 31f,
+            836f,
+            Align.center,
+            false,
+        )
+        assets.hudLabelFont.color = Color.WHITE
+
         val effects = session.powerUps.activeEffects().take(4)
         effects.forEachIndexed { index, (type, remaining) ->
             val x = 18f + (index % 2) * 432f
-            val y = actionBarRect.y - 52f - (index / 2) * 48f
+            val y = actionBarRect.y - 100f - (index / 2) * 48f
             draw(assets.ui.findRegion("panel"), x, y, 424f, 44f, Color(.01f, .055f, .1f, .88f))
             draw(assets.gameplayAtlas.powerUpIcon(type), x + 4f, y + 4f, 36f, 36f, Color.WHITE)
             val suffix = remaining?.let { " ${kotlin.math.ceil(it).toInt()}s" } ?: ""
@@ -467,6 +523,172 @@ class GameScreen(
         assets.hudLabelFont.color = Color.WHITE
     }
 
+    /** Animated game-over surface with a rewarded continue path capped at three uses per level attempt. */
+    private fun drawGameOverOverlay() {
+        val raw = if (game.progress.settings.reduceMotion) 1f else (gameOverOverlayTime / .34f).coerceIn(0f, 1f)
+        val eased = raw * raw * (3f - 2f * raw)
+        draw(assets.ui.findRegion("panel"), 0f, visibleBottom, 900f, visibleHeight, Color(0f, 0f, 0f, .68f * eased))
+
+        val base = Rectangle(95f, 365f, 710f, 710f)
+        val scale = if (game.progress.settings.reduceMotion) 1f else .92f + .08f * eased
+        val panel = scaledRect(base, scale)
+        draw(assets.ui.findRegion("panel"), panel.x, panel.y, panel.width, panel.height, Color(.015f, .035f, .075f, .97f * eased))
+
+        val titleColor = Color(ForgeUiPalette.textPrimary).also { it.a *= eased }
+        assets.pauseTitleFont.color = titleColor
+        assets.pauseTitleFont.draw(batch, if (customTestEditor != null) "TEST OVER" else "OUT OF LIVES", 0f, 1005f, 900f, Align.center, false)
+        assets.pauseTitleFont.color = Color.WHITE
+
+        assets.smallFont.color = Color(ForgeUiPalette.textSecondary).also { it.a *= eased }
+        val subtitle = if (customTestEditor != null) {
+            "Restart the test to try again"
+        } else {
+            "Watch a rewarded video to continue this stage with ${GameSession.REWARDED_REVIVE_LIVES} lives"
+        }
+        assets.smallFont.draw(batch, subtitle, 135f, 928f, 630f, Align.center, true)
+        assets.smallFont.color = Color.WHITE
+
+        if (customTestEditor == null) {
+            val remaining = session.rewardedRevivesRemaining
+            assets.hudValueFont.color = ForgeUiPalette.primaryLight
+            assets.hudValueFont.draw(batch, "+${GameSession.REWARDED_REVIVE_LIVES} LIVES", 0f, 842f, 900f, Align.center, false)
+            assets.hudValueFont.color = Color.WHITE
+            assets.hudLabelFont.color = ForgeUiPalette.textSecondary
+            assets.hudLabelFont.draw(
+                batch,
+                "CONTINUES ${session.rewardedRevivesUsed}/${GameSession.MAX_REWARDED_REVIVES}  •  $remaining LEFT",
+                0f,
+                792f,
+                900f,
+                Align.center,
+                false,
+            )
+            assets.hudLabelFont.color = Color.WHITE
+
+            val pulse = if (
+                game.progress.settings.reduceMotion ||
+                game.monetization.rewardedReviveAdGateway.state != AdState.READY ||
+                remaining <= 0
+            ) {
+                1f
+            } else {
+                1f + MathUtils.sin(gameOverOverlayTime * 5.2f) * .024f
+            }
+            val watchRect = scaledRect(rewardedContinueButton, pulse)
+            val canContinue = remaining > 0
+            val state = game.monetization.rewardedReviveAdGateway.state
+            val label = when {
+                !canContinue -> "REVIVE LIMIT REACHED"
+                rewardedContinueInFlight || state == AdState.SHOWING -> "PLAYING VIDEO…"
+                state == AdState.READY -> "WATCH VIDEO • CONTINUE"
+                state == AdState.LOADING -> "LOADING REWARD…"
+                state == AdState.UNAVAILABLE -> "RETRY REWARDED VIDEO"
+                else -> "REWARDED VIDEO UNAVAILABLE"
+            }
+            smallButton(
+                watchRect,
+                label,
+                if (canContinue && state == AdState.READY) ForgeUiRenderer.GradientStyle.PRIMARY else ForgeUiRenderer.GradientStyle.NEUTRAL,
+            )
+            if (rewardedContinueMessage.isNotBlank()) {
+                assets.smallFont.color = ForgeUiPalette.primaryLight
+                assets.smallFont.draw(batch, rewardedContinueMessage, 135f, 635f, 630f, Align.center, true)
+                assets.smallFont.color = Color.WHITE
+            }
+        }
+
+        smallButton(
+            gameOverRestartButton,
+            if (customTestEditor != null) "RESTART TEST" else "RESTART LEVEL",
+            ForgeUiRenderer.GradientStyle.CRIMSON,
+        )
+        smallButton(
+            gameOverMenuButton,
+            if (customTestEditor != null) "EXIT TEST" else "MAIN MENU",
+            ForgeUiRenderer.GradientStyle.NEUTRAL,
+        )
+        assets.smallFont.color = ForgeUiPalette.textSecondary
+        assets.smallFont.draw(batch, "FORGEPULSE GAMES", 0f, 392f, 900f, Align.center, false)
+        assets.smallFont.color = Color.WHITE
+    }
+
+    private fun scaledRect(rect: Rectangle, scale: Float): Rectangle {
+        val width = rect.width * scale
+        val height = rect.height * scale
+        return Rectangle(rect.x + (rect.width - width) / 2f, rect.y + (rect.height - height) / 2f, width, height)
+    }
+
+    private fun handleGameOverInput(back: Boolean) {
+        aimDragActive = false
+        controlTouchActive = false
+        if (back) {
+            game.pausedSession.clear()
+            if (customTestEditor != null) exitCustomTest() else game.openMenu()
+            return
+        }
+        if (!Gdx.input.justTouched()) return
+
+        when {
+            customTestEditor == null && rewardedContinueButton.contains(pointer.x, pointer.y) -> requestRewardedContinue()
+
+            gameOverRestartButton.contains(pointer.x, pointer.y) -> {
+                game.pausedSession.clear()
+                if (customTestEditor != null) game.playCustom(customTestEditor) else game.play(level.id)
+            }
+
+            gameOverMenuButton.contains(pointer.x, pointer.y) -> {
+                game.pausedSession.clear()
+                if (customTestEditor != null) exitCustomTest() else game.openMenu()
+            }
+        }
+    }
+
+    private fun requestRewardedContinue() {
+        if (rewardedContinueInFlight || session.rewardedRevivesRemaining <= 0) return
+        val gateway = game.monetization.rewardedReviveAdGateway
+        when (gateway.state) {
+            AdState.READY -> {
+                rewardedContinueInFlight = true
+                rewardedContinueMessage = "Opening rewarded video…"
+                gateway.show { result ->
+                    rewardedContinueInFlight = false
+                    when (result) {
+                        is RewardedAdResult.Earned -> {
+                            if (session.reviveFromRewardedAd()) {
+                                game.pausedSession.clear()
+                                targetX = session.paddle.x
+                                aimInputArmed = false
+                                aimDragActive = false
+                                controlTouchActive = false
+                                rewardedContinueMessage = ""
+                                feedbackText = "REVIVED • ${GameSession.REWARDED_REVIVE_LIVES} LIVES"
+                                feedbackTimer = 2.2f
+                                if (game.progress.settings.haptics) Gdx.input.vibrate(35)
+                                assets.play("powerup", game.progress.settings.masterVolume * game.progress.settings.sfxVolume)
+                            } else {
+                                rewardedContinueMessage = "Continue could not be applied."
+                            }
+                        }
+
+                        RewardedAdResult.ClosedWithoutReward ->
+                            rewardedContinueMessage = "Finish the video to continue."
+
+                        is RewardedAdResult.Failed -> rewardedContinueMessage = result.message
+                    }
+                }
+            }
+
+            AdState.UNAVAILABLE -> {
+                rewardedContinueMessage = "Reloading rewarded video…"
+                gateway.preload()
+            }
+
+            AdState.LOADING -> rewardedContinueMessage = "Rewarded video is still loading…"
+            AdState.SHOWING -> rewardedContinueMessage = "Rewarded video is already playing…"
+            AdState.DISABLED -> rewardedContinueMessage = "Rewarded videos are unavailable in this build."
+        }
+    }
+
     /** ملاحظة صيانة: الدالة `pauseOverlay` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun pauseOverlay() {
         draw(assets.ui.findRegion("panel"), 0f, visibleBottom, 900f, visibleHeight, ForgeUiPalette.glassOverlay)
@@ -492,7 +714,15 @@ class GameScreen(
     /** ملاحظة صيانة: الدالة `pauseArtButton` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun pauseArtButton(rect: Rectangle, assetName: String) {
         batch.color = Color.WHITE
-        batch.draw(assets.pauseMenuTexture(assetName), 90f, rect.y - 30f, 720f, 136f)
+        val texture = assets.pauseMenuTexture(assetName)
+
+        // Pause artwork is authored at 1500x350. Keep its native aspect ratio so the
+        // frame/text never looks vertically crushed on tall phones.
+        val drawWidth = 720f
+        val drawHeight = drawWidth * texture.height.toFloat() / texture.width.toFloat()
+        val drawX = (GameSession.WIDTH - drawWidth) * .5f
+        val drawY = rect.y + (rect.height - drawHeight) * .5f
+        batch.draw(texture, drawX, drawY, drawWidth, drawHeight)
     }
 
     /** ملاحظة صيانة: الدالة `overlayButton` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
@@ -509,6 +739,10 @@ class GameScreen(
             viewport.unproject(pointer)
         }
         val back = Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || Gdx.input.isKeyJustPressed(Input.Keys.BACK)
+        if (session.phase == GamePhase.GAME_OVER) {
+            handleGameOverInput(back)
+            return
+        }
         if (session.phase == GamePhase.PAUSED) {
             if (Gdx.input.justTouched()) {
                 when {
@@ -1184,7 +1418,9 @@ class GameScreen(
         game.pausedSession.clear()
         val previousStars = game.progress.stars(level.id)
         game.progress.complete(level.id, session.score, stars)
-        val cosmeticUnlocks = game.cosmeticProgression.onCampaignResult(level.id, previousStars, game.progress)
+        val cosmeticUnlocks = game.cosmeticProgression.onCampaignResult(
+            level.id, previousStars, game.progress, game.developmentAccess.enabled
+        )
         game.setScreen(ResultsScreen(game, level, session.score, stars, cosmeticUnlocks))
     }
 
@@ -1195,6 +1431,12 @@ class GameScreen(
 
     /** ملاحظة صيانة: الدالة `pause` تنفّذ العقد الموروث وتربط دورة حياة المكوّن بسلوك هذا الملف؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     override fun pause() {
+        // A full-screen rewarded ad can pause the Android activity. Keep GAME_OVER intact so
+        // the earned-reward callback can legally revive the same run when the ad finishes.
+        if (rewardedContinueInFlight && session.phase == GamePhase.GAME_OVER) {
+            if (customTestEditor == null) game.pausedSession.save(level, session)
+            return
+        }
         if (session.phase != GamePhase.PAUSED) pauseAndSave()
     }
 

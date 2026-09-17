@@ -11,7 +11,7 @@ object PowerUpInfoRepository {
         PowerUpType.KILL_PADDLE to
             PowerUpInfo("KILL PLAYER", "KILL PLAYER", "Hazard: destroys the paddle and costs one life."),
         PowerUpType.EXPAND_PADDLE to
-            PowerUpInfo("EXPAND PADDLE", "WIDE PADDLE", "Widens the paddle. Stacks up to four times."),
+            PowerUpInfo("EXPAND PADDLE", "WIDE PADDLE", "Widens the paddle much more. Stacks up to four times."),
         PowerUpType.TIMED_BOMB_BRICKS to
             PowerUpInfo(
                 "TIMED BOMB BRICKS",
@@ -38,7 +38,7 @@ object PowerUpInfoRepository {
             PowerUpInfo(
                 "MAGNETIC PADDLE",
                 "MAGNET",
-                "Pulls descending balls toward the paddle."
+                "Strongly pulls descending balls toward the paddle from a wider field."
             ),
         PowerUpType.SLOW_BALL to
             PowerUpInfo("SLOW BALL", "SLOW BALL", "Temporarily slows active balls."),

@@ -19,6 +19,9 @@ object GameplayTuning {
 
     /** Falling power-up balance. */
     const val POWERUP_FALL_SPEED = -135f
+    const val POWERUP_VISUAL_SIZE = 104f
+    const val POWERUP_PICKUP_WIDTH = 88f
+    const val POWERUP_PICKUP_HEIGHT = 70f
     const val POWERUP_DESPAWN_Y = -36f
     const val POWERUP_PADDLE_CLEARANCE = 36f
     const val TIMED_POWERUP_DURATION = 24f
@@ -26,16 +29,22 @@ object GameplayTuning {
     /** Mega-ball gameplay radius. Kept separate from the player's LARGE cosmetic size. */
     const val MEGA_BALL_RADIUS = 35f
 
-    /** Attraction field measured upward from the paddle center. */
-    const val MAGNET_RANGE = 540f
-    const val MAGNET_HORIZONTAL_RANGE = 600f
-    const val MAGNET_STEER_RATE = 13.5f
-    const val MAGNET_MAX_BLEND = .64f
+    /** Attraction field measured upward from the paddle center. Stronger than the old assist so the talisman feels valuable. */
+    const val MAGNET_RANGE = 650f
+    const val MAGNET_HORIZONTAL_RANGE = 720f
+    const val MAGNET_STEER_RATE = 19f
+    const val MAGNET_MAX_BLEND = .82f
+
+    /** Campaign talisman cadence: more frequent drops with a bounded per-level budget and a pity window. */
+    const val POWERUP_DROP_BUDGET = 24
+    const val POWERUP_DROP_MIN_INTERVAL = 4f
+    const val POWERUP_DROP_PITY_SECONDS = 14f
+    const val POWERUP_DROP_PITY_CHANCE = .78f
 
     /** Falling-talisman magnet: stronger pull with damping so capsules lock onto the paddle without wild oscillation. */
-    const val POWERUP_MAGNET_PULL = 6.5f
-    const val POWERUP_MAGNET_DAMPING = 3.2f
-    const val POWERUP_MAGNET_MAX_HORIZONTAL_SPEED = 560f
+    const val POWERUP_MAGNET_PULL = 8.5f
+    const val POWERUP_MAGNET_DAMPING = 3.6f
+    const val POWERUP_MAGNET_MAX_HORIZONTAL_SPEED = 720f
     const val SLOW_BALL_MULTIPLIER = .62f
     const val LASER_COOLDOWN = .32f
     const val LASER_AUTO_CHARGE_COOLDOWN = .16f

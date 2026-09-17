@@ -11,6 +11,9 @@ package com.example.brick_breaker_ball
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Input
+import com.badlogic.gdx.InputAdapter
+import com.badlogic.gdx.InputMultiplexer
+import com.badlogic.gdx.InputProcessor
 import com.badlogic.gdx.ScreenAdapter
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
@@ -37,6 +40,8 @@ abstract class ForgeScreen(protected val game: BrickBreakerGame) : ScreenAdapter
     protected val viewport = ExtendViewport(DESIGN_WIDTH, DESIGN_HEIGHT, camera)
     protected val batch = SpriteBatch()
     private val p = Vector3()
+    private var previousInputProcessor: InputProcessor? = null
+    private var mouseWheelProcessor: InputProcessor? = null
 
     protected val visibleWidth: Float get() = viewport.worldWidth
     protected val visibleHeight: Float get() = viewport.worldHeight
@@ -46,6 +51,25 @@ abstract class ForgeScreen(protected val game: BrickBreakerGame) : ScreenAdapter
     init {
         camera.position.set(DESIGN_WIDTH / 2f, DESIGN_HEIGHT / 2f, 0f)
         camera.update()
+    }
+
+    protected fun installMouseWheelHandler(handler: (amountY: Float) -> Boolean) {
+        removeMouseWheelHandler()
+        previousInputProcessor = Gdx.input.inputProcessor
+        mouseWheelProcessor = object : InputAdapter() {
+            override fun scrolled(amountX: Float, amountY: Float): Boolean = handler(amountY)
+        }
+        Gdx.input.inputProcessor = previousInputProcessor?.let { existing ->
+            InputMultiplexer(mouseWheelProcessor, existing)
+        } ?: mouseWheelProcessor
+    }
+
+    protected fun removeMouseWheelHandler() {
+        if (Gdx.input.inputProcessor === mouseWheelProcessor) {
+            Gdx.input.inputProcessor = previousInputProcessor
+        }
+        mouseWheelProcessor = null
+        previousInputProcessor = null
     }
 
     /** Draw a background so phones and tablets fill the whole physical display without stretching. */
@@ -113,13 +137,32 @@ abstract class ForgeScreen(protected val game: BrickBreakerGame) : ScreenAdapter
     }
 
     /** ملاحظة صيانة: الدالة `button` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
-    protected fun button(text: String, x: Float, y: Float, w: Float = 650f, h: Float = 100f): Rectangle {
+    protected fun button(
+        text: String,
+        x: Float,
+        y: Float,
+        w: Float = 650f,
+        h: Float = 100f,
+        style: ForgeUiRenderer.GradientStyle = ForgeUiRenderer.GradientStyle.PRIMARY,
+    ): Rectangle {
         val rect = Rectangle(x, y, w, h)
-        game.assets.uiRenderer.drawGradientButton(batch, rect, ForgeUiRenderer.GradientStyle.PRIMARY)
+        game.assets.uiRenderer.drawGradientButton(batch, rect, style)
         game.assets.buttonFont.color = ForgeUiPalette.textPrimary
         game.assets.buttonFont.draw(batch, text, x, y + h * .66f, w, Align.center, false)
         game.assets.buttonFont.color = Color.WHITE
         return rect
+    }
+
+    /** Uses the supplied lock artwork on a bright badge so it stays visible over dark previews. */
+    protected fun drawLockBadge(x: Float, y: Float, size: Float) {
+        game.assets.uiRenderer.drawRoundedGradientButton(
+            batch,
+            Rectangle(x, y, size, size),
+            ForgeUiRenderer.GradientStyle.PRIMARY,
+        )
+        val inset = size * .16f
+        batch.color = Color.WHITE
+        batch.draw(game.assets.lockIcon, x + inset, y + inset, size - inset * 2f, size - inset * 2f)
     }
 
     /** ملاحظة صيانة: الدالة `fittedText` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
@@ -199,10 +242,10 @@ class SplashScreen(game: BrickBreakerGame) : ForgeScreen(game) {
             batch.draw(game.assets.ui.findRegion("panel"), 55f, 90f, 790f, 270f)
             batch.color = Color.WHITE
             title("BRICK BREAKER BALL", 290f)
-            game.assets.smallFont.draw(batch, "NEON INDUSTRIAL FORGE", 0f, 205f, 900f, Align.center, false)
+            game.assets.smallFont.draw(batch, "FORGEPULSE GAMES • NEON INDUSTRIAL FORGE", 0f, 205f, 900f, Align.center, false)
         }
         batch.end()
-        if (time >= 5f || Gdx.input.justTouched()) {
+        if (time >= 7f || Gdx.input.justTouched()) {
             WorldVideoBackgrounds.hide()
             game.openMenu()
         }
@@ -306,12 +349,12 @@ class MainMenuScreen(game: BrickBreakerGame) : ForgeScreen(game) {
         val sideActionY = topAnchoredY(1280f, SIDE_ACTION_TOP_INSET)
         val info = artButton(game.assets.startMenuTexture("info"), 35f, sideActionY, 72f, 72f)
         val exit = artButton(game.assets.startMenuTexture("exit"), 805f, sideActionY, 72f, 72f)
-        val development = artButton(
+        val development = if (DevelopmentAccess.DEVELOPER_ACCESS && BuildConfig.DEVELOPER_ACCESS_ALLOWED) artButton(
             game.assets.startMenuTexture(if (game.developmentAccess.enabled) "code-on" else "code-off"),
             24f, visibleBottom + DEVELOPMENT_BOTTOM_INSET, 112f, 112f
-        )
+        ) else null
 
-        val returningPlayer = game.progress.hasStartedGame || game.progress.unlockedLevel > 1 ||
+        val returningPlayer = game.progress.hasStartedGame || game.progress.totalStars() > 0 ||
             game.progress.stars(1) > 0 || game.pausedSession.hasPausedGame()
         val primaryTexture = game.assets.startMenuTexture(if (returningPlayer) "continue" else "start")
         // Level Editor is an intentional public feature in this build, not a debug-only tool.
@@ -323,16 +366,68 @@ class MainMenuScreen(game: BrickBreakerGame) : ForgeScreen(game) {
         val editor = artButton(game.assets.startMenuTexture("level-editor"), 85f, floatingY(410f, 4), 730f, 145f)
         val customize = artButton(game.assets.startMenuTexture("paddle&balls"), 85f, floatingY(245f, 5), 730f, 145f)
 
+        batch.color = Color.WHITE
+        val logo = game.assets.forgePlusGamesLogo
+        val logoWidth = 540f
+        val logoHeight = logoWidth * logo.height.toFloat() / logo.width.toFloat()
+        batch.draw(logo, (DESIGN_WIDTH - logoWidth) / 2f, visibleBottom + 20f, logoWidth, logoHeight)
+
         if (confirmingNewGame) {
-            batch.color = Color(.02f, .06f, .13f, .97f)
-            batch.draw(game.assets.ui.findRegion("panel"), 90f, 530f, 720f, 560f)
+            // Modal backdrop: fully separates the confirmation from the menu underneath.
+            batch.color = Color(0f, 0f, 0f, .72f)
+            batch.draw(game.assets.ui.findRegion("panel"), visibleLeft, visibleBottom, visibleWidth, visibleHeight)
             batch.color = Color.WHITE
-            game.assets.titleFont.draw(batch, "NEW GAME?", 0f, 1010f, 900f, Align.center, false)
-            game.assets.bodyFont.draw(batch, "Start again from Level 1?\nSaved stars and best scores stay safe.", 130f, 885f, 640f, Align.center, true)
-            val confirm = button("YES, START NEW GAME", 160f, 650f, 580f, 100f)
-            val cancel = button("CANCEL", 160f, 520f, 580f, 100f)
+
+            // Keep the dialog centered on phones and tablets without overlapping the menu cards.
+            val modalWidth = 740f
+            val modalHeight = 590f
+            val modalX = (DESIGN_WIDTH - modalWidth) / 2f
+            val modalY = visibleBottom + (visibleHeight - modalHeight) / 2f
+            val modalRect = Rectangle(modalX, modalY, modalWidth, modalHeight)
+            game.assets.uiRenderer.drawGradientBorderPanel(
+                batch,
+                modalRect,
+                ForgeUiRenderer.GradientStyle.PRIMARY,
+                6f,
+            )
+
+            game.assets.titleFont.draw(
+                batch,
+                "START NEW GAME?",
+                modalX + 35f,
+                modalY + modalHeight - 92f,
+                modalWidth - 70f,
+                Align.center,
+                false,
+            )
+            game.assets.bodyFont.draw(
+                batch,
+                "Start again from Level 1?\nYour stars, unlocked levels and best scores stay safe.",
+                modalX + 70f,
+                modalY + modalHeight - 205f,
+                modalWidth - 140f,
+                Align.center,
+                true,
+            )
+
+            val confirm = button(
+                "YES, START NEW GAME",
+                modalX + 80f,
+                modalY + 150f,
+                modalWidth - 160f,
+                96f,
+            )
+            val cancel = button(
+                "CANCEL",
+                modalX + 80f,
+                modalY + 42f,
+                modalWidth - 160f,
+                88f,
+            )
+
             end()
             when {
+                Gdx.input.isKeyJustPressed(Input.Keys.BACK) -> confirmingNewGame = false
                 tapped(confirm) -> game.startNewGame()
                 tapped(cancel) -> confirmingNewGame = false
             }
@@ -354,7 +449,7 @@ class MainMenuScreen(game: BrickBreakerGame) : ForgeScreen(game) {
 
             tapped(exit) -> Gdx.app.exit()
 
-            tapped(development) -> {
+            development != null && tapped(development) -> {
                 val enabled = game.developmentAccess.toggle()
                 if (!enabled) game.cosmeticProgression.reconcile(game.progress)
                 game.assets.play("ui_click", game.progress.settings.masterVolume * game.progress.settings.sfxVolume)
@@ -363,7 +458,7 @@ class MainMenuScreen(game: BrickBreakerGame) : ForgeScreen(game) {
             tapped(primary) -> if (returningPlayer && game.pausedSession.hasPausedGame()) {
                 game.resumePausedGame()
             } else {
-                game.play(if (returningPlayer) game.progress.unlockedLevel else 1)
+                game.play(if (returningPlayer) game.progress.nextRecommendedLevel() else 1)
             }
 
             tapped(worldMap) -> game.setScreen(WorldMapScreen(game))
@@ -436,6 +531,7 @@ class WorldMapScreen(game: BrickBreakerGame) : ForgeScreen(game) {
         if (!unlocked) {
             batch.color = Color(0f, 0f, 0f, .56f)
             batch.draw(game.assets.ui.findRegion("panel"), x + 6f, y + 74f, width - 12f, imageHeight)
+            drawLockBadge(x + width - 66f, y + height - 66f, 52f)
         }
         batch.color = Color(.02f, .08f, .15f, .94f)
         batch.draw(game.assets.ui.findRegion("panel"), x + 6f, y + 6f, width - 12f, 70f)
@@ -590,7 +686,11 @@ class LevelSelectScreen(game: BrickBreakerGame, private val world: Int) : ForgeS
             val y = 1190f - row * 190f
             val open = game.developmentAccess.canSelectLevel(id, game.progress.unlockedLevel)
             val completed = game.progress.stars(id) > 0
-            val rect = button(if (open) stage.toString() else "LOCK", x, y, 230f, 125f)
+            val rect = button(
+                stage.toString(), x, y, 230f, 125f,
+                if (open) ForgeUiRenderer.GradientStyle.PRIMARY else ForgeUiRenderer.GradientStyle.DISABLED,
+            )
+            if (!open) drawLockBadge(x + 170f, y + 66f, 48f)
             cells += rect to id
             if (completed) starIcon(x + 158f, y + 39f, 42f)
         }
@@ -640,14 +740,19 @@ class ResultsScreen(
         val baseColor = color ?: oldColor
         font.color = Color(baseColor.r, baseColor.g, baseColor.b, alpha)
         font.data.setScale(oldScaleX * scale, oldScaleY * scale)
+        val measured = GlyphLayout(font, text).width
+        if (measured > width && measured > 0f) {
+            val fit = width / measured
+            font.data.setScale(oldScaleX * scale * fit, oldScaleY * scale * fit)
+        }
         font.draw(batch, text, x, y, width, Align.center, false)
         font.data.setScale(oldScaleX, oldScaleY)
         font.color = oldColor
     }
 
-    /** Completion screen with a staggered, smooth reveal and delayed input. */
+    /** Victory screen: title, stars, score, unlocked cosmetics and controls all reveal in sequence. */
     override fun render(delta: Float) {
-        revealTime = (revealTime + delta.coerceAtMost(.1f)).coerceAtMost(1.4f)
+        revealTime = (revealTime + delta.coerceAtMost(.1f)).coerceAtMost(2.4f)
         begin(level.world, video = true)
 
         val titleReveal = reveal(0f, .30f)
@@ -655,26 +760,29 @@ class ResultsScreen(
             game.assets.titleFont,
             "LEVEL COMPLETE",
             35f,
-            1480f - 22f * (1f - titleReveal),
+            1490f - 24f * (1f - titleReveal),
             830f,
             titleReveal,
-            .94f + .06f * titleReveal,
+            .92f + .08f * titleReveal,
         )
 
-        val iconSize = 92f
+        val iconSize = 88f
         val gap = 18f
         val starsWidth = stars * iconSize + (stars - 1) * gap
         val starsX = (900f - starsWidth) / 2f
         repeat(stars) { index ->
-            val starReveal = reveal(.12f + index * .11f, .30f)
+            val starReveal = reveal(.13f + index * .12f, .32f)
             if (starReveal > 0f) {
+                val pop = .78f + .22f * starReveal
+                val drawSize = iconSize * pop
+                val baseX = starsX + index * (iconSize + gap)
                 batch.color = Color(1f, 1f, 1f, starReveal)
                 batch.draw(
                     game.assets.starIcon,
-                    starsX + index * (iconSize + gap),
-                    1080f - 26f * (1f - starReveal),
-                    iconSize,
-                    iconSize,
+                    baseX + (iconSize - drawSize) / 2f,
+                    1170f + (iconSize - drawSize) / 2f,
+                    drawSize,
+                    drawSize,
                 )
                 batch.color = Color.WHITE
             }
@@ -685,64 +793,158 @@ class ResultsScreen(
             game.assets.bodyFont,
             "SCORE  $score",
             0f,
-            1020f - 18f * (1f - scoreReveal),
+            1100f - 15f * (1f - scoreReveal),
             900f,
             scoreReveal,
         )
 
         if (unlocks.isNotEmpty()) {
-            val rewardReveal = reveal(.48f, .30f)
+            val rewardTitleReveal = reveal(.52f, .30f)
             drawAnimatedText(
                 game.assets.hudLabelFont,
-                "NEW COLLECTION REWARD READY",
-                75f,
-                900f - 16f * (1f - rewardReveal),
-                750f,
-                rewardReveal,
+                if (unlocks.size == 1) "NEW COLLECTION ITEM" else "NEW COLLECTION ITEMS",
+                70f,
+                1010f - 12f * (1f - rewardTitleReveal),
+                760f,
+                rewardTitleReveal,
                 color = ForgeUiPalette.gold,
             )
+            drawRewardCards()
+        } else {
+            val clearReveal = reveal(.55f, .30f)
+            game.assets.smallFont.color = Color(
+                ForgeUiPalette.textSecondary.r,
+                ForgeUiPalette.textSecondary.g,
+                ForgeUiPalette.textSecondary.b,
+                clearReveal,
+            )
+            fittedText(game.assets.smallFont, "STAGE CLEARED • KEEP PUSHING", 90f, 870f, 720f, .64f)
+            game.assets.smallFont.color = Color.WHITE
         }
 
-        val buttonReveal = reveal(.46f, .42f)
+        val buttonsReveal = reveal(if (unlocks.isEmpty()) .66f else .92f, .36f)
         var next = Rectangle()
         var retry = Rectangle()
         var menu = Rectangle()
-        if (buttonReveal > 0f) {
-            val slide = 42f * (1f - buttonReveal)
-            next = button(
-                if (unlocks.isNotEmpty()) {
-                    "VIEW NEW REWARDS"
-                } else if (level.id < LevelRepository.TOTAL_LEVELS) {
-                    "NEXT LEVEL"
-                } else {
-                    "CAMPAIGN COMPLETE"
-                },
-                125f,
-                760f - slide,
-            )
+        if (buttonsReveal > 0f) {
+            val slide = 36f * (1f - buttonsReveal)
+            val nextLabel = when {
+                level.id >= LevelRepository.TOTAL_LEVELS -> "CAMPAIGN COMPLETE"
+                game.developmentAccess.canSelectLevel(level.id + 1, game.progress.unlockedLevel) -> "NEXT LEVEL"
+                else -> "BACK TO WORLD"
+            }
+            next = button(nextLabel, 125f, 205f - slide, 650f, 96f)
             if (unlocks.isEmpty()) {
-                retry = button("REPLAY", 125f, 630f - slide)
-                menu = button("MAIN MENU", 125f, 500f - slide)
+                retry = button("REPLAY", 125f, 92f - slide, 310f, 80f, ForgeUiRenderer.GradientStyle.NEUTRAL)
+                menu = button("MAIN MENU", 465f, 92f - slide, 310f, 80f, ForgeUiRenderer.GradientStyle.NEUTRAL)
             }
         }
         end()
 
-        // Ignore the touch that may still be held from the last gameplay frame. Only arm
-        // controls after the reveal has started and the player has released the screen.
+        // Wait until the last gameplay touch is released so the victory animation cannot be skipped accidentally.
         if (!inputArmed) {
-            if (revealTime >= .50f && !Gdx.input.isTouched) inputArmed = true
+            if (revealTime >= .65f && !Gdx.input.isTouched) inputArmed = true
             return
         }
 
         when {
             tapped(next) -> {
-                val destination = { if (level.id < LevelRepository.TOTAL_LEVELS) game.play(level.id + 1) else game.openMenu() }
-                if (unlocks.isNotEmpty()) game.setScreen(CosmeticUnlockRevealScreen(game, unlocks, destination)) else destination()
+                when {
+                    level.id >= LevelRepository.TOTAL_LEVELS -> game.openMenu()
+                    game.developmentAccess.canSelectLevel(level.id + 1, game.progress.unlockedLevel) -> game.play(level.id + 1)
+                    else -> game.setScreen(LevelSelectScreen(game, level.world))
+                }
             }
 
             unlocks.isEmpty() && tapped(retry) -> game.play(level.id)
-
             unlocks.isEmpty() && tapped(menu) -> game.openMenu()
+        }
+    }
+
+    /** Shows the actual ball/paddle rewards on the victory screen; there is no separate VIEW REWARDS step. */
+    private fun drawRewardCards() {
+        val visibleRewards = unlocks.take(3)
+        val cardHeight = when (visibleRewards.size) {
+            1 -> 230f
+            2 -> 205f
+            else -> 180f
+        }
+        val gap = 16f
+        val totalHeight = visibleRewards.size * cardHeight + (visibleRewards.size - 1) * gap
+        val top = 935f
+
+        visibleRewards.forEachIndexed { index, unlock ->
+            val t = reveal(.62f + index * .14f, .36f)
+            if (t <= 0f) return@forEachIndexed
+            val y = top - cardHeight - index * (cardHeight + gap) - (1f - t) * 28f
+            val rect = Rectangle(70f, y, 760f, cardHeight)
+            game.assets.uiRenderer.drawGradientBorderPanel(batch, rect, ForgeUiRenderer.GradientStyle.PRIMARY, 4f)
+            batch.color = Color(1f, 1f, 1f, t)
+            when (unlock) {
+                is CosmeticUnlock.Ball -> drawBallReward(unlock.ball, rect, t)
+                is CosmeticUnlock.Paddle -> drawPaddleReward(unlock.style, rect, t)
+            }
+            batch.color = Color.WHITE
+        }
+
+        if (unlocks.size > visibleRewards.size) {
+            val more = unlocks.size - visibleRewards.size
+            val t = reveal(.95f, .30f)
+            drawAnimatedText(
+                game.assets.smallFont,
+                "+$more MORE COLLECTION ITEM${if (more == 1) "" else "S"} UNLOCKED",
+                110f,
+                315f,
+                680f,
+                t,
+                .58f,
+                ForgeUiPalette.primaryLight,
+            )
+        }
+    }
+
+    private fun drawBallReward(ball: BallSpriteDefinition, rect: Rectangle, alpha: Float) {
+        val profile = BallAbilityCatalog.profileForBall(ball)
+        val previewSize = minOf(128f, rect.height - 34f)
+        game.assets.cosmetics.ballRegion(ball)?.let { region ->
+            val side = minOf(region.regionWidth, region.regionHeight)
+            val xOffset = ((region.regionWidth - side) / 2).coerceAtLeast(0)
+            val yOffset = ((region.regionHeight - side) / 2).coerceAtLeast(0)
+            val square = TextureRegion(region, xOffset, yOffset, side, side)
+            // Intentionally no generated glow/shadow behind the ball: it caused the faint square halo.
+            batch.draw(square, rect.x + 28f, rect.y + (rect.height - previewSize) / 2f, previewSize, previewSize)
+        }
+        val textX = rect.x + 185f
+        val textWidth = rect.width - 210f
+        drawAnimatedText(game.assets.hudLabelFont, ball.name.uppercase(), textX, rect.y + rect.height - 34f, textWidth, alpha, .70f)
+        drawAnimatedText(game.assets.smallFont, "${profile.title} • TIER ${profile.tier}", textX, rect.y + rect.height - 80f, textWidth, alpha, .60f, ForgeUiPalette.primaryLight)
+        drawAnimatedText(game.assets.smallFont, profile.shortStat(), textX, rect.y + rect.height - 116f, textWidth, alpha, .56f, ForgeUiPalette.gold)
+        if (rect.height >= 210f) {
+            drawAnimatedText(game.assets.smallFont, profile.description.uppercase(), textX, rect.y + 50f, textWidth, alpha, .46f, ForgeUiPalette.textSecondary)
+        }
+    }
+
+    private fun drawPaddleReward(style: PaddleStyleSet, rect: Rectangle, alpha: Float) {
+        val profile = PaddleAbilityCatalog.profileForNormalPaddle(style.normal.id)
+        val previewX = rect.x + 18f
+        val previewWidth = 320f
+        val formHeight = minOf(46f, (rect.height - 38f) / 3f)
+        listOf(style.normal, style.weapon, style.sticky).forEachIndexed { index, paddle ->
+            game.assets.cosmetics.paddleRegion(paddle)?.let { region ->
+                val scale = minOf(previewWidth / region.regionWidth, formHeight / region.regionHeight)
+                val w = region.regionWidth * scale
+                val h = region.regionHeight * scale
+                val y = rect.y + rect.height - 25f - (index + 1) * (formHeight + 6f)
+                batch.draw(region, previewX + (previewWidth - w) / 2f, y + (formHeight - h) / 2f, w, h)
+            }
+        }
+        val textX = rect.x + 360f
+        val textWidth = rect.width - 382f
+        drawAnimatedText(game.assets.hudLabelFont, style.displayName.uppercase(), textX, rect.y + rect.height - 34f, textWidth, alpha, .66f)
+        drawAnimatedText(game.assets.smallFont, "NORMAL • WEAPON • STICKY", textX, rect.y + rect.height - 74f, textWidth, alpha, .50f, ForgeUiPalette.textSecondary)
+        drawAnimatedText(game.assets.smallFont, "${profile.title} • TIER ${profile.tier}", textX, rect.y + rect.height - 108f, textWidth, alpha, .54f, ForgeUiPalette.primaryLight)
+        if (rect.height >= 200f) {
+            drawAnimatedText(game.assets.smallFont, profile.description.uppercase(), textX, rect.y + 50f, textWidth, alpha, .43f, ForgeUiPalette.textSecondary)
         }
     }
 }
@@ -778,6 +980,8 @@ class SettingsScreen(game: BrickBreakerGame, private val returnToPausedGame: Boo
         const val SETTING_ART_BOTTOM_OFFSET = 45f
         const val DEVELOPER_BLOCK_HEIGHT = 210f
         const val DEVELOPER_SPACING = 24f
+        const val ACTION_BUTTON_HEIGHT = 88f
+        const val ACTION_BUTTON_GAP = 28f
     }
 
     /** ملاحظة صيانة: الدالة `settingButton` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
@@ -785,6 +989,73 @@ class SettingsScreen(game: BrickBreakerGame, private val returnToPausedGame: Boo
         batch.color = Color.WHITE
         batch.draw(game.assets.settingsMenuTexture(assetName), 0f, y - SETTING_ART_BOTTOM_OFFSET, 900f, SETTING_ART_HEIGHT)
         return Rectangle(115f, y, 700f, SETTING_TOUCH_HEIGHT)
+    }
+
+    private fun roundedButton(text: String, x: Float, y: Float, width: Float, height: Float): Rectangle {
+        val rect = Rectangle(x, y, width, height)
+        game.assets.uiRenderer.drawCompactRoundedGradientButton(batch, rect, ForgeUiRenderer.GradientStyle.PRIMARY)
+        game.assets.buttonFont.color = ForgeUiPalette.textPrimary
+        fittedText(
+            game.assets.buttonFont,
+            text,
+            x + 10f,
+            y + height * .66f,
+            width - 20f,
+            .92f,
+        )
+        game.assets.buttonFont.color = Color.WHITE
+        return rect
+    }
+
+    private fun imageButton(assetName: String, x: Float, y: Float, width: Float, height: Float): Rectangle {
+        val rect = Rectangle(x, y, width, height)
+
+        // Use the exact same forged outer frame, height and corner radius as the
+        // orange Privacy / Website buttons so all three controls belong to one system.
+        game.assets.uiRenderer.drawCompactRoundedGradientButton(
+            batch,
+            rect,
+            ForgeUiRenderer.GradientStyle.NEUTRAL,
+        )
+
+        val texture = game.assets.settingsMenuTexture(assetName)
+
+        // The GitHub PNG already contains its own large rounded frame. Crop that old
+        // frame away and keep only the GitHub mark + MSR7799 artwork, otherwise it
+        // looks like a small button sitting inside another button.
+        val cropX = (texture.width * .055f).toInt().coerceAtLeast(1)
+        val cropY = (texture.height * .18f).toInt().coerceAtLeast(1)
+        val cropWidth = (texture.width - cropX * 2).coerceAtLeast(1)
+        val cropHeight = (texture.height - cropY * 2).coerceAtLeast(1)
+        val region = TextureRegion(texture, cropX, cropY, cropWidth, cropHeight)
+
+        // Match the inner face used by the orange buttons.
+        val inset = 6f
+        val innerX = x + inset
+        val innerY = y + inset
+        val innerWidth = width - inset * 2f
+        val innerHeight = height - inset * 2f
+
+        // Preserve the artwork aspect ratio and make it occupy almost the whole button.
+        val sourceRatio = cropWidth.toFloat() / cropHeight.toFloat()
+        val targetRatio = innerWidth / innerHeight
+        var drawWidth = innerWidth
+        var drawHeight = innerHeight
+        if (sourceRatio > targetRatio) {
+            drawHeight = innerWidth / sourceRatio
+        } else {
+            drawWidth = innerHeight * sourceRatio
+        }
+
+        batch.color = Color.WHITE
+        batch.draw(
+            region,
+            innerX + (innerWidth - drawWidth) / 2f,
+            innerY + (innerHeight - drawHeight) / 2f,
+            drawWidth,
+            drawHeight,
+        )
+        return rect
     }
 
     /** ملاحظة صيانة: الدالة `toggleIcon` تحوّل البيانات أو تبني المعرّف المتوافق مع بقية النظام؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
@@ -822,10 +1093,70 @@ class SettingsScreen(game: BrickBreakerGame, private val returnToPausedGame: Boo
         toggleIcon(settings.colorBlind, colorY)
         val developerY = color.y - DEVELOPER_BLOCK_HEIGHT - DEVELOPER_SPACING
         batch.color = Color.WHITE
-        batch.draw(game.assets.settingsMenuTexture("game-developer"), 0f, developerY, 900f, DEVELOPER_BLOCK_HEIGHT)
-        val actionY = developerY - 100f
-        val privacy = button("PRIVACY POLICY", 115f, actionY, 325f, 86f)
-        val github = button("GITHUB", 460f, actionY, 325f, 86f)
+        // Larger developer artwork, still clear of the settings row and action buttons.
+        batch.draw(
+            game.assets.settingsMenuTexture("game-developer"),
+            60f,
+            developerY + 7f,
+            780f,
+            DEVELOPER_BLOCK_HEIGHT - 14f,
+        )
+
+        val actionY = developerY - 102f
+        val adPrivacyRequired = game.monetization.rewardedAdGateway.privacyOptionsRequired
+        val privacy: Rectangle
+        val adPrivacy: Rectangle?
+        val website: Rectangle
+        val github: Rectangle
+        if (adPrivacyRequired) {
+            // Four equal production actions: privacy, AdMob consent options, game website, GitHub.
+            val startX = 24f
+            val gap = 18f
+            val width = (852f - gap * 3f) / 4f
+            privacy = roundedButton("PRIVACY POLICY", startX, actionY, width, ACTION_BUTTON_HEIGHT)
+            adPrivacy = roundedButton(
+                "AD PRIVACY",
+                startX + width + gap,
+                actionY,
+                width,
+                ACTION_BUTTON_HEIGHT,
+            )
+            website = roundedButton(
+                "WEBSITE",
+                startX + (width + gap) * 2f,
+                actionY,
+                width,
+                ACTION_BUTTON_HEIGHT,
+            )
+            github = imageButton(
+                "github",
+                startX + (width + gap) * 3f,
+                actionY,
+                width,
+                ACTION_BUTTON_HEIGHT,
+            )
+        } else {
+            // Three equal buttons, centered as one balanced row.
+            val startX = 45f
+            val gap = 22f
+            val width = (810f - gap * 2f) / 3f
+            privacy = roundedButton("PRIVACY POLICY", startX, actionY, width, ACTION_BUTTON_HEIGHT)
+            adPrivacy = null
+            website = roundedButton(
+                "WEBSITE",
+                startX + width + gap,
+                actionY,
+                width,
+                ACTION_BUTTON_HEIGHT,
+            )
+            github = imageButton(
+                "github",
+                startX + (width + gap) * 2f,
+                actionY,
+                width,
+                ACTION_BUTTON_HEIGHT,
+            )
+        }
         batch.draw(game.assets.settingsMenuTexture("save&back"), 0f, 55f, 900f, 210f)
         val back = Rectangle(115f, 100f, 700f, 120f)
         end()
@@ -836,15 +1167,32 @@ class SettingsScreen(game: BrickBreakerGame, private val returnToPausedGame: Boo
                 game.applyAudioSettings()
             }
 
-            tapped(haptic) -> settings.haptics = !settings.haptics
+            tapped(haptic) -> {
+                settings.haptics = !settings.haptics
+                game.progress.saveSettings()
+                if (settings.haptics) Gdx.input.vibrate(24)
+            }
 
-            tapped(motion) -> settings.reduceMotion = !settings.reduceMotion
+            tapped(motion) -> {
+                settings.reduceMotion = !settings.reduceMotion
+                game.progress.saveSettings()
+            }
 
-            tapped(contrast) -> settings.highContrastBall = !settings.highContrastBall
+            tapped(contrast) -> {
+                settings.highContrastBall = !settings.highContrastBall
+                game.progress.saveSettings()
+            }
 
-            tapped(color) -> settings.colorBlind = !settings.colorBlind
+            tapped(color) -> {
+                settings.colorBlind = !settings.colorBlind
+                game.progress.saveSettings()
+            }
 
             tapped(privacy) -> game.setScreen(PrivacyPolicyScreen(game, returnToPausedGame))
+
+            adPrivacy != null && tapped(adPrivacy) -> game.monetization.rewardedAdGateway.showPrivacyOptions()
+
+            tapped(website) -> Gdx.net.openURI("https://bricks-breaker-ball.vercel.app")
 
             tapped(github) -> Gdx.net.openURI("https://github.com/msr7799")
 

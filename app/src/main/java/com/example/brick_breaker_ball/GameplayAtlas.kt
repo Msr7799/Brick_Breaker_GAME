@@ -25,7 +25,7 @@ class GameplayAtlas(private val sheet: DetailedSpriteSheet) {
     fun ball(ball: Ball): TextureRegion {
         val ability = when {
             ball.collisionMode == BallCollisionMode.PIERCING -> "PIERCING"
-            ball.element == BallElement.FIRE || ball.element == BallElement.EXPLOSIVE -> "FIRE"
+            ball.abilityFireCharge || ball.element == BallElement.FIRE || ball.element == BallElement.EXPLOSIVE -> "FIRE"
             else -> "NORMAL"
         }
         val size = when (ball.size) {
@@ -37,18 +37,18 @@ class GameplayAtlas(private val sheet: DetailedSpriteSheet) {
     }
 
     /** ملاحظة صيانة: الدالة `brick` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
-    fun brick(brick: Brick, world: Int, useCampaignPalette: Boolean = true): TextureRegion {
-        val intact = intactBrickId(brick.type, world, brick.id, useCampaignPalette)
+    fun brick(brick: Brick, world: Int, useCampaignPalette: Boolean = true, colorBlind: Boolean = false, levelId: Int = 0): TextureRegion {
+        val intact = intactBrickId(brick.type, world, brick.id, useCampaignPalette, colorBlind, levelId)
         val sprite = if (brick.health < brick.initialHealth) sheet.nextState(intact) ?: intact else intact
         return sheet.region(sprite)
     }
 
     /** ملاحظة صيانة: الدالة `preview` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
-    fun preview(type: BrickType, world: Int): TextureRegion = sheet.region(intactBrickId(type, world, type.ordinal * 17 + 5, useCampaignPalette = false))
+    fun preview(type: BrickType, world: Int): TextureRegion = sheet.region(intactBrickId(type, world, type.ordinal * 17 + 5, useCampaignPalette = false, colorBlind = false))
 
     /** ملاحظة صيانة: الدالة `intactBrickId` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
-    private fun intactBrickId(type: BrickType, world: Int, id: Int, useCampaignPalette: Boolean): SpriteId {
-        if (useCampaignPalette) CampaignBrickPalette.spriteFor(type, world, id)?.let { return it }
+    private fun intactBrickId(type: BrickType, world: Int, id: Int, useCampaignPalette: Boolean, colorBlind: Boolean, levelId: Int = 0): SpriteId {
+        if (useCampaignPalette) CampaignBrickPalette.spriteFor(type, world, id, colorBlind, levelId)?.let { return it }
         return when (type) {
             BrickType.ROUGH_STONE -> SpriteId.BRICK_ROUGH_STONE
 

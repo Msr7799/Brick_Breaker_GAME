@@ -16,11 +16,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DetailedSpriteManifestTest {
-    private val root = File(requireNotNull(System.getProperty("user.dir"))).let {
-        if (File(it, "spritesheet.png").exists()) it else it.parentFile
-    }
-    private val imageFile = File(root, "spritesheet.png")
-    private val manifestFile = File(root, "docs/sprite-map-detailed.json")
+    private val root = generateSequence(File(requireNotNull(System.getProperty("user.dir")))) { it.parentFile }
+        .first { File(it, "app/src/main/assets/sprites").isDirectory }
+    private val imageFile = File(root, "app/src/main/assets/sprites/spritesheet.png")
+    private val manifestFile = File(root, "app/src/main/assets/sprites/sprite-map-detailed.json")
 
     /** ملاحظة صيانة: الدالة `canonicalManifestAndPixelsAreValid` توثّق حالة اختبار أو تهيئة آلية وتحمي السلوك المتوقع من التراجع؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     @Test fun canonicalManifestAndPixelsAreValid() {
@@ -64,12 +63,8 @@ class DetailedSpriteManifestTest {
         val sizes = listOf("small", "medium", "large")
         assertTrue(abilities.flatMap { ability -> sizes.map { size -> "ball_${ability}_$size" } }.all { it in ids })
         assertEquals((1..8).map { "spark_frame_${it.toString().padStart(2, '0')}" }, ids.filter { it.startsWith("spark_frame_") }.sorted())
-        val runtimeImage = File(root, "app/src/main/assets/sprites/spritesheet.png")
-        val runtimeManifest = File(root, "app/src/main/assets/sprites/sprite-map-detailed.json")
-        assertTrue(runtimeImage.exists())
-        assertTrue(runtimeManifest.exists())
-        assertTrue(imageFile.readBytes().contentEquals(runtimeImage.readBytes()))
-        assertTrue(manifestFile.readBytes().contentEquals(runtimeManifest.readBytes()))
+        assertTrue(imageFile.exists())
+        assertTrue(manifestFile.exists())
         assertFalse(File(root, "app/src/main/assets/sprites/spritesheet-with-notes.png").exists())
         assertFalse(File(root, "app/src/main/assets/atlases/gameplay.atlas").exists())
         assertFalse(File(root, "app/src/main/assets/atlases/gameplay.png").exists())

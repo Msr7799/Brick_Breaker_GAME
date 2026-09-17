@@ -46,7 +46,16 @@ class MainActivity : AndroidApplication() {
         }
         val monetization = MonetizationServices(
             purchaseGateway = PlayBillingPurchaseGateway(this),
-            rewardedAdGateway = AdMobRewardedAdGateway(this, BuildConfig.REWARDED_AD_UNIT)
+            rewardedReviveAdGateway = AdMobRewardedAdGateway(
+                this,
+                BuildConfig.REWARDED_REVIVE_AD_UNIT,
+                requestConsentOnInit = true,
+            ),
+            rewardedTalismanAdGateway = AdMobRewardedAdGateway(
+                this,
+                BuildConfig.REWARDED_TALISMAN_AD_UNIT,
+                requestConsentOnInit = false,
+            ),
         )
         brickBreakerGame = BrickBreakerGame(monetization)
         val gameView = initializeForView(

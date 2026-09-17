@@ -43,9 +43,10 @@ class BrickBreakerGame(val monetization: MonetizationServices = MonetizationServ
             PaddleStyleCatalog.build(assets.cosmetics.paddles),
             cosmeticOwnership
         )
-        cosmeticProgression.reconcile(progress)
+        cosmeticProgression.reconcile(progress, developmentAccess.enabled)
         customLevels = CustomLevelRepository()
-        monetization.rewardedAdGateway.preload()
+        monetization.rewardedReviveAdGateway.preload()
+        monetization.rewardedTalismanAdGateway.preload()
         reconcilePurchases()
         setScreen(SplashScreen(this))
     }
@@ -54,7 +55,7 @@ class BrickBreakerGame(val monetization: MonetizationServices = MonetizationServ
     override fun setScreen(next: Screen?) {
         val previous = screen
         if (next is GameScreen) {
-            assets.startGameplayMusic(progress.settings.masterVolume * progress.settings.musicVolume)
+            assets.startGameplayMusic(next.musicWorld, progress.settings.masterVolume * progress.settings.musicVolume)
         } else if (::assets.isInitialized) {
             assets.stopGameplayMusic()
         }
@@ -70,7 +71,8 @@ class BrickBreakerGame(val monetization: MonetizationServices = MonetizationServ
     /** ملاحظة صيانة: الدالة `applyAudioSettings` تعالج الحدث أو الطلب وتحدّث الحالة المرتبطة به؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun applyAudioSettings() {
         if (screen is GameScreen && progress.settings.masterVolume > 0f && progress.settings.musicVolume > 0f) {
-            assets.startGameplayMusic(progress.settings.masterVolume * progress.settings.musicVolume)
+            val gameplayScreen = screen as GameScreen
+            assets.startGameplayMusic(gameplayScreen.musicWorld, progress.settings.masterVolume * progress.settings.musicVolume)
         } else {
             assets.stopGameplayMusic()
         }
@@ -113,7 +115,8 @@ class BrickBreakerGame(val monetization: MonetizationServices = MonetizationServ
     override fun resume() {
         super.resume()
         if (::ledger.isInitialized) reconcilePurchases()
-        monetization.rewardedAdGateway.preload()
+        monetization.rewardedReviveAdGateway.preload()
+        monetization.rewardedTalismanAdGateway.preload()
     }
 
     /** ملاحظة صيانة: الدالة `dispose` تنفّذ العقد الموروث وتربط دورة حياة المكوّن بسلوك هذا الملف؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */

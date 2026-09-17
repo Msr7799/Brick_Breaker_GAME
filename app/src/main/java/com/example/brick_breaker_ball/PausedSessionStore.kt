@@ -21,7 +21,8 @@ class PausedSessionStore(private val prefs: Preferences = Gdx.app.getPreferences
         val balls = session.balls.joinToString(";") { b ->
             listOf(
                 b.id, b.position.x, b.position.y, b.previousPosition.x, b.previousPosition.y, b.velocity.x, b.velocity.y,
-                b.size.name, b.baseSize.name, b.cosmeticGroupName, b.cosmeticSpriteName, b.element.name, b.collisionMode.name, b.baseSpeed, b.stuckOffset ?: "n"
+                b.size.name, b.baseSize.name, b.cosmeticGroupName, b.cosmeticSpriteName, b.element.name, b.collisionMode.name, b.baseSpeed, b.stuckOffset ?: "n",
+                b.abilityFireCharge
             ).joinToString(",")
         }
         val bricks = session.bricks.joinToString(";") { b -> listOf(b.id, b.bounds.x, b.bounds.y, b.bounds.width, b.bounds.height, b.type.name, b.health, b.hue, b.originX, b.originY, b.age, b.groupId, b.locked, b.ghostVisible, b.initialHealth, b.timedBombSeconds ?: "n", b.temporaryOriginalType?.name ?: "n", b.temporaryOriginalHealth, b.temporaryOriginalInitialHealth).joinToString(",") }
@@ -29,7 +30,8 @@ class PausedSessionStore(private val prefs: Preferences = Gdx.app.getPreferences
         val timers = session.powerUps.timers.entries.joinToString(";") { "${it.key.name},${it.value}" }
         val persistent = session.powerUps.persistentSnapshot().joinToString(",") { it.name }
         val lasers = session.laserShots.joinToString(";") { s -> listOf(s.position.x, s.position.y, s.previousPosition.x, s.previousPosition.y, s.fire, s.piercing).joinToString(",") }
-        prefs.putInteger("version", 10).putBoolean("valid", true).putInteger("level", level.id).putInteger("lives", session.lives).putInteger("score", session.score)
+        prefs.putInteger("version", 13).putBoolean("valid", true).putInteger("level", level.id).putInteger("lives", session.lives).putInteger("score", session.score)
+            .putLong("seed", session.seed)
             .putString("baseBallSize", session.baseBallSize.name)
             .putString("ballGroup", session.selectedBallGroupName).putString("ballSprite", session.selectedBallSpriteName)
             .putString("phase", session.phase.name)
@@ -38,7 +40,14 @@ class PausedSessionStore(private val prefs: Preferences = Gdx.app.getPreferences
             .putString("timers", timers).putString("persistent", persistent).putString("lasers", lasers)
             .putFloat("laserCooldown", session.laserCooldown).putInteger("nextBallId", session.nextBallId).putInteger("nextPowerUpId", session.nextPowerUpId)
             .putBoolean("shield", session.bottomShield).putInteger("explosionExpansion", session.explosionExpansion)
-            .putBoolean("fallingBricksMode", session.fallingBricksMode).putInteger("expandPaddleStacks", session.expandPaddleStacks).flush()
+            .putBoolean("fallingBricksMode", session.fallingBricksMode).putInteger("expandPaddleStacks", session.expandPaddleStacks)
+            .putString("paddleAbilityKind", session.paddleAbility.kind.name).putInteger("paddleAbilityTier", session.paddleAbility.tier)
+            .putInteger("paddleAbilityHitCount", session.paddleAbilityHitCount)
+            .putInteger("ballAbilityHitCount", session.ballAbilityHitCount)
+            .putInteger("ballAbilityBreakCount", session.ballAbilityBreakCount)
+            .putFloat("abilityTapWindowRemaining", session.abilityTapWindowRemaining)
+            .putInteger("rewardedRevivesUsed", session.rewardedRevivesUsed)
+            .flush()
     }
 
     /** ملاحظة صيانة: الدالة `restore` تقرأ البيانات المطلوبة أو تسترجعها بصيغة مناسبة للاستخدام؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
@@ -47,12 +56,25 @@ class PausedSessionStore(private val prefs: Preferences = Gdx.app.getPreferences
         return runCatching {
             val level = LevelRepository.level(prefs.getInteger("level", 1))
             val version = prefs.getInteger("version", 1)
+            val savedPhase = runCatching { GamePhase.valueOf(prefs.getString("phase", GamePhase.SERVING.name)) }
+                .getOrDefault(GamePhase.SERVING)
             val restoredBaseSize = if (version >= 6) runCatching { BallSize.valueOf(prefs.getString("baseBallSize", BallSize.DEFAULT.name)) }.getOrDefault(BallSize.DEFAULT) else BallSize.DEFAULT
+            val restoredAbility = if (version >= 11) {
+                val kind = runCatching { PaddleAbilityKind.valueOf(prefs.getString("paddleAbilityKind", PaddleAbilityKind.PRECISION_CORE.name)) }
+                    .getOrDefault(PaddleAbilityKind.PRECISION_CORE)
+                PaddleAbilityCatalog.profile(kind, prefs.getInteger("paddleAbilityTier", 1))
+            } else {
+                PaddleAbilityCatalog.default
+            }
+            val restoredBallSprite = if (version >= 7) prefs.getString("ballSprite", CosmeticDefaults.BALL_SPRITE) else CosmeticDefaults.BALL_SPRITE
             val session = GameSession(
+                seed = prefs.getLong("seed", 0xB12C_BA11L),
                 level = level,
                 baseBallSize = restoredBaseSize,
                 selectedBallGroupName = if (version >= 7) prefs.getString("ballGroup", CosmeticDefaults.BALL_GROUP) else CosmeticDefaults.BALL_GROUP,
-                selectedBallSpriteName = if (version >= 7) prefs.getString("ballSprite", CosmeticDefaults.BALL_SPRITE) else CosmeticDefaults.BALL_SPRITE
+                selectedBallSpriteName = restoredBallSprite,
+                paddleAbility = restoredAbility,
+                ballAbility = BallAbilityCatalog.profileForSprite(restoredBallSprite),
             )
             session.lives = prefs.getInteger("lives", level.lives)
             session.score = prefs.getInteger("score", 0)
@@ -63,7 +85,12 @@ class PausedSessionStore(private val prefs: Preferences = Gdx.app.getPreferences
             session.balls.clear()
             prefs.getString("balls", "").split(';').filter(String::isNotBlank).forEach { raw ->
                 val v = raw.split(',')
-                session.balls += if (version >= 7 && v.size >= 15) {
+                session.balls += if (version >= 11 && v.size >= 16) {
+                    Ball(
+                        id = v[0].toInt(), position = Vector2(v[1].toFloat(), v[2].toFloat()), previousPosition = Vector2(v[3].toFloat(), v[4].toFloat()), velocity = Vector2(v[5].toFloat(), v[6].toFloat()),
+                        size = BallSize.valueOf(v[7]), baseSize = BallSize.valueOf(v[8]), cosmeticGroupName = v[9], cosmeticSpriteName = v[10], element = BallElement.valueOf(v[11]), collisionMode = BallCollisionMode.valueOf(v[12]), baseSpeed = v[13].toFloat(), stuckOffset = v[14].takeUnless { it == "n" }?.toFloat(), abilityFireCharge = v[15].toBoolean()
+                    )
+                } else if (version >= 7 && v.size >= 15) {
                     Ball(
                         id = v[0].toInt(), position = Vector2(v[1].toFloat(), v[2].toFloat()), previousPosition = Vector2(v[3].toFloat(), v[4].toFloat()), velocity = Vector2(v[5].toFloat(), v[6].toFloat()),
                         size = BallSize.valueOf(v[7]), baseSize = BallSize.valueOf(v[8]), cosmeticGroupName = v[9], cosmeticSpriteName = v[10], element = BallElement.valueOf(v[11]), collisionMode = BallCollisionMode.valueOf(v[12]), baseSpeed = v[13].toFloat(), stuckOffset = v[14].takeUnless { it == "n" }?.toFloat()
@@ -94,7 +121,7 @@ class PausedSessionStore(private val prefs: Preferences = Gdx.app.getPreferences
                     )
                 }
             }
-            require(session.balls.isNotEmpty())
+            require(session.balls.isNotEmpty() || savedPhase == GamePhase.GAME_OVER)
             session.bricks.clear()
             prefs.getString("bricks", "").split(';').filter(String::isNotBlank).forEach { raw ->
                 val v = raw.split(',')
@@ -158,8 +185,20 @@ class PausedSessionStore(private val prefs: Preferences = Gdx.app.getPreferences
             session.explosionExpansion = prefs.getInteger("explosionExpansion", 1)
             session.fallingBricksMode = prefs.getBoolean("fallingBricksMode", false)
             session.expandPaddleStacks = if (version >= 8) prefs.getInteger("expandPaddleStacks", 0).coerceIn(0, GameSession.MAX_EXPAND_STACKS) else 0
+            if (version >= 11) {
+                session.paddleAbilityHitCount = prefs.getInteger("paddleAbilityHitCount", 0).coerceAtLeast(0)
+                session.abilityTapWindowRemaining = prefs.getFloat("abilityTapWindowRemaining", 0f).coerceAtLeast(0f)
+            }
+            if (version >= 13) {
+                session.ballAbilityHitCount = prefs.getInteger("ballAbilityHitCount", 0).coerceAtLeast(0)
+                session.ballAbilityBreakCount = prefs.getInteger("ballAbilityBreakCount", 0).coerceAtLeast(0)
+            }
+            if (version >= 12) {
+                session.rewardedRevivesUsed = prefs.getInteger("rewardedRevivesUsed", 0)
+                    .coerceIn(0, GameSession.MAX_REWARDED_REVIVES)
+            }
             session.restoreWeaponPaddleBonus(savedWidthIncludesBonus = version >= 10)
-            session.phase = GamePhase.valueOf(prefs.getString("phase", GamePhase.SERVING.name))
+            session.phase = savedPhase
             level to session
         }.getOrElse {
             clear()

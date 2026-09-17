@@ -63,4 +63,19 @@ class CampaignBrickPaletteTest {
             BrickType.TRANSPARENT_SLOW_PASS_THROUGH
         ).forEach { type -> assertNull(type.name, CampaignBrickPalette.spriteFor(type, 13, 7)) }
     }
+
+    @Test fun colorBlindModeUsesStableHighContrastSemanticTints() {
+        assertEquals(
+            com.badlogic.gdx.graphics.Color.valueOf("56B4E9"),
+            CampaignBrickPalette.tintFor(BrickType.NORMAL_ONE_HIT, 1, colorBlind = true)
+        )
+        assertEquals(
+            CampaignBrickPalette.tintFor(BrickType.NORMAL_ONE_HIT, 1, colorBlind = true),
+            CampaignBrickPalette.tintFor(BrickType.NORMAL_ONE_HIT, 13, colorBlind = true)
+        )
+        val normal = CampaignBrickPalette.spriteFor(BrickType.CRYSTAL_BLUE, 3, 17, colorBlind = true)
+        val otherWorld = CampaignBrickPalette.spriteFor(BrickType.CRYSTAL_BLUE, 11, 17, colorBlind = true)
+        assertTrue(normal != null)
+        assertTrue(otherWorld != null)
+    }
 }

@@ -36,7 +36,7 @@ class CosmeticProgressionService(
     paddles: List<PaddleStyleSet>,
     private val ownership: CosmeticOwnershipStore
 ) {
-    /** Exact gameplay order: starter first, then one new ball for each early cleared stage. */
+    /** Exact gameplay order: starter first, then the remaining balls are spread across the full 90-stage campaign. */
     val balls: List<BallSpriteDefinition> = starterFirst(
         balls.sortedBy(BallSpriteDefinition::index),
         balls.firstOrNull { it.groupName == CosmeticDefaults.BALL_GROUP && it.spriteName == CosmeticDefaults.BALL_SPRITE }
@@ -53,9 +53,17 @@ class CosmeticProgressionService(
      * Ball #1 is always available. Completing a new campaign stage unlocks the next ball
      * in the ordered catalog until the entire ball collection is earned.
      */
-    private val ballUnlockStages: Map<String, Int> = this.balls.drop(1).mapIndexed { index, ball ->
-        ball.id to (index + 1).coerceIn(1, LevelRepository.TOTAL_LEVELS)
-    }.toMap()
+    private val ballUnlockStages: Map<String, Int> = buildMap {
+        val earned = balls.drop(1)
+        earned.forEachIndexed { index, ball ->
+            val stage = if (index == 0) {
+                1
+            } else {
+                1 + ceil(index * (LevelRepository.TOTAL_LEVELS - 1).toDouble() / (earned.size - 1).coerceAtLeast(1)).toInt()
+            }
+            put(ball.id, stage.coerceIn(1, LevelRepository.TOTAL_LEVELS))
+        }
+    }
 
     /** The first earned paddle style intentionally shares Stage 1 for a combined reveal. */
     private val paddleUnlockStages: Map<String, Int> = buildMap {
@@ -70,7 +78,7 @@ class CosmeticProgressionService(
         }
     }
 
-    fun reconcile(progress: ProgressStore) {
+    fun reconcile(progress: ProgressStore, developmentAccess: Boolean = false) {
         starterBall?.let { ownership.unlockBall(it.id) }
         starterPaddle()?.let { ownership.unlockPaddleStyle(it.id) }
 
@@ -82,21 +90,26 @@ class CosmeticProgressionService(
             val stage = paddleUnlockStages[style.id] ?: return@forEach
             if (progress.stars(stage) > 0) ownership.unlockPaddleStyle(style.id)
         }
-        ensureEquippedOwned(progress)
+        if (!developmentAccess) ensureEquippedOwned(progress)
     }
 
     /** Call after ProgressStore.complete(); every returned entry is already durably owned. */
-    fun onCampaignResult(levelId: Int, previousStars: Int, progress: ProgressStore): List<CosmeticUnlock> {
+    fun onCampaignResult(
+        levelId: Int,
+        previousStars: Int,
+        progress: ProgressStore,
+        developmentAccess: Boolean = false,
+    ): List<CosmeticUnlock> {
         if (previousStars > 0 || progress.stars(levelId) <= 0) return emptyList()
         val unlocked = mutableListOf<CosmeticUnlock>()
 
-        balls.drop(1).firstOrNull { ballUnlockStages[it.id] == levelId }?.let { ball ->
+        balls.drop(1).filter { ballUnlockStages[it.id] == levelId }.forEach { ball ->
             if (ownership.unlockBall(ball.id)) unlocked += CosmeticUnlock.Ball(ball)
         }
-        paddleStyles.drop(1).firstOrNull { paddleUnlockStages[it.id] == levelId }?.let { style ->
+        paddleStyles.drop(1).filter { paddleUnlockStages[it.id] == levelId }.forEach { style ->
             if (ownership.unlockPaddleStyle(style.id)) unlocked += CosmeticUnlock.Paddle(style)
         }
-        ensureEquippedOwned(progress)
+        if (!developmentAccess) ensureEquippedOwned(progress)
         return unlocked
     }
 

@@ -1,10 +1,10 @@
 package com.example.brick_breaker_ball
 
 import com.badlogic.gdx.math.Vector2
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
 
 class GameplayRulesRegressionTest {
     private fun levelWith(vararg placements: Triple<Int, Int, BrickType>): LevelDefinition {
@@ -51,7 +51,7 @@ class GameplayRulesRegressionTest {
         session.update(.12f)
 
         assertFalse(session.bricks.any { it.type == BrickType.INDESTRUCTIBLE })
-        assertTrue(ball.velocity.y > 0f, "Piercing should not reflect from destroyed steel")
+        assertTrue("Piercing should not reflect from destroyed steel", ball.velocity.y > 0f)
     }
 
     @Test

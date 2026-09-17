@@ -33,6 +33,15 @@ Armed paddle with two launch points. It fires Laser Projectiles upward to hit br
 
 Catches a ball on contact and holds it to the paddle until the player releases it. The supplied rules allow it to hold multiple balls while multiball is active.
 
+### Paddle Style Abilities
+
+Every cosmetic paddle style set now has a gameplay ability. The same ability follows the style across its Normal, Weapon, and Sticky visual forms. Ability strength increases modestly on later unlocked styles.
+
+- ==Precision Core== - Balanced control with a small paddle-response bonus. Titanium Edge is the starter example.
+- ==Hyper Glide== - Faster paddle response for quick horizontal movement. Neon Wing is the first Hyper Glide style.
+- ==Impact Boost== - While the ball is in play, tap just before the ball reaches the paddle. A successful timed return increases the ball's base speed. Sticky release and Laser firing keep priority over this ability. Quantum Slate is the first Impact Boost style.
+- ==Inferno Rhythm== - Counts normal paddle returns. Every fourth normal return charges the ball with a one-hit fire strike. The charge is consumed by the next breakable brick it hits and does not create the full Fire Ball splash explosion. Prism Guard is the first Inferno Rhythm style.
+
 ## 3. Ball System
 
 ### Sizes

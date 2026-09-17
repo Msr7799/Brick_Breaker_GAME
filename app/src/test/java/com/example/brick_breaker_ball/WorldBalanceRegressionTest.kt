@@ -1,8 +1,8 @@
 package com.example.brick_breaker_ball
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
 
 class WorldBalanceRegressionTest {
     private fun effort(level: LevelDefinition): Int = level.brickIds.values.sumOf { id ->
@@ -18,7 +18,7 @@ class WorldBalanceRegressionTest {
     fun everyGeneratedCampaignLevelValidates() {
         LevelRepository.levels.forEach { level ->
             val result = LevelValidator.validate(level)
-            assertTrue(result.valid, "Level ${level.id} invalid: ${result.errors}")
+            assertTrue("Level ${level.id} invalid: ${result.errors}", result.valid)
         }
     }
 
@@ -28,7 +28,7 @@ class WorldBalanceRegressionTest {
         LevelRepository.worlds.forEach { world ->
             val levels = (LevelRepository.firstLevel(world.id)..LevelRepository.lastLevel(world.id)).map(LevelRepository::level)
             val average = levels.map(::effort).average()
-            assertTrue(average >= previous, "World ${world.id} effort $average fell below $previous")
+            assertTrue("World ${world.id} effort $average fell below $previous", average >= previous)
             previous = average
         }
     }
@@ -39,7 +39,7 @@ class WorldBalanceRegressionTest {
         LevelRepository.worlds.forEach { world ->
             val levels = (LevelRepository.firstLevel(world.id)..LevelRepository.lastLevel(world.id)).map(LevelRepository::level)
             val average = levels.map { it.ballSpeed.toDouble() }.average()
-            assertTrue(average > previous, "World ${world.id} speed $average did not rise above $previous")
+            assertTrue("World ${world.id} speed $average did not rise above $previous", average > previous)
             previous = average
         }
     }
@@ -51,8 +51,8 @@ class WorldBalanceRegressionTest {
             BrickType.LIGHTNING_SPEED_PASS_THROUGH,
             BrickType.TRANSPARENT_SLOW_PASS_THROUGH
         ).forEach { type ->
-            assertTrue(type.breakable, "$type must disappear/break according to the annotated rules")
-            assertEquals(1, type.maxHealth, "$type should resolve on first collision")
+            assertTrue("$type must disappear/break according to the annotated rules", type.breakable)
+            assertEquals("$type should resolve on first collision", 1, type.maxHealth)
         }
     }
 
@@ -65,7 +65,7 @@ class WorldBalanceRegressionTest {
     @Test
     fun everyWorldHasAVisualMaterialPalette() {
         LevelRepository.worlds.forEach { world ->
-            assertTrue(CampaignBrickPalette.palette(world.id).isNotEmpty(), "World ${world.id} palette is empty")
+            assertTrue("World ${world.id} palette is empty", CampaignBrickPalette.palette(world.id).isNotEmpty())
         }
     }
 }

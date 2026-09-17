@@ -31,9 +31,9 @@ class WorldMapAssetsTest {
     @Test fun worldNamesMatchTheThirteenRequestedThemes() {
         assertEquals(
             listOf(
-                "CRYSTAL LEVIATHAN", "CELESTIAL GROVE", "VOID WHALE", "AZURE PYRAMID",
-                "SKY KINGDOM", "STORM SPIRE", "CRYSTAL COAST", "FROZEN CITADEL",
-                "DARK MATTER", "CONJUNCTION", "CHAOS", "THE END OF TIME", "DARK VOLCANO"
+                "CRYSTAL DEPTHS", "WINGED GUARDIANS", "MOONLIT JUNGLE", "DESERT TEMPLE",
+                "GOLDEN HORIZON", "ASTRAL GATE", "AZURE COAST", "FROST CITADEL",
+                "VOID VORTEX", "COSMIC WHALE", "EMBER PORTAL", "CLOCKWORK CITADEL", "CRIMSON ECLIPSE"
             ),
             LevelRepository.worlds.map { it.name }
         )

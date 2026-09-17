@@ -83,7 +83,8 @@ object PowerUpCatalog {
         PowerUpType.MULTI_BALL, PowerUpType.TRIPLE_BALL, PowerUpType.EXTRA_LIFE,
         PowerUpType.RANDOM_GOOD, PowerUpType.RANDOM_BAD,
         PowerUpType.KILL_PADDLE, PowerUpType.SET_OFF_EXPLODING, PowerUpType.LEVEL_WARP,
-        PowerUpType.ZAP_BRICKS, PowerUpType.EIGHT_BALL
+        PowerUpType.ZAP_BRICKS, PowerUpType.EIGHT_BALL,
+        PowerUpType.MULTIBALL_PLUS_4, PowerUpType.MULTIBALL_15
     )
     private val levelScoped = setOf(
         PowerUpType.EXPAND_PADDLE,
@@ -105,6 +106,14 @@ object PowerUpCatalog {
         PowerUpType.GHOST_BALL, PowerUpType.MULTIBALL_15
     )
     val classicTypes = classicOrderedTypes.toSet()
+
+    /** Every world exposes the complete 20-talisman set; rotation only changes deterministic ordering. */
+    fun worldDropTypes(world: Int): List<PowerUpType> {
+        if (classicOrderedTypes.isEmpty()) return emptyList()
+        val offset = ((world - 1).coerceAtLeast(0) * 3) % classicOrderedTypes.size
+        return classicOrderedTypes.drop(offset) + classicOrderedTypes.take(offset)
+    }
+
     private val icons = mapOf(
         PowerUpType.LASER_AUTO_CHARGE to "powerup_laser_auto_charge", PowerUpType.LASER_PADDLE to "powerup_laser_auto_charge",
         PowerUpType.EXTRA_LIFE to "powerup_extra_life", PowerUpType.KILL_PADDLE to "powerup_kill_player",
@@ -172,11 +181,12 @@ object PowerUpCatalog {
     }
 }
 
-class PowerUpDropDirector(seed: Long) {
+class PowerUpDropDirector(seed: Long, world: Int = 1) {
     private val random = Random(seed)
     private var elapsedSinceDrop = 0f
-    private var budget = 18
+    private var budget = GameplayTuning.POWERUP_DROP_BUDGET
     private var last: PowerUpType? = null
+    private val worldPool = PowerUpCatalog.worldDropTypes(world)
 
     /** ملاحظة صيانة: الدالة `update` تحدّث الحالة المتغيرة خلال دورة التشغيل أو المحاكاة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun update(dt: Float) {
@@ -185,14 +195,18 @@ class PowerUpDropDirector(seed: Long) {
 
     /** ملاحظة صيانة: الدالة `choose` تنفّذ مسؤولية محلية يعتمد عليها هذا الجزء من اللعبة؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun choose(lives: Int, activeFalling: Int, forced: Boolean = false, baseChance: Float = .16f): PowerUpType? {
-        if (budget <= 0 || activeFalling >= 3 || (!forced && elapsedSinceDrop < 5f)) return null
+        if (!forced && (budget <= 0 || activeFalling >= 3 || elapsedSinceDrop < GameplayTuning.POWERUP_DROP_MIN_INTERVAL)) return null
         if (!forced &&
-            random.nextFloat() > if (elapsedSinceDrop > 18f) maxOf(.72f, baseChance) else baseChance.coerceIn(0f, 1f)
+            random.nextFloat() > if (elapsedSinceDrop > GameplayTuning.POWERUP_DROP_PITY_SECONDS) {
+                maxOf(GameplayTuning.POWERUP_DROP_PITY_CHANCE, baseChance)
+            } else {
+                baseChance.coerceIn(0f, 1f)
+            }
         ) {
             return null
         }
-        val pool = PowerUpCatalog.definitions.values.filter {
-            it.type in PowerUpCatalog.classicTypes && it.type != last && (lives > 1 || it.category == PowerUpCategory.GOOD)
+        val pool = worldPool.map(PowerUpCatalog.definitions::getValue).filter {
+            it.type != last && (lives > 1 || it.category == PowerUpCategory.GOOD)
         }
         val total = pool.sumOf { it.dropWeight.toDouble() }.toFloat()
         var roll = random.nextFloat() * total
@@ -202,7 +216,7 @@ class PowerUpDropDirector(seed: Long) {
         }?.type ?: pool.last().type
         last = selected
         elapsedSinceDrop = 0f
-        budget--
+        if (!forced) budget--
         return selected
     }
 }

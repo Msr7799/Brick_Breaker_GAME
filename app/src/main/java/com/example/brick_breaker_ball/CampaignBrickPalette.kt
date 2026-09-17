@@ -28,18 +28,17 @@ internal object CampaignBrickPalette {
             listOf(SpriteId.BRICK_CRYSTAL_BLUE_INTACT, SpriteId.BRICK_CRYSTAL_MAROON_INTACT, SpriteId.BRICK_CRYSTAL_PURPLE_INTACT),
             Color.valueOf("6AA8FF")
         ),
-        // 2 — blue/teal alien grove
+        // 2 — shadowed winged guardians
         2 to WorldVisualTheme(
-            listOf(SpriteId.BRICK_CRYSTAL_MAROON_INTACT, SpriteId.BRICK_CRYSTAL_BLUE_INTACT, SpriteId.BRICK_CRYSTAL_GREEN_INTACT),
-            Color.valueOf("68C7E5")
+            listOf(SpriteId.BRICK_ARMORED_DARK_INTACT, SpriteId.BRICK_STONE_GRAY_INTACT, SpriteId.BRICK_CRYSTAL_PURPLE_INTACT, SpriteId.BRICK_CRYSTAL_BLUE_INTACT),
+            Color.valueOf("8EA5C8")
         ),
-        // 3 — celestial whale / bright sky
+        // 3 — moonlit jungle: cool blue, violet and pale moonlight
         3 to WorldVisualTheme(
             listOf(
                 SpriteId.BRICK_CRYSTAL_BLUE_INTACT,
                 SpriteId.BRICK_CRYSTAL_MAROON_INTACT,
                 SpriteId.BRICK_CRYSTAL_PURPLE_INTACT,
-                SpriteId.BRICK_CRYSTAL_PINK_INTACT,
                 SpriteId.BRICK_ELECTRIC_WHITE_INTACT
             ),
             Color.valueOf("8BA7FF")
@@ -49,15 +48,15 @@ internal object CampaignBrickPalette {
             listOf(SpriteId.BRICK_CRYSTAL_ORANGE_INTACT, SpriteId.BRICK_STONE_GRAY_INTACT, SpriteId.BRICK_CRYSTAL_RED_INTACT),
             Color.valueOf("E0A05C")
         ),
-        // 5 — pale turquoise sky kingdom
+        // 5 — warm golden horizon
         5 to WorldVisualTheme(
             listOf(
-                SpriteId.BRICK_CRYSTAL_MAROON_INTACT,
-                SpriteId.BRICK_CRYSTAL_GREEN_INTACT,
-                SpriteId.BRICK_CRYSTAL_BLUE_INTACT,
+                SpriteId.BRICK_CRYSTAL_ORANGE_INTACT,
+                SpriteId.BRICK_CRYSTAL_RED_INTACT,
+                SpriteId.BRICK_STONE_GRAY_INTACT,
                 SpriteId.BRICK_ELECTRIC_WHITE_INTACT
             ),
-            Color.valueOf("72C5C8")
+            Color.valueOf("E8B971")
         ),
         // 6 — electric storm spires
         6 to WorldVisualTheme(
@@ -70,13 +69,13 @@ internal object CampaignBrickPalette {
             ),
             Color.valueOf("6D8CFF")
         ),
-        // 7 — saturated MAROON coast
+        // 7 — azure coast with tropical green accents
         7 to WorldVisualTheme(
             listOf(
                 SpriteId.BRICK_CRYSTAL_MAROON_INTACT,
                 SpriteId.BRICK_CRYSTAL_BLUE_INTACT,
                 SpriteId.BRICK_CRYSTAL_GREEN_INTACT,
-                SpriteId.BRICK_CRYSTAL_ORANGE_INTACT
+                SpriteId.BRICK_ELECTRIC_WHITE_INTACT
             ),
             Color.valueOf("4CB9F2")
         ),
@@ -101,27 +100,26 @@ internal object CampaignBrickPalette {
             ),
             Color.valueOf("7B5A8D")
         ),
-        // 10 — cosmic conjunction, blue steel with warm highlights
+        // 10 — luminous cosmic whale
         10 to WorldVisualTheme(
             listOf(
                 SpriteId.BRICK_ELECTRIC_WHITE_INTACT,
-                SpriteId.BRICK_CRYSTAL_ORANGE_INTACT,
                 SpriteId.BRICK_CRYSTAL_BLUE_INTACT,
                 SpriteId.BRICK_CRYSTAL_PURPLE_INTACT,
+                SpriteId.BRICK_CRYSTAL_PINK_INTACT,
                 SpriteId.BRICK_CRYSTAL_MAROON_INTACT
             ),
-            Color.valueOf("7F9DBD")
+            Color.valueOf("A8BDF8")
         ),
-        // 11 — chaos / magenta-red darkness
+        // 11 — ember portal and dark stone
         11 to WorldVisualTheme(
             listOf(
                 SpriteId.BRICK_ARMORED_DARK_INTACT,
-                SpriteId.BRICK_CRYSTAL_PURPLE_INTACT,
                 SpriteId.BRICK_CRYSTAL_RED_INTACT,
-                SpriteId.BRICK_CRYSTAL_PINK_INTACT,
+                SpriteId.BRICK_CRYSTAL_ORANGE_INTACT,
                 SpriteId.BRICK_STONE_GRAY_INTACT
             ),
-            Color.valueOf("A56B9C")
+            Color.valueOf("D98355")
         ),
         // 12 — end of time / cold clockwork steel
         12 to WorldVisualTheme(
@@ -140,8 +138,7 @@ internal object CampaignBrickPalette {
                 SpriteId.BRICK_CRYSTAL_RED_INTACT,
                 SpriteId.BRICK_CRYSTAL_ORANGE_INTACT,
                 SpriteId.BRICK_ARMORED_DARK_INTACT,
-                SpriteId.BRICK_STONE_GRAY_INTACT,
-                SpriteId.BRICK_CRYSTAL_PURPLE_INTACT
+                SpriteId.BRICK_STONE_GRAY_INTACT
             ),
             Color.valueOf("D0784D")
         )
@@ -165,10 +162,17 @@ internal object CampaignBrickPalette {
         BrickType.CRYSTAL_GREEN
     )
 
-    fun spriteFor(type: BrickType, world: Int, brickId: Int): SpriteId? {
+    private val colorBlindMaterials = listOf(
+        SpriteId.BRICK_ELECTRIC_WHITE_INTACT,
+        SpriteId.BRICK_STONE_GRAY_INTACT,
+        SpriteId.BRICK_ARMORED_DARK_INTACT,
+        SpriteId.BRICK_CRYSTAL_BLUE_INTACT,
+    )
+
+    fun spriteFor(type: BrickType, world: Int, brickId: Int, colorBlind: Boolean = false, levelId: Int = 0): SpriteId? {
         if (type !in twoHitMaterialTypes) return null
-        val choices = palette(world)
-        return choices[(brickId * 5 + type.ordinal * 3 + world).mod(choices.size)]
+        val choices = if (colorBlind) colorBlindMaterials else palette(world)
+        return choices[(brickId + type.ordinal * 3 + world + levelId).mod(choices.size)]
     }
 
     /**
@@ -176,15 +180,30 @@ internal object CampaignBrickPalette {
      * sprite.  Functional bricks keep a stable semantic accent while NORMAL_ONE_HIT follows the
      * current world's palette.
      */
-    fun tintFor(type: BrickType, world: Int): Color = when (type) {
-        BrickType.NORMAL_ONE_HIT -> themes.getValue(world.coerceIn(1, 13)).oneHitTint
-        BrickType.EXPLOSIVE -> Color.valueOf("FF5D4D")
-        BrickType.GLASS -> Color.valueOf("B9F4FF")
-        BrickType.MOVING_HORIZONTAL, BrickType.MOVING_VERTICAL -> Color.valueOf("57D8FF")
-        BrickType.GHOST -> Color(0.66f, 0.54f, 1f, 0.78f)
-        BrickType.SWITCH -> Color.valueOf("6DEBFF")
-        BrickType.KEY_BRICK -> Color.valueOf("FFC857")
-        BrickType.CHAIN_BRICK -> Color.valueOf("E8F6FF")
+    fun tintFor(type: BrickType, world: Int, colorBlind: Boolean = false): Color {
+        if (colorBlind) return colorBlindTintFor(type)
+        return when (type) {
+            BrickType.NORMAL_ONE_HIT -> themes.getValue(world.coerceIn(1, 13)).oneHitTint
+            BrickType.EXPLOSIVE -> Color.valueOf("FF5D4D")
+            BrickType.GLASS -> Color.valueOf("B9F4FF")
+            BrickType.MOVING_HORIZONTAL, BrickType.MOVING_VERTICAL -> Color.valueOf("57D8FF")
+            BrickType.GHOST -> Color(0.66f, 0.54f, 1f, 0.78f)
+            BrickType.SWITCH -> Color.valueOf("6DEBFF")
+            BrickType.KEY_BRICK -> Color.valueOf("FFC857")
+            BrickType.CHAIN_BRICK -> Color.valueOf("E8F6FF")
+            else -> Color.WHITE
+        }
+    }
+
+    private fun colorBlindTintFor(type: BrickType): Color = when (type) {
+        BrickType.NORMAL_ONE_HIT -> Color.valueOf("56B4E9")
+        BrickType.EXPLOSIVE -> Color.valueOf("D55E00")
+        BrickType.GLASS -> Color.valueOf("F0E442")
+        BrickType.MOVING_HORIZONTAL, BrickType.MOVING_VERTICAL -> Color.valueOf("009E73")
+        BrickType.GHOST -> Color.valueOf("CC79A7")
+        BrickType.SWITCH -> Color.valueOf("0072B2")
+        BrickType.KEY_BRICK -> Color.valueOf("E69F00")
+        BrickType.CHAIN_BRICK -> Color.WHITE
         else -> Color.WHITE
     }
 

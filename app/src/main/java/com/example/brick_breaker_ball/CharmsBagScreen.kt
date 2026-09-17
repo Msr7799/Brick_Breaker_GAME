@@ -38,6 +38,14 @@ class CharmsBagScreen(
     private var touchLastY = 0f
     private var feedback = ""
 
+    override fun show() {
+        installMouseWheelHandler(::handleMouseWheel)
+    }
+
+    override fun hide() {
+        removeMouseWheelHandler()
+    }
+
     override fun render(delta: Float) {
         begin()
 
@@ -284,6 +292,15 @@ class CharmsBagScreen(
             }
             touchActive = false
         }
+    }
+
+    private fun handleMouseWheel(amountY: Float): Boolean {
+        if (amountY == 0f) return false
+        pointer.set(Gdx.input.x.toFloat(), Gdx.input.y.toFloat(), 0f)
+        viewport.unproject(pointer)
+        if (pointer.y !in LIST_BOTTOM..LIST_TOP) return false
+        scrollOffset = (scrollOffset + amountY * CARD_STEP).coerceIn(0f, maxScroll(entries().size))
+        return true
     }
 
     private fun useSelectedCharm() {

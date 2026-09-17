@@ -2,7 +2,7 @@
  * ملاحظات صيانة الملف:
  * المسار: app/src/main/java/com/example/brick_breaker_ball/GameAssets.kt
  * المؤلف: mohamed alromaihi
- * الدوال الموجودة: `font`، `play`، `worldFallbackBg`، `worldMapImage`، `startMenuTexture`، `pauseMenuTexture`، `settingsMenuTexture`، `startMenuMusic`، `stopMenuMusic`، `startGameplayMusic`، `stopGameplayMusic`، `dispose`، `linearTexture`
+ * الدوال الموجودة: `gameplayMusicPathForWorld`، `font`، `play`، `worldFallbackBg`، `worldMapImage`، `startMenuTexture`، `pauseMenuTexture`، `settingsMenuTexture`، `startMenuMusic`، `stopMenuMusic`، `startGameplayMusic`، `stopGameplayMusic`، `dispose`، `linearTexture`
  */
 
 package com.example.brick_breaker_ball
@@ -16,6 +16,16 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.TextureAtlas
 import com.badlogic.gdx.graphics.g2d.TextureRegion
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator
+
+/** يعيد مسار موسيقى الحملة المخصصة للعالم من دون تحميل مورد صوتي. */
+internal fun gameplayMusicPathForWorld(world: Int): String = when (world) {
+    in 1..3 -> "audio/special-state-bg-loop2.mp3"
+    in 4..6 -> "audio/special-state-bg-loop4.mp3"
+    in 7..9 -> "audio/special-state-bg-loop5.mp3"
+    in 10..11 -> "audio/special-state-bg-loop6.mp3"
+    in 12..13 -> "audio/special-state-bg-loop7-final.mp3"
+    else -> "audio/special-state-bg-loop2.mp3"
+}
 
 class GameAssets {
     val detailedSprites = DetailedSpriteSheet()
@@ -36,6 +46,7 @@ class GameAssets {
     val worldDoneIcon = Texture(Gdx.files.internal("ui/world_done_icon.png")).apply {
         setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
     }
+    val lockIcon = linearTexture("backgrounds/start-screen/lock-icon.png")
     private val worldMapTextures: Map<Int, Texture> = (1..13).mapNotNull { world ->
         runCatching {
             Texture(Gdx.files.internal("backgrounds/worlds-map-images/$world.png")).apply {
@@ -46,11 +57,18 @@ class GameAssets {
     }.toMap()
     private val worldMapRegions = worldMapTextures.mapValues { TextureRegion(it.value) }
     val startScreenBackground = linearTexture("backgrounds/start-screen/start-screen-bg.png")
+    val forgePlusGamesLogo = linearTexture("backgrounds/start-screen/forge-plus-games.png")
     // Dedicated background for ShopScreen only.
     val shopScreenBackground = linearTexture("ui/splash_keyart1.png")
-    private val startMenuTextures: Map<String, Texture> = listOf(
-        "continue", "start", "world-map", "shop", "charms-bag", "level-editor", "paddle&balls", "new-game",
-        "setting", "sound-on", "sound-off", "info", "exit", "code-on", "code-off"
+    private val startMenuTextures: Map<String, Texture> = (
+        listOf(
+            "continue", "start", "world-map", "shop", "charms-bag", "level-editor", "paddle&balls", "new-game",
+            "setting", "sound-on", "sound-off", "info", "exit"
+        ) + if (DevelopmentAccess.DEVELOPER_ACCESS && BuildConfig.DEVELOPER_ACCESS_ALLOWED) {
+            listOf("code-on", "code-off")
+        } else {
+            emptyList()
+        }
     ).associateWith { name -> linearTexture("backgrounds/start-screen/$name.png") }
     private val pauseMenuTextures: Map<String, Texture> = listOf(
         "resume",
@@ -73,10 +91,11 @@ class GameAssets {
     val buttonFont: BitmapFont
     val pauseTitleFont: BitmapFont
     private val sounds = mutableMapOf<String, Sound>()
-    private val gameplayMusic = Gdx.audio.newMusic(Gdx.files.internal("audio/special-state-bg-loop.mp3")).apply {
-        isLooping = true
-    }
-    private val menuMusic = Gdx.audio.newMusic(Gdx.files.internal("audio/special-state-bg-loop2.mp3")).apply {
+    private val gameplayMusic = mutableMapOf<String, Music>()
+    private var activeGameplayMusic: Music? = null
+    private var activeGameplayMusicPath: String? = null
+    // loop.mp3 is reserved for menus; campaign worlds use the five tracks mapped above.
+    private val menuMusic = Gdx.audio.newMusic(Gdx.files.internal("audio/special-state-bg-loop.mp3")).apply {
         isLooping = true
     }
 
@@ -155,13 +174,22 @@ pauseTitleFont = font(boldGenerator, 68, Color.WHITE, 2f)
     fun stopMenuMusic() = menuMusic.stop()
 
     /** ملاحظة صيانة: الدالة `startGameplayMusic` تنفّذ انتقالًا أو تعرض التدفق المطلوب للمستخدم؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
-    fun startGameplayMusic(volume: Float) {
-        gameplayMusic.volume = volume.coerceIn(0f, 1f)
-        if (!gameplayMusic.isPlaying) gameplayMusic.play()
+    fun startGameplayMusic(world: Int, volume: Float) {
+        val path = gameplayMusicPathForWorld(world)
+        val music = gameplayMusic.getOrPut(path) {
+            Gdx.audio.newMusic(Gdx.files.internal(path)).apply { isLooping = true }
+        }
+        if (activeGameplayMusicPath != path) {
+            activeGameplayMusic?.stop()
+            activeGameplayMusic = music
+            activeGameplayMusicPath = path
+        }
+        music.volume = volume.coerceIn(0f, 1f)
+        if (!music.isPlaying && music.volume > 0f) music.play()
     }
 
     /** ملاحظة صيانة: الدالة `stopGameplayMusic` تنظّف الحالة أو الموارد المرتبطة بهذه المسؤولية بأمان؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
-    fun stopGameplayMusic() = gameplayMusic.stop()
+    fun stopGameplayMusic() = activeGameplayMusic?.stop() ?: Unit
 
     /** ملاحظة صيانة: الدالة `dispose` تنظّف الحالة أو الموارد المرتبطة بهذه المسؤولية بأمان؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     fun dispose() {
@@ -173,8 +201,10 @@ pauseTitleFont = font(boldGenerator, 68, Color.WHITE, 2f)
         splash.dispose()
         starIcon.dispose()
         worldDoneIcon.dispose()
+        lockIcon.dispose()
         worldMapTextures.values.forEach(Texture::dispose)
         startScreenBackground.dispose()
+        forgePlusGamesLogo.dispose()
         shopScreenBackground.dispose()
         startMenuTextures.values.forEach(Texture::dispose)
         pauseMenuTextures.values.forEach(Texture::dispose)
@@ -187,7 +217,7 @@ pauseTitleFont = font(boldGenerator, 68, Color.WHITE, 2f)
         buttonFont.dispose()
         pauseTitleFont.dispose()
         sounds.values.forEach(Sound::dispose)
-        gameplayMusic.dispose()
+        gameplayMusic.values.forEach(Music::dispose)
         menuMusic.dispose()
     }
 

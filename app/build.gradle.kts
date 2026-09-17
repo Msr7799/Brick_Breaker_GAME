@@ -7,13 +7,15 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 
 plugins {
-    alias(libs.plugins.android.application)
+    id("com.android.application")
 
     // Kotlin formatter
     id("com.diffplug.spotless") version "8.10.2"
 }
 
 val gdxVersion = "1.14.2"
+val productionApplicationId =
+    providers.gradleProperty("productionApplicationId").orElse("com.forgepulse.brickbreakerball").get()
 
 val natives by configurations.creating
 val texturePacker by configurations.creating
@@ -38,16 +40,17 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.brick_breaker_ball"
+        applicationId = productionApplicationId
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         val privacyPolicyUrl = providers.gradleProperty("privacyPolicyUrl").orElse("").get()
         val escapedPrivacyPolicyUrl = privacyPolicyUrl.replace("\\", "\\\\").replace("\"", "\\\"")
         buildConfigField("String", "PRIVACY_POLICY_URL", "\"$escapedPrivacyPolicyUrl\"")
+        buildConfigField("boolean", "DEVELOPER_ACCESS_ALLOWED", "false")
 
     }
 
@@ -81,6 +84,7 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+            buildConfigField("boolean", "DEVELOPER_ACCESS_ALLOWED", "true")
 
             manifestPlaceholders["admobAppId"] =
                 "ca-app-pub-3940256099942544~3347511713"
@@ -90,7 +94,12 @@ android {
 
             buildConfigField(
                 "String",
-                "REWARDED_AD_UNIT",
+                "REWARDED_REVIVE_AD_UNIT",
+                "\"ca-app-pub-3940256099942544/5224354917\""
+            )
+            buildConfigField(
+                "String",
+                "REWARDED_TALISMAN_AD_UNIT",
                 "\"ca-app-pub-3940256099942544/5224354917\""
             )
         }
@@ -106,10 +115,17 @@ android {
                     ).orElse("")
                     .get()
 
-            val adsUnit =
+            val reviveAdsUnit =
                 providers
                     .gradleProperty(
-                        "productionRewardedAdUnitId"
+                        "productionRewardedReviveAdUnitId"
+                    ).orElse("")
+                    .get()
+
+            val talismanAdsUnit =
+                providers
+                    .gradleProperty(
+                        "productionRewardedTalismanAdUnitId"
                     ).orElse("")
                     .get()
 
@@ -117,7 +133,10 @@ android {
                 !adsApp.contains(
                     "3940256099942544"
                 ) &&
-                    !adsUnit.contains(
+                    !reviveAdsUnit.contains(
+                        "3940256099942544"
+                    ) &&
+                    !talismanAdsUnit.contains(
                         "3940256099942544"
                     )
             ) {
@@ -130,7 +149,12 @@ android {
                         "ca-app-pub-[0-9]{16}~[0-9]{10}"
                     )
                 ) &&
-                    adsUnit.matches(
+                    reviveAdsUnit.matches(
+                        Regex(
+                            "ca-app-pub-[0-9]{16}/[0-9]{10}"
+                        )
+                    ) &&
+                    talismanAdsUnit.matches(
                         Regex(
                             "ca-app-pub-[0-9]{16}/[0-9]{10}"
                         )
@@ -154,11 +178,25 @@ android {
 
             buildConfigField(
                 "String",
-                "REWARDED_AD_UNIT",
-                "\"${if (adsEnabled) adsUnit else ""}\""
+                "REWARDED_REVIVE_AD_UNIT",
+                "\"${if (adsEnabled) reviveAdsUnit else ""}\""
+            )
+            buildConfigField(
+                "String",
+                "REWARDED_TALISMAN_AD_UNIT",
+                "\"${if (adsEnabled) talismanAdsUnit else ""}\""
             )
 
-            isMinifyEnabled = false
+            // Production optimization: shrink/optimize/obfuscate bytecode with R8
+            // and remove unused Android resources. Assets under src/main/assets are unaffected.
+            isMinifyEnabled = true
+            isShrinkResources = true
+
+            // Ask AGP to package any native symbol table metadata that is actually
+            // available. Prebuilt third-party .so files may already be stripped.
+            ndk {
+                debugSymbolLevel = "SYMBOL_TABLE"
+            }
 
             if (keystorePropertiesFile.exists()) {
                 signingConfig =
@@ -185,6 +223,7 @@ android {
 
             applicationIdSuffix = ".qa"
             versionNameSuffix = "-qa"
+            buildConfigField("boolean", "DEVELOPER_ACCESS_ALLOWED", "true")
 
             signingConfig =
                 signingConfigs.getByName(
@@ -199,7 +238,12 @@ android {
 
             buildConfigField(
                 "String",
-                "REWARDED_AD_UNIT",
+                "REWARDED_REVIVE_AD_UNIT",
+                "\"ca-app-pub-3940256099942544/5224354917\""
+            )
+            buildConfigField(
+                "String",
+                "REWARDED_TALISMAN_AD_UNIT",
                 "\"ca-app-pub-3940256099942544/5224354917\""
             )
 
@@ -209,7 +253,10 @@ android {
                     "release"
                 )
 
-            isMinifyEnabled = false
+            // QA intentionally mirrors Release R8/resource shrinking so runtime
+            // issues are caught before the Play bundle is uploaded.
+            isMinifyEnabled = true
+            isShrinkResources = true
         }
     }
 
@@ -382,6 +429,10 @@ dependencies {
     )
 
     implementation(
+        "com.google.android.ump:user-messaging-platform:4.0.0"
+    )
+
+    implementation(
         "com.android.billingclient:billing:9.1.0"
     )
 
@@ -434,15 +485,15 @@ dependencies {
     )
 
     testImplementation(
-        libs.junit
+        "junit:junit:4.13.2"
     )
 
     androidTestImplementation(
-        libs.androidx.espresso.core
+        "androidx.test.espresso:espresso-core:3.7.0"
     )
 
     androidTestImplementation(
-        libs.androidx.junit
+        "androidx.test.ext:junit:1.3.0"
     )
 }
 
@@ -552,8 +603,7 @@ fun registerAtlas(
 val atlasTasks =
     listOf(
         "ui",
-        "particles",
-        "backgrounds"
+        "particles"
     ).map(
         ::registerAtlas
     )
@@ -597,10 +647,17 @@ val verifyProductionMonetization by
                     ).orNull
                     .orEmpty()
 
-            val rewardedId =
+            val rewardedReviveId =
                 providers
                     .gradleProperty(
-                        "productionRewardedAdUnitId"
+                        "productionRewardedReviveAdUnitId"
+                    ).orNull
+                    .orEmpty()
+
+            val rewardedTalismanId =
+                providers
+                    .gradleProperty(
+                        "productionRewardedTalismanAdUnitId"
                     ).orNull
                     .orEmpty()
 
@@ -624,22 +681,35 @@ val verifyProductionMonetization by
             }
 
             check(
-                rewardedId.matches(
+                rewardedReviveId.matches(
                     Regex(
                         "ca-app-pub-[0-9]{16}/[0-9]{10}"
                     )
                 )
             ) {
-                "Missing/invalid productionRewardedAdUnitId. " +
-                    "Configure your own Rewarded Ad Unit " +
-                    "before Play release."
+                "Missing/invalid productionRewardedReviveAdUnitId. " +
+                    "Configure the Rewarded Revive Ad Unit before Play release."
+            }
+
+            check(
+                rewardedTalismanId.matches(
+                    Regex(
+                        "ca-app-pub-[0-9]{16}/[0-9]{10}"
+                    )
+                )
+            ) {
+                "Missing/invalid productionRewardedTalismanAdUnitId. " +
+                    "Configure the Rewarded Talisman Ad Unit before Play release."
             }
 
             check(
                 !appId.contains(
                     "3940256099942544"
                 ) &&
-                    !rewardedId.contains(
+                    !rewardedReviveId.contains(
+                        "3940256099942544"
+                    ) &&
+                    !rewardedTalismanId.contains(
                         "3940256099942544"
                     )
             ) {
@@ -659,13 +729,94 @@ val verifyProductionMonetization by
 
 tasks
     .matching {
-        it.name ==
-            "bundleRelease"
+        it.name == "bundleRelease" || it.name == "assembleRelease"
     }.configureEach {
 
         dependsOn(
             verifyProductionMonetization
         )
+    }
+
+// =============================================================================
+// Production source-safety verification
+// =============================================================================
+
+val verifyProductionSourceSafety by tasks.registering {
+    group = "verification"
+    description = "Verifies that developer-mode bypasses are gated out of Release."
+
+    doLast {
+        val buildSource = project.file("build.gradle.kts").readText()
+        check("buildConfigField(\"boolean\", \"DEVELOPER_ACCESS_ALLOWED\", \"false\")" in buildSource) {
+            "Release must default to developer access disabled."
+        }
+        val developerSource = project.file("src/main/java/com/example/brick_breaker_ball/DevelopmentAccess.kt").readText()
+        check("const val DEVELOPER_ACCESS = " in developerSource &&
+            "private val available: Boolean = DEVELOPER_ACCESS && BuildConfig.DEVELOPER_ACCESS_ALLOWED" in developerSource &&
+            "get() = available && prefs.getBoolean(ENABLED_KEY, false)" in developerSource &&
+            "if (!available) return false" in developerSource) {
+            "Developer access must be gated by the build variant."
+        }
+
+        val menuSource = project.file("src/main/java/com/example/brick_breaker_ball/UiScreens.kt").readText()
+        check("val development = if (DevelopmentAccess.DEVELOPER_ACCESS && BuildConfig.DEVELOPER_ACCESS_ALLOWED) artButton(" in menuSource) {
+            "Developer-mode menu button must be hidden in Play Release."
+        }
+
+        val shopSource = project.file("src/main/java/com/example/brick_breaker_ball/ShopScreen.kt").readText()
+        check("if (game.developmentAccess.enabled) {" in shopSource) {
+            "Developer test grants must require enabled developer access."
+        }
+    }
+}
+
+tasks
+    .matching { it.name == "assembleRelease" || it.name == "bundleRelease" }
+    .configureEach {
+        dependsOn(verifyProductionSourceSafety)
+    }
+
+// =============================================================================
+// Release signing verification
+// =============================================================================
+
+val verifyReleaseSigning by
+    tasks.registering {
+        group = "verification"
+        description = "Fails production release tasks when the upload signing configuration is missing or incomplete."
+
+        doLast {
+            check(productionApplicationId.matches(Regex("[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*){2,}"))) {
+                "productionApplicationId must be a valid reverse-domain Android application ID."
+            }
+            check(!productionApplicationId.startsWith("com.example")) {
+                "Set productionApplicationId to your permanent Play package ID before Release (for example com.yourbrand.brickbreakerball)."
+            }
+            val privacyUrl = providers.gradleProperty("privacyPolicyUrl").orNull.orEmpty()
+            check(privacyUrl.startsWith("https://") && privacyUrl.length > "https://".length) {
+                "privacyPolicyUrl must be a public HTTPS URL before Release."
+            }
+            check(keystorePropertiesFile.exists()) {
+                "Missing keystore.properties. Configure the Play upload signing key before building Release."
+            }
+
+            val requiredKeys = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+            val missingKeys = requiredKeys.filter { keystoreProperties.getProperty(it).isNullOrBlank() }
+            check(missingKeys.isEmpty()) {
+                "keystore.properties is incomplete. Missing required signing fields: ${missingKeys.joinToString()}."
+            }
+
+            val configuredStore = rootProject.file(keystoreProperties.getProperty("storeFile"))
+            check(configuredStore.isFile) {
+                "The configured Release keystore file does not exist."
+            }
+        }
+    }
+
+tasks
+    .matching { it.name == "assembleRelease" || it.name == "bundleRelease" }
+    .configureEach {
+        dependsOn(verifyReleaseSigning)
     }
 
 // =============================================================================

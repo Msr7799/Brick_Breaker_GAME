@@ -15,13 +15,21 @@ val SHOP_ELIGIBLE_TYPES = listOf(
     PowerUpType.ONE_HIT_ANY_BRICK, PowerUpType.MULTIBALL_15
 )
 
-enum class ShopProductId { RANDOM_5, RANDOM_50, FIVE_OF_EACH, TEN_OF_EACH }
+enum class ShopProductId { RANDOM_5, RANDOM_20, RANDOM_50, FIVE_OF_EACH, TEN_OF_EACH, MIXED_150 }
 sealed interface BoosterGrant {
     data class RandomTotal(val amount: Int) : BoosterGrant
     data class EachType(val amountPerType: Int) : BoosterGrant
+    data class EachTypePlusRandom(val amountPerType: Int, val randomAmount: Int) : BoosterGrant
 }
 
-data class ShopProduct(val id: ShopProductId, val storeId: String, val title: String, val subtitle: String, val grant: BoosterGrant)
+data class ShopProduct(
+    val id: ShopProductId,
+    val storeId: String,
+    val title: String,
+    val subtitle: String,
+    val grant: BoosterGrant,
+    val targetUsdPrice: String? = null,
+)
 
 data class ShopProductUiState(val enabled: Boolean, val buttonLabel: String)
 
@@ -32,30 +40,44 @@ fun shopProductUiState(formattedPrice: String?, busy: Boolean): ShopProductUiSta
 }
 
 object ShopCatalog {
-    /**
-     * Production-facing catalog. New real-money purchases are deterministic so the player
-     * always knows exactly what will be granted before Google Play opens.
-     */
+    /** Target USD prices are display guidance until Play returns the actual localized price. */
     val products = listOf(
+        ShopProduct(
+            ShopProductId.RANDOM_20,
+            "booster_random_20_099",
+            "SPARK PACK",
+            "20 RANDOM POSITIVE ITEMS",
+            BoosterGrant.RandomTotal(20),
+            "\$0.99",
+        ),
+        ShopProduct(
+            ShopProductId.RANDOM_50,
+            "booster_random_50_199",
+            "POWER CRATE",
+            "50 RANDOM POSITIVE ITEMS",
+            BoosterGrant.RandomTotal(50),
+            "\$1.99",
+        ),
         ShopProduct(
             ShopProductId.FIVE_OF_EACH,
             "booster_five_each_299",
             "FULL ARSENAL",
             "5 OF EACH POSITIVE ITEM • 70 TOTAL",
-            BoosterGrant.EachType(5)
+            BoosterGrant.EachType(5),
+            "\$2.99",
         ),
         ShopProduct(
-            ShopProductId.TEN_OF_EACH,
-            "booster_ten_each_599",
+            ShopProductId.MIXED_150,
+            "booster_mixed_150_499",
             "FORGE VAULT",
-            "10 OF EACH POSITIVE ITEM • 140 TOTAL",
-            BoosterGrant.EachType(10)
+            "10 OF EACH + 10 RANDOM • 150 TOTAL",
+            BoosterGrant.EachTypePlusRandom(10, 10),
+            "\$4.99",
         )
     )
 
     /**
-     * Old randomized SKUs are retained only for reconciliation/consumption of a purchase
-     * created by an earlier build. They are deliberately hidden from the production Shop UI.
+     * Old SKUs remain available for reconciliation and consumption at their original reward.
      */
     val legacyProducts = listOf(
         ShopProduct(
@@ -66,11 +88,11 @@ object ShopCatalog {
             BoosterGrant.RandomTotal(5)
         ),
         ShopProduct(
-            ShopProductId.RANDOM_50,
-            "booster_random_50_199",
-            "LEGACY OVERDRIVE CRATE",
-            "LEGACY RANDOM ITEM PACK",
-            BoosterGrant.RandomTotal(50)
+            ShopProductId.TEN_OF_EACH,
+            "booster_ten_each_599",
+            "LEGACY FORGE VAULT",
+            "10 OF EACH POSITIVE ITEM • 140 TOTAL",
+            BoosterGrant.EachType(10)
         )
     )
 
@@ -83,14 +105,20 @@ object ShopCatalog {
 object BoosterGrantFactory {
     fun createGrant(product: ShopProduct, token: String): Map<PowerUpType, Int> = when (val grant = product.grant) {
         is BoosterGrant.EachType -> SHOP_ELIGIBLE_TYPES.associateWith { grant.amountPerType }
-
-        is BoosterGrant.RandomTotal -> buildMap {
-            // Kept only for reconciliation of legacy randomized SKUs.
-            val random = Random(token.hashCode().toLong())
-            repeat(grant.amount) {
-                val type = SHOP_ELIGIBLE_TYPES[random.nextInt(SHOP_ELIGIBLE_TYPES.size)]
-                put(type, (get(type) ?: 0) + 1)
+        is BoosterGrant.RandomTotal -> randomGrant(grant.amount, token)
+        is BoosterGrant.EachTypePlusRandom -> buildMap {
+            SHOP_ELIGIBLE_TYPES.forEach { put(it, grant.amountPerType) }
+            randomGrant(grant.randomAmount, token).forEach { (type, count) ->
+                put(type, getValue(type) + count)
             }
+        }
+    }
+
+    private fun randomGrant(amount: Int, token: String): Map<PowerUpType, Int> = buildMap {
+        val random = Random(token.hashCode().toLong())
+        repeat(amount) {
+            val type = SHOP_ELIGIBLE_TYPES[random.nextInt(SHOP_ELIGIBLE_TYPES.size)]
+            put(type, (get(type) ?: 0) + 1)
         }
     }
 

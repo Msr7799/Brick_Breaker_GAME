@@ -121,7 +121,8 @@ data class Ball(
     var collisionMode: BallCollisionMode = BallCollisionMode.NORMAL,
     var baseSpeed: Float = 0f,
     var stuckOffset: Float? = null,
-    var lastBrickId: Int = -1
+    var lastBrickId: Int = -1,
+    var abilityFireCharge: Boolean = false
 ) {
     val radius get() = size.radius
     val visualDiameter get() = radius * 2f

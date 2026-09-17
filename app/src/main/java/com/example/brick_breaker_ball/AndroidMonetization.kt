@@ -23,38 +23,83 @@ import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.OnUserEarnedRewardListener
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
+import com.google.android.ump.ConsentInformation
+import com.google.android.ump.ConsentRequestParameters
+import com.google.android.ump.UserMessagingPlatform
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 /** Android implementation of the platform monetization bridges used by the LibGDX game. */
 class AdMobRewardedAdGateway(
     private val activity: Activity,
-    private val adUnitId: String
+    private val adUnitId: String,
+    private val requestConsentOnInit: Boolean = true,
 ) : RewardedAdGateway {
     private val handler = Handler(Looper.getMainLooper())
+    private val consentInformation = UserMessagingPlatform.getConsentInformation(activity)
     private var rewardedAd: RewardedAd? = null
     private var loading = false
     private var disposed = false
+    private var mobileAdsInitialized = false
+    private var consentRequestInFlight = false
 
     @Volatile
     override var state: AdState = if (adUnitId.isBlank()) AdState.DISABLED else AdState.LOADING
         private set
+
+    override val privacyOptionsRequired: Boolean
+        get() = consentInformation.privacyOptionsRequirementStatus ==
+            ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
 
     private val retryRunnable = Runnable {
         if (!disposed && rewardedAd == null && adUnitId.isNotBlank()) preload()
     }
 
     init {
-        if (adUnitId.isNotBlank()) {
-            activity.runOnUiThread {
-                MobileAds.initialize(activity) { preload() }
-            }
+        if (adUnitId.isNotBlank() && requestConsentOnInit) refreshConsent()
+    }
+
+    override fun refreshConsent() {
+        if (disposed || adUnitId.isBlank() || consentRequestInFlight) {
+            if (adUnitId.isBlank()) state = AdState.DISABLED
+            return
+        }
+        activity.runOnUiThread {
+            if (disposed || consentRequestInFlight) return@runOnUiThread
+            consentRequestInFlight = true
+            val params = ConsentRequestParameters.Builder().build()
+            consentInformation.requestConsentInfoUpdate(
+                activity,
+                params,
+                {
+                    consentRequestInFlight = false
+                    startAdsIfAllowed()
+                    UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) {
+                        startAdsIfAllowed()
+                    }
+                },
+                {
+                    consentRequestInFlight = false
+                    // UMP may still have a valid decision from a previous session.
+                    startAdsIfAllowed()
+                },
+            )
         }
     }
 
     override fun preload() {
         if (disposed || adUnitId.isBlank()) {
             state = AdState.DISABLED
+            return
+        }
+        if (!consentInformation.canRequestAds()) {
+            state = AdState.LOADING
+            handler.removeCallbacks(retryRunnable)
+            handler.postDelayed(retryRunnable, CONSENT_RETRY_DELAY_MS)
+            return
+        }
+        if (!mobileAdsInitialized) {
+            startAdsIfAllowed()
             return
         }
         activity.runOnUiThread {
@@ -88,8 +133,8 @@ class AdMobRewardedAdGateway(
     }
 
     override fun show(callback: (RewardedAdResult) -> Unit) {
-        if (disposed || adUnitId.isBlank()) {
-            dispatch { callback(RewardedAdResult.Failed("Reward ads are unavailable")) }
+        if (disposed || adUnitId.isBlank() || !consentInformation.canRequestAds()) {
+            dispatch { callback(RewardedAdResult.Failed("Reward ads are unavailable until privacy choices are complete")) }
             return
         }
         activity.runOnUiThread {
@@ -129,6 +174,36 @@ class AdMobRewardedAdGateway(
         }
     }
 
+    override fun showPrivacyOptions(callback: (String?) -> Unit) {
+        if (disposed || !privacyOptionsRequired) {
+            dispatch { callback(null) }
+            return
+        }
+        activity.runOnUiThread {
+            UserMessagingPlatform.showPrivacyOptionsForm(activity) { formError ->
+                startAdsIfAllowed()
+                dispatch { callback(formError?.message) }
+            }
+        }
+    }
+
+    private fun startAdsIfAllowed() {
+        if (disposed || adUnitId.isBlank()) return
+        if (!consentInformation.canRequestAds()) {
+            state = AdState.LOADING
+            return
+        }
+        if (mobileAdsInitialized) {
+            preload()
+            return
+        }
+        activity.runOnUiThread {
+            if (disposed || mobileAdsInitialized) return@runOnUiThread
+            mobileAdsInitialized = true
+            MobileAds.initialize(activity) { preload() }
+        }
+    }
+
     override fun dispose() {
         disposed = true
         handler.removeCallbacks(retryRunnable)
@@ -144,6 +219,7 @@ class AdMobRewardedAdGateway(
 
     private companion object {
         const val RETRY_DELAY_MS = 15_000L
+        const val CONSENT_RETRY_DELAY_MS = 1_500L
     }
 }
 
@@ -220,6 +296,13 @@ class PlayBillingPurchaseGateway(
     override fun price(product: ShopProduct): String? {
         val details = productDetails[product.storeId] ?: return null
         return selectedOffer(details)?.formattedPrice
+    }
+
+    override fun refreshProducts() {
+        activity.runOnUiThread {
+            if (disposed) return@runOnUiThread
+            if (billingClient.isReady) queryProducts() else connect()
+        }
     }
 
     override fun purchase(product: ShopProduct, callback: (PurchaseResult) -> Unit) {

@@ -26,10 +26,10 @@ enum class ShopReturnDestination { MAIN_MENU, PAUSED_GAME }
  *
  * Design rules:
  * - one clear visual hierarchy instead of a dense prototype grid;
- * - deterministic real-money bundles only in the visible catalog;
+ * - four clearly described paid Item bundles in the visible catalog;
  * - collection previews connect purchases to the actual progression loop;
  * - rewarded ads live in their own Free tab and grant only from the SDK reward callback;
- * - no hard-coded currency prices and no invented Play product IDs.
+ * - checkout uses Google Play's localized price and stays disabled without ProductDetails.
  *
  * ملاحظات صيانة عامة على هذا التحديث:
  * - المتجر يستخدم Midnight Forge palette المركزية وGradients مولّدة مباشرة، بدون Tint فوق Texture ملونة.
@@ -51,8 +51,8 @@ enum class ShopReturnDestination { MAIN_MENU, PAUSED_GAME }
  * - تبويب FREE أصبح متمركزًا رأسيًا (بطاقة المكافأة + HOW IT WORKS) بدل مسافة فارغة ضخمة واحدة
  *   قبل زر BACK — الفراغ الزائد يتوزّع تلقائيًا أعلى/أسفل الكتلة.
  * - زرا FULL ARSENAL / FORGE VAULT أسفل ITEMS هما أزرار شراء حقيقية (نفس منتجات FEATURED)، وليسا
- *   أدوات مطوّر؛ التسمية "DEV" التي تظهر عليهما فقط لأن developmentAccess.enabled مفعّل في هذا البناء
- *   التجريبي (DevelopmentAccess.TEST_PRICE_LABEL) — في بناء إنتاج فعلي ستظهر السعر الحقيقي بدلاً منها.
+ *   مسار Developer Access متاح في Debug وQA عند تشغيله من القائمة الرئيسية؛ يعرض DEV
+ *   ويمنح مشتريات تجريبية. إصدار Play Release يعرض أسعار Google Play الفعلية فقط.
  * - زر BACK ثابت الموضع والحجم لكل الأقسام (نداء واحد خارج When في `render`)، لا حاجة لتعديل هنا.
  * - عنصر Floating الرمادي وSafe Area الخاصة به غير موجودين في هذا الملف (على الأرجح في ForgeScreen
  *   الأساس)؛ لم يُعدَّل هنا لعدم توفر ذلك الملف.
@@ -73,6 +73,14 @@ class ShopScreen(game: BrickBreakerGame, private val returnDestination: ShopRetu
         private const val SCALE_ITEM_TITLE = .86f
         private const val SCALE_BODY = .76f
         private const val SCALE_CAPTION = .64f
+
+        private val FEATURED_PREVIEW_TYPES = listOf(
+            PowerUpType.LASER_AUTO_CHARGE,
+            PowerUpType.EXTRA_LIFE,
+            PowerUpType.EXPAND_PADDLE,
+            PowerUpType.FIRE_BALL,
+            PowerUpType.MULTIBALL_PLUS_4,
+        )
 
         // أعلى نقطة مشتركة لكل مناطق التمرير الثلاث (PADDLES / BALLS / ITEMS)، بدل قيمة top مختلفة
         // لكل تبويب. الهيدر أعلاه أصبح أقصر تحديدًا ليتيح هذه القيمة مساحة كافية دون تمرير الشاشة.
@@ -105,11 +113,17 @@ class ShopScreen(game: BrickBreakerGame, private val returnDestination: ShopRetu
      * تُعرض بعد (مثلاً بعد رجوع اللاعب من الخلفية أثناء عرض إعلان) قبل تحميل إعلان المكافأة التالي.
      */
     override fun show() {
+        installMouseWheelHandler(::handleMouseWheel)
         game.pendingRewards.load()?.let {
             game.setScreen(RewardRevealScreen(game, it, returnDestination))
             return
         }
-        game.monetization.rewardedAdGateway.preload()
+        game.monetization.purchaseGateway.refreshProducts()
+        game.monetization.rewardedTalismanAdGateway.preload()
+    }
+
+    override fun hide() {
+        removeMouseWheelHandler()
     }
 
     /**
@@ -289,6 +303,34 @@ class ShopScreen(game: BrickBreakerGame, private val returnDestination: ShopRetu
         scrollOffsets[tab] = offset.coerceIn(0f, maxOffset)
     }
 
+    private fun handleMouseWheel(amountY: Float): Boolean {
+        if (amountY == 0f || activeTab !in setOf(ShopTab.PADDLES, ShopTab.BALLS, ShopTab.ITEMS)) return false
+        touchWorld.set(Gdx.input.x.toFloat(), Gdx.input.y.toFloat())
+        viewport.unproject(touchWorld)
+        val panelBounds = Rectangle(55f, 325f, 790f, PANEL_TOP - 325f)
+        if (!panelBounds.contains(touchWorld.x, touchWorld.y)) return false
+
+        val contentHeight = when (activeTab) {
+            ShopTab.PADDLES -> {
+                val rows = (game.cosmeticProgression.paddleStyles.size + 1) / 2
+                12f + rows * (164f + 24f) - 24f + 12f
+            }
+            ShopTab.BALLS -> {
+                val rows = (game.assets.cosmetics.balls.size + 1) / 2
+                12f + rows * (255f + 24f) - 24f + 12f
+            }
+            ShopTab.ITEMS -> {
+                val rows = (SHOP_ELIGIBLE_TYPES.size + 1) / 2
+                12f + rows * (218f + 24f) - 24f + 12f
+            }
+            else -> 0f
+        }
+        val maxOffset = maxScrollOffset(contentHeight, panelBounds)
+        val next = (scrollOffset(activeTab) + amountY * 230f).coerceIn(0f, maxOffset)
+        scrollOffsets[activeTab] = next
+        return true
+    }
+
     /**
      * ملاحظة صيانة: الدالة `beginClippedRegion` تبدأ قص الرسم (Scissor Test) عند حدود مستطيل معيّن،
      * بحيث لا تظهر أي بطاقة خارج منطقة العرض القابلة للتمرير. يجب إغلاقها دائمًا عبر
@@ -345,19 +387,23 @@ class ShopScreen(game: BrickBreakerGame, private val returnDestination: ShopRetu
         )
     }
 
-    /**
-     * ملاحظة صيانة: الدالة `drawFeatured` ترسم تبويب "المميز" وتعرض حزمتي الشراء الحقيقيتين فقط
-     * (Full Arsenal / Forge Vault). هذا التبويب صغير بطبيعته (منتجان ثابتان فقط) لذلك لا يحتاج تمريرًا،
-     * فقط تكبيرًا بسيطًا للأيقونات والخط داخل `drawWideProductCard`.
-     */
+    /** Four offers fit in the featured area with a larger hero icon and clear reward text. */
     private fun drawFeatured(actions: MutableList<Pair<Rectangle, () -> Unit>>) {
-        drawSectionTitle("FEATURED", "Clear value, no paid random loot — Google Play local prices.")
+        drawSectionTitle("FEATURED ITEMS", "Random pulls: each of 14 positive Items has a 1/14 chance; repeats possible.")
 
         val products = ShopCatalog.products
         products.forEachIndexed { index, product ->
-            val y = 865f - index * 285f
-            val buy = drawWideProductCard(product, y, if (index == 0) crimson else primary)
-            if (game.developmentAccess.canMakeTestPurchase(game.monetization.purchaseGateway.price(product) != null, purchaseBusy)) {
+            val y = 940f - index * 224f
+            val accent = when (index) {
+                0 -> primary
+                1 -> crimson
+                2 -> primary
+                else -> success
+            }
+            val buy = drawWideProductCard(product, y, accent)
+            if (game.developmentAccess.canMakeTestPurchase(
+                    game.monetization.purchaseGateway.price(product) != null, purchaseBusy
+                )) {
                 actions += buy to { purchase(product) }
             }
         }
@@ -403,8 +449,9 @@ class ShopScreen(game: BrickBreakerGame, private val returnDestination: ShopRetu
             val definitions = listOf(style.normal, style.weapon, style.sticky)
             definitions.forEachIndexed { formIndex, definition ->
                 val px = rect.x + 24f + formIndex * 261f
-                batch.color = if (owned) Color.WHITE else Color(.35f, .39f, .44f, .65f)
+                batch.color = Color.WHITE
                 game.assets.cosmetics.paddleRegion(definition)?.let { drawFit(it, px, rect.y + 98f, 220f, 104f) }
+                if (!owned) drawLockBadge(px + 175f, rect.y + 148f, 42f)
                 batch.color = Color.WHITE
                 game.assets.smallFont.color = muted
                 fittedText(game.assets.smallFont, listOf("NORMAL", "WEAPON", "STICKY")[formIndex], px, rect.y + 76f, 220f, SCALE_CAPTION)
@@ -412,6 +459,10 @@ class ShopScreen(game: BrickBreakerGame, private val returnDestination: ShopRetu
             }
 
             fittedText(game.assets.hudLabelFont, style.displayName.uppercase(), rect.x + 25f, rect.y + 230f, 485f, SCALE_ITEM_TITLE)
+            val ability = PaddleAbilityCatalog.profileForNormalPaddle(style.normal.id)
+            game.assets.smallFont.color = primaryLight
+            fittedText(game.assets.smallFont, ability.title, rect.x + 25f, rect.y + 202f, 485f, SCALE_CAPTION)
+            game.assets.smallFont.color = Color.WHITE
             val state = when {
                 equipped -> "EQUIPPED"
                 owned -> "OWNED"
@@ -476,36 +527,28 @@ class ShopScreen(game: BrickBreakerGame, private val returnDestination: ShopRetu
                 SCALE_ITEM_TITLE
             )
 
-            if (owned) {
-                game.assets.cosmetics.ballRegion(definition)?.let {
-                    drawFit(it, rect.x + (rect.width - 112f) / 2f, rect.y + 82f, 112f, 112f)
-                }
-                game.assets.smallFont.color = if (equipped) success else muted
-                fittedText(
-                    game.assets.smallFont,
-                    if (equipped) "EQUIPPED" else "UNLOCKED",
-                    rect.x + 18f,
-                    rect.y + 53f,
-                    rect.width - 36f,
-                    SCALE_BODY
-                )
-            } else {
-                batch.color = ForgeUiPalette.glassPanel
-                batch.draw(game.assets.ui.findRegion("panel"), rect.x + 125f, rect.y + 88f, 125f, 100f)
-                batch.color = Color.WHITE
-                game.assets.hudLabelFont.color = muted
-                fittedText(game.assets.hudLabelFont, "?", rect.x + 125f, rect.y + 157f, 125f, .92f)
-                game.assets.hudLabelFont.color = Color.WHITE
-                game.assets.smallFont.color = primaryLight
-                fittedText(
-                    game.assets.smallFont,
-                    game.cosmeticProgression.ballRequirement(definition),
-                    rect.x + 18f,
-                    rect.y + 53f,
-                    rect.width - 36f,
-                    SCALE_BODY
-                )
+            val previewX = rect.x + (rect.width - 112f) / 2f
+            game.assets.cosmetics.ballRegion(definition)?.let {
+                drawFit(it, previewX, rect.y + 82f, 112f, 112f)
             }
+            if (!owned) drawLockBadge(previewX + 66f, rect.y + 148f, 46f)
+            game.assets.smallFont.color = when {
+                equipped -> success
+                owned -> muted
+                else -> primaryLight
+            }
+            fittedText(
+                game.assets.smallFont,
+                when {
+                    equipped -> "EQUIPPED"
+                    owned -> "UNLOCKED"
+                    else -> game.cosmeticProgression.ballRequirement(definition)
+                },
+                rect.x + 18f,
+                rect.y + 53f,
+                rect.width - 36f,
+                SCALE_BODY
+            )
             game.assets.smallFont.color = Color.WHITE
         }
         endClippedRegion()
@@ -607,15 +650,19 @@ class ShopScreen(game: BrickBreakerGame, private val returnDestination: ShopRetu
         )
         game.assets.smallFont.color = Color.WHITE
 
-        val first = ShopCatalog.products.getOrNull(0)
-        val second = ShopCatalog.products.getOrNull(1)
+        val first = ShopCatalog.products.firstOrNull { it.id == ShopProductId.FIVE_OF_EACH }
+        val second = ShopCatalog.products.firstOrNull { it.id == ShopProductId.MIXED_150 }
         if (first != null) {
             val r = compactProductButton(first, 75f, 180f, 355f, crimson)
-            if (game.developmentAccess.canMakeTestPurchase(game.monetization.purchaseGateway.price(first) != null, purchaseBusy)) actions += r to { purchase(first) }
+            if (game.developmentAccess.canMakeTestPurchase(
+                    game.monetization.purchaseGateway.price(first) != null, purchaseBusy
+                )) actions += r to { purchase(first) }
         }
         if (second != null) {
             val r = compactProductButton(second, 470f, 180f, 355f, primary)
-            if (game.developmentAccess.canMakeTestPurchase(game.monetization.purchaseGateway.price(second) != null, purchaseBusy)) actions += r to { purchase(second) }
+            if (game.developmentAccess.canMakeTestPurchase(
+                    game.monetization.purchaseGateway.price(second) != null, purchaseBusy
+                )) actions += r to { purchase(second) }
         }
     }
 
@@ -642,7 +689,7 @@ class ShopScreen(game: BrickBreakerGame, private val returnDestination: ShopRetu
 
         val button = drawFreeRewardCard(55f, rewardY, 790f, rewardHeight)
         if (game.dailyRewards.canWatch(System.currentTimeMillis()) &&
-            game.monetization.rewardedAdGateway.state in setOf(AdState.READY, AdState.UNAVAILABLE)
+            game.monetization.rewardedTalismanAdGateway.state in setOf(AdState.READY, AdState.UNAVAILABLE)
         ) {
             actions += button to { handleRewardTap() }
         }
@@ -672,7 +719,7 @@ class ShopScreen(game: BrickBreakerGame, private val returnDestination: ShopRetu
             game.assets.smallFont.color = danger
             fittedText(
                 game.assets.smallFont,
-                "Debug: reward unit = ${BuildConfig.REWARDED_AD_UNIT.ifBlank { "none" }}",
+                "Debug: reward unit = ${BuildConfig.REWARDED_TALISMAN_AD_UNIT.ifBlank { "none" }}",
                 explainer.x + SPACE_LG,
                 explainer.y - SPACE_MD,
                 680f,
@@ -704,36 +751,63 @@ class ShopScreen(game: BrickBreakerGame, private val returnDestination: ShopRetu
         fittedText(game.assets.smallFont, "$owned / $total COSMETICS", x, y + 52f, width, .56f)
     }
 
-    /**
-     * ملاحظة صيانة: الدالة `drawWideProductCard` ترسم بطاقة منتج عريضة واحدة (تستخدمها تبويب
-     * FEATURED) وتعيد مستطيل زر الشراء فقط ليُفحص لاحقًا عند اللمس؛ لا تحتوي على أي منطق شراء بنفسها.
-     */
+    /** Draws the actual Item art and Play purchase state for one featured offer. */
     private fun drawWideProductCard(product: ShopProduct, y: Float, accent: Color): Rectangle {
-        val rect = Rectangle(55f, y, 790f, 258f)
+        val rect = Rectangle(55f, y, 790f, 205f)
         framedPanel(rect, accent)
-        fittedText(game.assets.hudLabelFont, product.title, rect.x + 28f, rect.y + 222f, 520f, .98f)
+
+        val heroType = when (product.id) {
+            ShopProductId.RANDOM_20 -> PowerUpType.RANDOM_GOOD
+            ShopProductId.RANDOM_50 -> PowerUpType.MULTIBALL_15
+            ShopProductId.FIVE_OF_EACH -> PowerUpType.EXTRA_LIFE
+            ShopProductId.MIXED_150 -> PowerUpType.FIRE_BALL
+            else -> PowerUpType.RANDOM_GOOD
+        }
+        val hero = Rectangle(rect.x + 20f, rect.y + 43f, 122f, 122f)
+        game.assets.uiRenderer.drawGradientPanel(batch, hero, ForgeUiRenderer.GradientStyle.NEUTRAL)
+        drawFit(game.assets.gameplayAtlas.powerUpIcon(heroType), hero.x + 7f, hero.y + 7f, 108f, 108f)
+
+        val detailX = rect.x + 162f
+        fittedText(game.assets.hudLabelFont, product.title, detailX, rect.y + 170f, 392f, .92f)
         game.assets.smallFont.color = muted
-        fittedText(game.assets.smallFont, product.subtitle, rect.x + 28f, rect.y + 180f, 540f, .80f)
+        fittedText(game.assets.smallFont, product.subtitle, detailX, rect.y + 140f, 392f, .73f)
         game.assets.smallFont.color = Color.WHITE
 
-        SHOP_ELIGIBLE_TYPES.take(7).forEachIndexed { index, type ->
-            batch.color = Color.WHITE
-            batch.draw(game.assets.gameplayAtlas.powerUpIcon(type), rect.x + 28f + index * 76f, rect.y + 77f, 64f, 64f)
+        FEATURED_PREVIEW_TYPES.forEachIndexed { index, type ->
+            val iconX = detailX + index * 72f
+            val iconY = rect.y + 55f
+            game.assets.uiRenderer.drawGradientPanel(
+                batch, Rectangle(iconX, iconY, 66f, 66f), ForgeUiRenderer.GradientStyle.NEUTRAL,
+            )
+            drawFit(game.assets.gameplayAtlas.powerUpIcon(type), iconX + 3f, iconY + 3f, 60f, 60f)
         }
         game.assets.smallFont.color = primaryLight
-        fittedText(game.assets.smallFont, "EVERY POSITIVE ITEM INCLUDED", rect.x + 28f, rect.y + 54f, 520f, .74f)
+        val detail = when (product.grant) {
+            is BoosterGrant.RandomTotal -> "RANDOM: 1/14 PER TYPE • REPEATS POSSIBLE"
+            is BoosterGrant.EachType -> "ALL 14 POSITIVE TYPES GUARANTEED"
+            is BoosterGrant.EachTypePlusRandom -> "10 EACH + 10 RANDOM: 1/14 PER TYPE"
+        }
+        fittedText(game.assets.smallFont, detail, detailX, rect.y + 34f, 390f, .62f)
         game.assets.smallFont.color = Color.WHITE
 
         val localizedPrice = displayedPrice(product)
         val state = shopProductUiState(localizedPrice, purchaseBusy)
+        game.assets.smallFont.color = if (localizedPrice == null) muted else primaryLight
+        val priceNote = when {
+            game.developmentAccess.enabled -> "TEST GRANT"
+            localizedPrice == null -> "TARGET USD ${product.targetUsdPrice}"
+            else -> "GOOGLE PLAY PRICE"
+        }
+        fittedText(game.assets.smallFont, priceNote, rect.x + 570f, rect.y + 155f, 193f, .64f)
+        game.assets.smallFont.color = Color.WHITE
         return shopButton(
-            state.buttonLabel,
+            if (localizedPrice == null) "UNAVAILABLE" else state.buttonLabel,
             rect.x + 570f,
-            rect.y + 62f,
-            190f,
-            104f,
+            rect.y + 50f,
+            193f,
+            83f,
             if (state.enabled) accent else ForgeUiPalette.disabled,
-            .84f
+            .78f
         )
     }
 
@@ -756,7 +830,7 @@ class ShopScreen(game: BrickBreakerGame, private val returnDestination: ShopRetu
         val now = System.currentTimeMillis()
         val daily = game.dailyRewards.currentState(now)
         val cooldown = game.dailyRewards.remainingCooldownMillis(now)
-        val adState = game.monetization.rewardedAdGateway.state
+        val adState = game.monetization.rewardedTalismanAdGateway.state
         framedPanel(Rectangle(x, y, w, h), primary)
 
         fittedText(game.assets.titleFont, "WATCH • EARN • KEEP PLAYING", x + 35f, y + h - 52f, w - 70f, .70f)
@@ -779,14 +853,14 @@ class ShopScreen(game: BrickBreakerGame, private val returnDestination: ShopRetu
         // "لا يوجد إعلانات متاحة" معلومة تهم اللاعب فتظهر دائمًا؛ أما تفاصيل test-unit/production فهي
         // شأن تصحيح أخطاء فقط، ولا تظهر إطلاقًا خارج بناء DEBUG.
         when {
-            BuildConfig.REWARDED_AD_UNIT.isBlank() -> {
+            BuildConfig.REWARDED_TALISMAN_AD_UNIT.isBlank() -> {
                 game.assets.smallFont.color = danger
                 fittedText(game.assets.smallFont, "Rewarded videos are currently unavailable.", x + 45f, y + 175f, w - 90f, SCALE_CAPTION)
                 game.assets.smallFont.color = Color.WHITE
             }
 
             BuildConfig.DEBUG -> {
-                val adMode = if (BuildConfig.REWARDED_AD_UNIT.contains("3940256099942544")) {
+                val adMode = if (BuildConfig.REWARDED_TALISMAN_AD_UNIT.contains("3940256099942544")) {
                     "Debug build — Google test ad unit"
                 } else {
                     "Debug build — production ad unit"
@@ -929,12 +1003,12 @@ class ShopScreen(game: BrickBreakerGame, private val returnDestination: ShopRetu
     private fun handleRewardTap() {
         val now = System.currentTimeMillis()
         if (!game.dailyRewards.canWatch(now)) return
-        when (game.monetization.rewardedAdGateway.state) {
+        when (game.monetization.rewardedTalismanAdGateway.state) {
             AdState.READY -> claimReward()
 
             AdState.UNAVAILABLE -> {
                 message = "Retrying the rewarded ad…"
-                game.monetization.rewardedAdGateway.preload()
+                game.monetization.rewardedTalismanAdGateway.preload()
             }
 
             AdState.LOADING -> message = "Rewarded video is loading…"
@@ -949,7 +1023,7 @@ class ShopScreen(game: BrickBreakerGame, private val returnDestination: ShopRetu
     private fun purchase(product: ShopProduct) {
         if (purchaseBusy) return
         if (product !in ShopCatalog.products) {
-            message = "This legacy random product is not sold in the production shop."
+            message = "This older product is no longer sold in the shop."
             return
         }
         if (game.developmentAccess.enabled) {
@@ -974,7 +1048,8 @@ class ShopScreen(game: BrickBreakerGame, private val returnDestination: ShopRetu
     }
 
     private fun displayedPrice(product: ShopProduct): String? =
-        if (game.developmentAccess.enabled) DevelopmentAccess.TEST_PRICE_LABEL else game.monetization.purchaseGateway.price(product)
+        if (game.developmentAccess.enabled) DevelopmentAccess.TEST_PRICE_LABEL
+        else game.monetization.purchaseGateway.price(product)
 
     /** ملاحظة صيانة: الدالة `grantPurchase` تمنح مكونات الشراء فعليًا عبر `BoosterInventoryStore`، وتتحقق أولاً من `TransactionLedger.hasProcessed` لمنع منح نفس عملية الشراء مرتين (مهم عند استعادة عمليات شراء سابقة). */
     private fun grantPurchase(product: ShopProduct, transactionId: String, successPrefix: String) {
@@ -991,7 +1066,7 @@ class ShopScreen(game: BrickBreakerGame, private val returnDestination: ShopRetu
     /** ملاحظة صيانة: الدالة `claimReward` هي المكان الوحيد الذي يُمنح فيه عنصر مجاني فعليًا، ويحدث ذلك فقط داخل رد نداء `RewardedAdResult.Earned` القادم من الـ SDK — لا تستدعِ منح المكافأة من أي مكان آخر. */
     private fun claimReward() {
         message = ""
-        game.monetization.rewardedAdGateway.show { result ->
+        game.monetization.rewardedTalismanAdGateway.show { result ->
             when (result) {
                 is RewardedAdResult.Earned -> {
                     // الإعلان المجاني يمنح فقط العناصر الإيجابية المعروضة في SHOP_ELIGIBLE_TYPES.
