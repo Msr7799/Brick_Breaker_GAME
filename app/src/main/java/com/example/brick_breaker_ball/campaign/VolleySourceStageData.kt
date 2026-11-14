@@ -25,42 +25,56 @@ internal object VolleySourceStageData {
     // the existing authored rows above it for later descents.
     private const val INITIAL_WAVE_BOTTOM = VolleySession.SOURCE_WAVE_BOTTOM
 
-    private data class BossPlacement(val x: Float, val y: Float, val baseHealth: Float)
-
-    // Each world uses its own boss portrait on one physical core. Keep the surrounding
-    // imported formation, but never attach a alternate boss sprite to that core.
-    private val worldBosses = listOf(
-        BossPlacement(330f, 1650f, 35f),
-        BossPlacement(330f, 1650f, 45f),
-        BossPlacement(330f, 1630f, 60f),
-        BossPlacement(330f, 1710f, 75f),
-        BossPlacement(330f, 1650f, 90f),
-        BossPlacement(250f, 1550f, 110f),
-        BossPlacement(330f, 1650f, 130f),
-        BossPlacement(170f, 1290f, 150f)
-    )
+    private val worldBossHealth = listOf(35f, 45f, 60f, 75f, 90f, 110f, 130f, 150f)
 
     private fun placeWorldBoss(world: Int, bricks: MutableList<VolleyAuthoredBrickSeed>) {
-        val placement = worldBosses[world - 1]
         val width = 3f * TARGET_PITCH
         val height = 3f * TARGET_PITCH
-        // Keep every original index stable for saved games and orb receipts. Intersecting
-        // bricks become inactive, leaving only the actual boss collision in this space.
-        bricks.indices.forEach { index ->
-            val brick = bricks[index]
-            if (brick.x < placement.x + width && brick.x + brick.width > placement.x &&
-                brick.y < placement.y + height && brick.y + brick.height > placement.y) {
-                bricks[index] = brick.copy(suppressedByWorldBoss = true)
-            }
-        }
-        bricks += VolleyAuthoredBrickSeed(
+        val originalCore = bricks.indexOfFirst { it.type == BrickType.BOSS_CORE && !it.suppressedByWorldBoss }
+        // Y grows toward later waves. Keep the entire existing formation, with a clear
+        // one-row gap before the finale instead of erasing tiles around an opening boss.
+        val top = bricks.filter { !it.suppressedByWorldBoss && it.type != BrickType.BOSS_CORE }
+            .maxOf { it.y + it.height }
+        val core = VolleyAuthoredBrickSeed(
             sourceRow = -1, sourceColumn = 5,
-            x = placement.x, y = placement.y, width = width, height = height,
+            x = VolleySession.SOURCE_LANE_LEFT + (11f * TARGET_PITCH - width) / 2f,
+            y = top + TARGET_PITCH, width = width, height = height,
             type = BrickType.BOSS_CORE, health = 1, shape = VolleyPieceShape.RECTANGLE,
             countsForClear = true, sourceKind = "BOSS",
             sourceScene = null,
-            sourceBaseHealth = placement.baseHealth
+            sourceBaseHealth = if (originalCore >= 0) bricks[originalCore].sourceBaseHealth
+                else worldBossHealth[world - 1]
         )
+        if (originalCore >= 0) bricks[originalCore] = core else bricks += core
+
+        val count = when (world) { in 1..3 -> 2; in 4..6 -> 3; else -> 4 }
+        // Replace ordinary square enemies only: preserve collision, IDs, passages,
+        // keys, bombs, movers and every other authored puzzle relationship.
+        val candidates = bricks.indices.filter { index ->
+            val b = bricks[index]
+            b.type.breakable && b.countsForClear && !b.suppressedByWorldBoss &&
+                b.shape == VolleyPieceShape.RECTANGLE && b.groupId == 0 &&
+                b.sourceKind in setOf("GRASS", "STONE", "SAND", "BLACK", "ICE", "BURN", "ENEMY") &&
+                b.sourceBaseHealth != null
+        }
+        require(candidates.size >= count) { "World $world needs $count reachable boss guards" }
+        val bottom = candidates.minOf { bricks[it].y }
+        val ceiling = candidates.maxOf { bricks[it].y }
+        val remaining = candidates.toMutableSet()
+        repeat(count) { guard ->
+            val targetY = bottom + (ceiling - bottom) * (.3f + .6f * (guard + .5f) / count)
+            val column = listOf(2, 8, 5, 1)[(guard + world) % 4]
+            val targetX = VolleySession.SOURCE_LANE_LEFT + column * TARGET_PITCH
+            val index = remaining.minBy { index ->
+                val b = bricks[index]
+                kotlin.math.abs(b.y - targetY) * 2f + kotlin.math.abs(b.x - targetX)
+            }
+            remaining.remove(index)
+            val brick = bricks[index]
+            bricks[index] = brick.copy(type = BrickType.ARMORED_DARK, shieldLock = true,
+                sourceKind = "BOSS_GUARD", sourceScene = null,
+                sourceBaseHealth = brick.sourceBaseHealth!! * .5f)
+        }
     }
     private fun asset(name: String): FileHandle = if (Gdx.files != null) Gdx.files.internal(name) else {
         val candidates = listOf(File("app/src/main/assets/$name"), File("src/main/assets/$name"))
@@ -211,17 +225,8 @@ internal object VolleySourceStageData {
                 }
             }
         }
-        if (local == VolleyStageRepository.worldLevelCount(world) && levelId != 160) {
+        if (local == VolleyStageRepository.worldLevelCount(world)) {
             placeWorldBoss(world, bricks)
-        }
-        if (levelId == 160) {
-            // The ninth finale already contains one source core. Preserve its ID, position,
-            // collision and HP while replacing only the alternate boss artwork.
-            bricks.indices.forEach { index ->
-                if (bricks[index].type == BrickType.BOSS_CORE) {
-                    bricks[index] = bricks[index].copy(sourceScene = null)
-                }
-            }
         }
         val bossStage = bricks.any { it.type == BrickType.BOSS_CORE && !it.suppressedByWorldBoss }
         val rows = 32

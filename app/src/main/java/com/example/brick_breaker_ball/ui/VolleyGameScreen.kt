@@ -1158,8 +1158,9 @@ class VolleyGameScreen(
         }
         batch.color = Color.WHITE
         batch.draw(frame, x, y, frame.regionWidth * scale, frame.regionHeight * scale)
-        if (session.bricks.any { it.volleyShieldLock && it.health > 0 } && core.health > 0) {
-            fittedText(game.assets.smallFont, "SHIELD", x - 8f, y + 16f * scale, frame.regionWidth * scale + 16f, .35f)
+        val guards = session.bricks.count { it.volleyShieldLock && it.health > 0 }
+        if (guards > 0 && core.health > 0) {
+            fittedText(game.assets.smallFont, "LOCKS $guards", x - 8f, y + 16f * scale, frame.regionWidth * scale + 16f, .35f)
         }
     }
 
@@ -1189,6 +1190,14 @@ class VolleyGameScreen(
                     brick.bounds.width * 1.12f + pulse,
                     brick.bounds.height * 1.12f + pulse
                 )
+            } else if (sourceSeed?.sourceKind == "BOSS_GUARD") {
+                // Use the supplied skull stone as a distinct, solid guard target.
+                val skull = game.assets.arcadeIcons.findRegion("assets_9cd24f93_009")
+                batch.draw(skull, brick.bounds.x, brick.bounds.y, brick.bounds.width, brick.bounds.height)
+                val lock = game.assets.arcadeIcons.findRegion("assets_9cd24f93_033")
+                val size = brick.bounds.width * .34f
+                batch.draw(lock, brick.bounds.x + brick.bounds.width - size,
+                    brick.bounds.y + brick.bounds.height - size * .7f, size, size)
             } else if (importedArt != null) {
                 // The sprite is centered on the collision body at scale .25. Match its
                 // full art extent, including the border below square and triangle tiles.

@@ -221,6 +221,8 @@ data class VolleySessionSnapshot(
     /** Saved bonuses let a newly selected ball or Orb loadout take effect when a paused run resumes. */
     val ballStartingBonus: Int? = null,
     val orbStartingBonus: Int? = null,
+    /** Null identifies paused encounters from before the boss was moved behind its guards. */
+    val bossGuardLayoutVersion: Int? = null,
     val burnChargesLeft: Map<Int, Int>? = null,
     val rotatingAngles: Map<Int, Float>? = null,
     val rotatingStartAngles: Map<Int, Float>? = null,

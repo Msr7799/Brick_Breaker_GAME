@@ -317,6 +317,7 @@ class VolleySession(
         shotgunEnabled = shotgunEnabledForRun,
         ballStartingBonus = ballAbility.startingBalls,
         orbStartingBonus = orbEffects.startingBalls(),
+        bossGuardLayoutVersion = 1,
         loopAccumulator = loop.snapshotAccumulator(),
         balls = balls.map { VolleyBallSnapshot(it.id, it.position.x, it.position.y, it.velocity.x, it.velocity.y, it.radius, it.lastBrickId, it.lastRailId, it.portalCooldown, it.alive) },
         bricks = bricks.map { VolleyBrickSnapshot(it.id, it.bounds.x, it.bounds.y, it.bounds.width, it.bounds.height, it.type, it.health, it.hue, it.groupId, it.locked, it.ghostVisible, it.initialHealth, it.gridRow, it.gridCol, it.countsForClear, it.movementDirection, it.rewardGranted, it.volleyVisualFamily, it.consumeOnHit, it.volleyShieldLock, it.volleyHazardKind) },
@@ -419,6 +420,11 @@ class VolleySession(
         torchMotion.putAll(snapshot.torchMotion.orEmpty())
         initialImportedFreezeApplied = true
         val rankedSeedsById = stage.cells.flatten().filterNotNull()
+        val savedBoardShift = snapshot.bricks.firstNotNullOfOrNull { saved ->
+            val authored = stage.authoredBricks.getOrNull(saved.id - 1)
+            if (authored == null || authored.type == BrickType.BOSS_CORE) null
+            else SOURCE_WAVE_BOTTOM + (saved.y - SOURCE_WAVE_BOTTOM) * previousScale - authored.y
+        } ?: 0f
         bricks.clear()
         bricks += snapshot.bricks.mapNotNull { saved ->
             val authored = stage.authoredBricks.getOrNull(saved.id - 1)
@@ -437,11 +443,12 @@ class VolleySession(
                 authored?.type == BrickType.ARMORED_DARK && saved.type == BrickType.INDESTRUCTIBLE
             val restoredBoss = stage.sourceScene != null && authored?.sourceKind == "BOSS" &&
                 saved.type != BrickType.BOSS_CORE
+            val restoredGuard = authored?.sourceKind == "BOSS_GUARD" && !saved.shieldLock
             val currentInitialHealth = authored?.let(::importedBrickHealth)
             val restoredOsb = stage.sourceScene != null && authored?.sourceKind == "OSB" &&
                 saved.initialHealth != currentInitialHealth
             val refreshHealth = stage.sourceScene != null && authored != null &&
-                (authored.type == saved.type || restoredBoss) && authored.type.breakable &&
+                (authored.type == saved.type || restoredBoss || restoredGuard) && authored.type.breakable &&
                 authored.sourceKind !in IMPORTED_HIT_COUNTER_KINDS &&
                 saved.initialHealth > 0 && saved.initialHealth != currentInitialHealth &&
                 saved.health in 0..saved.initialHealth
@@ -458,6 +465,14 @@ class VolleySession(
                 SOURCE_WAVE_BOTTOM + (saved.y - SOURCE_WAVE_BOTTOM) * previousScale,
                 saved.width * previousScale, saved.height * previousScale
             ) else Rectangle(saved.x, saved.y, saved.width, saved.height)
+            if (stage.sourceScene != null && stage.bossStage && authored?.type == BrickType.BOSS_CORE &&
+                snapshot.bossGuardLayoutVersion == null) {
+                bounds.set(authored.x, authored.y + savedBoardShift, authored.width, authored.height)
+            }
+            if (restoredGuard) {
+                frozenBricks.remove(saved.id)
+                protectedBricks.remove(saved.id)
+            }
             if (restoredSourceObstacle && authored != null) {
                 bounds.x += (bounds.width - authored.width) / 2f
                 bounds.y += (bounds.height - authored.height) / 2f +
@@ -470,7 +485,8 @@ class VolleySession(
                 if (importedSlider || restoredBlocker || restoredSourceObstacle) BrickType.INDESTRUCTIBLE
                     else if (restoredOsb) BrickType.ARMORED_THREE_HIT
                     else if (restoredGate || restoredSliderHeart) BrickType.ARMORED_DARK
-                    else if (restoredBoss) BrickType.BOSS_CORE else saved.type, health, saved.hue,
+                    else if (restoredBoss) BrickType.BOSS_CORE
+                    else if (restoredGuard) BrickType.ARMORED_DARK else saved.type, health, saved.hue,
                 groupId = saved.groupId, locked = saved.locked, ghostVisible = saved.ghostVisible, initialHealth = initialHealth,
                 gridRow = saved.gridRow, gridCol = saved.gridCol, countsForClear = if (suppressedByWorldBoss || importedSlider || restoredBlocker || restoredSourceObstacle) false
                     else if (restoredGate || restoredSliderHeart) true else saved.countsForClear,
@@ -481,6 +497,7 @@ class VolleySession(
                     else if (restoredOsb) VolleyAssetCatalog.familyFor(BrickType.ARMORED_THREE_HIT, world)
                     else if (restoredGate || restoredSliderHeart) VolleyAssetCatalog.familyFor(BrickType.ARMORED_DARK, world)
                     else if (restoredBoss) VolleyAssetCatalog.familyFor(BrickType.BOSS_CORE, world)
+                    else if (restoredGuard) VolleyAssetCatalog.familyFor(BrickType.ARMORED_DARK, world)
                     else saved.visualFamily,
                 volleyAtlasSpriteName = authored?.atlasSpriteName
                     ?: rankedSeedsById.getOrNull(saved.id - 1)?.atlasSpriteName,
@@ -488,7 +505,7 @@ class VolleySession(
                 volleyPieceShape = authored?.shape
                     ?: rankedSeedsById.getOrNull(saved.id - 1)?.shape
                     ?: VolleyPieceShape.RECTANGLE,
-                volleyShieldLock = saved.shieldLock, volleyHazardKind = saved.hazardKind
+                volleyShieldLock = authored?.shieldLock ?: saved.shieldLock, volleyHazardKind = saved.hazardKind
             )
         }
         // A paused run from before the nine-world boss update has no final core yet.
@@ -1718,7 +1735,7 @@ class VolleySession(
             return
         }
 
-        // Bosses are encounters rather than giant HP bricks. Four authored guard blocks expose the
+        // Bosses are encounters rather than giant HP bricks. Authored guard blocks expose the
         // core only after they are defeated; one-hit/piercing effects therefore cannot skip phase 1.
         if (brick.type == BrickType.BOSS_CORE && stage.bossStage && bricks.any { it.volleyShieldLock && it.health > 0 }) {
             emit(VolleyEvent.Impact(centerX(brick), centerY(brick), false))
@@ -1853,16 +1870,20 @@ class VolleySession(
                     emit(VolleyEvent.GrantRandomItem(brick.id, 0,
                         orbRank = if (stage.levelId >= 160) 3 else 2))
                 }
-                bricks.filter { it !== brick && it.countsForClear && it.health > 0 }.forEach { it.health = 0 }
                 emit(VolleyEvent.Feedback("CORE DESTROYED", 1.1f))
             }
 
             else -> Unit
         }
-        if (stage.bossStage && brick.volleyShieldLock && bricks.none { it.volleyShieldLock && it.health > 0 }) {
-            emit(VolleyEvent.Feedback("CORE EXPOSED", 1.05f))
-            bricks.firstOrNull { it.type == BrickType.BOSS_CORE && it.health > 0 }?.let { core ->
-                emit(VolleyEvent.Vfx(VolleyVfxKind.BEAM, centerX(core), centerY(core)))
+        if (stage.bossStage && brick.volleyShieldLock) {
+            val remainingGuards = bricks.count { it.volleyShieldLock && it.health > 0 }
+            if (remainingGuards == 0) {
+                emit(VolleyEvent.Feedback("CORE EXPOSED", 1.05f))
+                bricks.firstOrNull { it.type == BrickType.BOSS_CORE && it.health > 0 }?.let { core ->
+                    emit(VolleyEvent.Vfx(VolleyVfxKind.BEAM, centerX(core), centerY(core)))
+                }
+            } else {
+                emit(VolleyEvent.Feedback("CORE LOCKS LEFT: $remainingGuards", .85f))
             }
         }
         // Ordinary impacts use the light pitch-rising pop emitted from BrickHit. Heavy materials

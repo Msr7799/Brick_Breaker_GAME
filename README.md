@@ -52,6 +52,10 @@ Pearl White is the free starter. Other balls have a visible Coins or Gems price;
 
 The power rating is separate from campaign attack growth and equipped Orb effects. Tap any Shop ball to inspect its ability; the OWNED button opens that exact ball in the collection.
 
+## Boss encounters
+
+Each world ends with a guarded boss behind the complete stage formation. Worlds 1–3 have two skull locks, worlds 4–6 have three, and worlds 7–9 have four. Break every lock before the boss can take damage. Defeating the boss does not erase remaining stage objectives.
+
 ## Project map
 
 Open each folder below to see its purpose. The final expandable section lists every public source and runtime asset file with a short description.
