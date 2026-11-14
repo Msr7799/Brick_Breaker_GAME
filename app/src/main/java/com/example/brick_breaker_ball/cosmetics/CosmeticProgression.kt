@@ -38,7 +38,8 @@ class CosmeticProgressionService(
     /** Exact gameplay order: starter first, then the remaining balls are spread across the full campaign. */
     val balls: List<BallSpriteDefinition> = starterFirst(
         balls.sortedBy(BallSpriteDefinition::index),
-        balls.firstOrNull { it.groupName == CosmeticDefaults.BALL_GROUP && it.spriteName == CosmeticDefaults.BALL_SPRITE }
+        balls.firstOrNull(VolleyBallSelection::isStarter)
+            ?: balls.firstOrNull { it.groupName == CosmeticDefaults.BALL_GROUP && it.spriteName == CosmeticDefaults.BALL_SPRITE }
     )
 
     private val starterBall: BallSpriteDefinition? = this.balls.firstOrNull()
@@ -50,6 +51,7 @@ class CosmeticProgressionService(
 
     fun reconcile(progress: ProgressStore, developmentAccess: Boolean = false) {
         starterBall?.let { ownership.unlockBall(it.id) }
+        balls.firstOrNull(VolleyBallSelection::isStarter)?.let { ownership.unlockBall(it.id) }
         balls.forEach { ball ->
             val stage = ballUnlockStages[ball.id] ?: return@forEach
             if (progress.stars(stage) > 0 || progress.legacyClassicStars(stage) > 0) ownership.unlockBall(ball.id)
@@ -84,6 +86,7 @@ class CosmeticProgressionService(
         if (definition == starterBall) return "STARTER BALL"
         val offer = BallCollectionCatalog.offer(definition)
         return when {
+            offer.stage != null && offer.coins != null -> "${offer.coins} COINS OR STAGE ${offer.stage}"
             offer.stage != null -> "COMPLETE STAGE ${offer.stage}"
             offer.coins != null -> "${offer.coins} COINS"
             offer.rarity == BallRarity.EPIC -> "1000 GEMS OR PLAY STORE"

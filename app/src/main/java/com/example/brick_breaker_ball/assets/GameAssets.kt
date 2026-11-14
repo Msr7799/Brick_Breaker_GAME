@@ -187,6 +187,28 @@ class GameAssets {
         }
     }
     val solidUiRegion = TextureRegion(solidUiTexture)
+    // The legacy glow atlas frame has opaque black corners. Build a genuinely transparent
+    // radial light so UI/impact effects cannot draw a rectangular shadow over the game.
+    private val softGlowTexture = run {
+        val side = 64
+        val pixmap = Pixmap(side, side, Pixmap.Format.RGBA8888)
+        try {
+            pixmap.setBlending(Pixmap.Blending.None)
+            for (y in 0 until side) for (x in 0 until side) {
+                val dx = (x - (side - 1) / 2f) / ((side - 1) / 2f)
+                val dy = (y - (side - 1) / 2f) / ((side - 1) / 2f)
+                val falloff = (1f - dx * dx - dy * dy).coerceIn(0f, 1f)
+                pixmap.setColor(1f, 1f, 1f, falloff * falloff * falloff)
+                pixmap.drawPixel(x, y)
+            }
+            Texture(pixmap).apply {
+                setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
+            }
+        } finally {
+            pixmap.dispose()
+        }
+    }
+    val softGlowRegion = TextureRegion(softGlowTexture)
     private val heroGuideTextureDelegate = lazy { linearTexture("ui/hero-guide/forge_dragon_guide.png") }
     val heroGuideRegion: TextureRegion by lazy { TextureRegion(heroGuideTextureDelegate.value) }
     private val orbSageTextureDelegate = lazy { linearTexture("ui/hero-guide/orb_sage_guide.png") }
@@ -801,6 +823,7 @@ class GameAssets {
         cosmetics.dispose()
         uiRenderer.dispose()
         particles.dispose()
+        softGlowTexture.dispose()
         volley.dispose()
         arcadeIcons.dispose()
         splash.dispose()

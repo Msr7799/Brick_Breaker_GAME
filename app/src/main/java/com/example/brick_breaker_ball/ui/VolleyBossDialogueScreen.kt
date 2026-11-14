@@ -173,7 +173,7 @@ class VolleyBossDialogueScreen(
     private fun drawEncounterHeader() {
         val accent = if (script.moment == VolleyBossDialogueMoment.FINAL_WARNING) ForgeUiPalette.danger else ForgeUiPalette.primary
         batch.color = Color(accent).also { it.a = .20f }
-        batch.draw(game.assets.particles.findRegion("glow"), 30f, 1360f, 840f, 190f)
+        batch.draw(game.assets.softGlowRegion, 30f, 1360f, 840f, 190f)
         batch.color = Color.WHITE
         fittedText(
             if (script.moment == VolleyBossDialogueMoment.FINAL_WARNING) game.assets.buttonFont else game.assets.hudLabelFont,
@@ -201,7 +201,7 @@ class VolleyBossDialogueScreen(
         val x = MathUtils.lerp(startX, restingX, enter)
         val y = 100f + if (game.progress.settings.reduceMotion) 0f else MathUtils.sin(elapsed * 2.8f) * 5f
         batch.color = Color(0f, .75f, 1f, .12f * enter)
-        batch.draw(game.assets.particles.findRegion("glow"), x - 70f, y - 35f, width + 140f, height + 100f)
+        batch.draw(game.assets.softGlowRegion, x - 70f, y - 35f, width + 140f, height + 100f)
         batch.color = Color(1f, 1f, 1f, enter)
         batch.draw(portrait, x, y, width, height)
         batch.color = Color.WHITE
@@ -212,7 +212,7 @@ class VolleyBossDialogueScreen(
         batch.color = Color(0.025f, .055f, .10f, .94f)
         batch.draw(game.assets.solidUiRegion, bubble.x, bubble.y, bubble.width, bubble.height)
         batch.color = Color(ForgeUiPalette.primary).also { it.a = .28f }
-        batch.draw(game.assets.particles.findRegion("glow"), bubble.x - 18f, bubble.y - 18f, bubble.width + 36f, bubble.height + 36f)
+        batch.draw(game.assets.softGlowRegion, bubble.x - 18f, bubble.y - 18f, bubble.width + 36f, bubble.height + 36f)
         batch.color = Color.WHITE
 
         fittedText(game.assets.hudLabelFont, script.bossName, bubble.x + 48f, bubble.y + bubble.height - 48f, bubble.width - 96f, .62f)

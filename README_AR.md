@@ -12,7 +12,7 @@
 
 </div>
 
-**Brick Breaker Ball** لعبة أندرويد عمودية مطوّرة باستخدام **Kotlin وLibGDX**. حرّك المضرب في الطور الكلاسيكي، أو صوّب دفعات الكرات نحو التشكيلات الهابطة في طور Volley. اجمع عناصر القوة، افتح المظاهر، وتقدّم عبر تسعة عوالم مختلفة.
+**Brick Breaker Ball** لعبة أندرويد عمودية مطوّرة باستخدام **Kotlin وLibGDX**. صوّب دفعات الكرات نحو التشكيلات الهابطة، جهّز عناصر ORBS، وافتح كرات أقوى مع تقدّمك عبر تسعة عوالم مختلفة.
 
 ## صور من اللعبة
 
@@ -38,6 +38,19 @@
 ## تنزيل نسخة أندرويد
 
 نزّل ملف **APK الموقّع** من [إصدارات GitHub](https://github.com/Msr7799/Brick_Breaker_GAME/releases/latest)، أو ثبّت [نسخة Google Play](https://play.google.com/store/apps/details?id=com.forgepulse.brickbreakerball). ملفات APK تُنشر في قسم الإصدارات، وليست ضمن ملفات الكود.
+
+## تدرّج الكرات
+
+كرة Pearl White هي كرة البداية المجانية. لبقية الكرات سعر واضح بالعملات أو الجواهر، ويمكن فتح بعض كرات Normal وRare بإكمال مراحل الحملة أيضًا. تتدرج القوة داخل كل ندرة، وتبقى الكرة المملوكة مفتوحة بشكل دائم.
+
+| الندرة | قوة الكرة | الكرات الإضافية عند البداية |
+| --- | --- | --- |
+| Normal | 1–3 من 12 | 0–6 |
+| Rare | 4–6 من 12 | 10–18 |
+| Legendary | 7–9 من 12 | 22–30 |
+| Epic | 10–12 من 12 | 32–40 |
+
+تقييم القوة مستقل عن تطور هجوم الحملة وتأثيرات ORBS المجهّزة. اضغط على صورة أي كرة في المتجر لعرض قدرتها، أو زر OWNED لفتح نفس الكرة في قائمة الكرات.
 
 ## هيكل المشروع
 
@@ -103,7 +116,7 @@
 
 <!-- FILE_INDEX_START -->
 <details>
-<summary><strong>فهرس الملفات العامة كاملًا · 488 ملفًا</strong></summary>
+<summary><strong>فهرس الملفات العامة كاملًا · 487 ملفًا</strong></summary>
 
 <details>
 <summary>Android resources / mipmap-anydpi-v26 · 2</summary>
@@ -307,14 +320,13 @@
 </details>
 
 <details>
-<summary>Code / ui · 35</summary>
+<summary>Code / ui · 34</summary>
 
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/AppUpdateScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/AppUpdateScreen.kt) — منطق App Update Screen ضمن شاشات اللعبة والتحكم.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/BagScrollMath.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BagScrollMath.kt) — منطق Bag Scroll Math ضمن شاشات اللعبة والتحكم.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerDetailScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerDetailScreen.kt) — منطق Ball Power Detail Screen ضمن شاشات اللعبة والتحكم.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerPreview.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerPreview.kt) — منطق Ball Power Preview ضمن شاشات اللعبة والتحكم.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/CharmTutorial.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CharmTutorial.kt) — منطق Charm Tutorial ضمن شاشات اللعبة والتحكم.
-- [`app/src/main/java/com/example/brick_breaker_ball/ui/CharmsBagScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CharmsBagScreen.kt) — منطق Charms Bag Screen ضمن شاشات اللعبة والتحكم.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/CloudSaveScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CloudSaveScreen.kt) — منطق Cloud Save Screen ضمن شاشات اللعبة والتحكم.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/CosmeticUnlockRevealScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CosmeticUnlockRevealScreen.kt) — منطق Cosmetic Unlock Reveal Screen ضمن شاشات اللعبة والتحكم.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/CustomizationScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CustomizationScreen.kt) — منطق Customization Screen ضمن شاشات اللعبة والتحكم.

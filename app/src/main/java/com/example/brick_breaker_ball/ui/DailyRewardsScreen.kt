@@ -156,7 +156,7 @@ class DailyRewardsScreen(
             val pulse = selectionPulse()
             batch.setColor(1f, .77f, .15f, .25f + pulse * .19f)
             batch.draw(
-                game.assets.particles.findRegion("glow"),
+                game.assets.softGlowRegion,
                 tile.x - 7f,
                 tile.y - 7f,
                 tile.width + 14f,

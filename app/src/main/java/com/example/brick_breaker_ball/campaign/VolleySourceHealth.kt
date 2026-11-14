@@ -21,10 +21,12 @@ internal object VolleySourceHealth {
     fun initialHealth(base: Float, enemyLevel: Int, difficulty: VolleyDifficulty): Int =
         ceil(rawHealth(base, enemyLevel, difficulty)).toInt().coerceAtLeast(1)
 
-    // The source game raises the player's attack through upgrades. This Volley port has no
-    // equivalent persistent RPG attack stat, so keep a bounded hit budget per imported brick.
-    fun ballAttack(enemyLevel: Int, initialHealth: Int): Int =
-        maxOf(1, enemyLevel / 4, ceil(initialHealth / 30.0).toInt())
+    // Attack follows campaign progress, never the health of the brick being struck.
+    // A 1,000-HP enemy therefore stays tougher than a 100-HP enemy at the same stage.
+    fun ballAttack(enemyLevel: Int, initialHealth: Int): Int {
+        require(initialHealth >= 0)
+        return 1 + (enemyLevel.coerceIn(1, 160) - 1) / 12
+    }
 
     /** Boss durability grows by world instead of reusing the ordinary 30-hit normalization. */
     fun bossBallAttack(world: Int, initialHealth: Int): Int {

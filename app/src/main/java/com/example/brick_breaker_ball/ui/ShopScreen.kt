@@ -101,7 +101,8 @@ class ShopScreen(
     game: BrickBreakerGame,
     private val returnDestination: ShopReturnDestination,
     private val shopMode: GameplayMode = game.progress.settings.gameplayMode,
-    private val initialTabName: String = "FEATURED"
+    private val initialTabName: String = "FEATURED",
+    private val initialBallSpriteName: String? = null
 ) : ForgeScreen(game) {
 
     companion object {
@@ -149,7 +150,13 @@ class ShopScreen(
     private val rewardFx = RewardFxSystem(game)
     private var tabTransitionTime = 0f
     private var tabTransitionDirection = 1f
-    private val pageByTab = mutableMapOf<ShopTab, Int>()
+    private val pageByTab = mutableMapOf<ShopTab, Int>().apply {
+        initialBallSpriteName?.let { sprite ->
+            val index = VolleyBallSelection.inDisplayOrder(game.assets.cosmetics.balls, shopMode)
+                .indexOfFirst { it.spriteName == sprite }
+            if (index >= 0) put(ShopTab.BALLS, index / 4)
+        }
+    }
     private var boardPageTransitionTime = 0f
     private var boardPageTransitionDirection = 1f
     private var previousArrowPulse = 0f
@@ -394,7 +401,7 @@ class ShopScreen(
             else -> {
                 shopGuidePage = -1
                 game.navigate(VolleyOrbsScreen(game, returnDestination, shopMode,
-                    returnToShop = true, backToBag = false, guideFromShop = true))
+                    returnToShop = true, guideFromShop = true))
                 return true
             }
         }
@@ -408,7 +415,8 @@ class ShopScreen(
         val status: String,
         val image: () -> TextureRegion?,
         val first: BoardShopAction?,
-        val second: BoardShopAction? = null
+        val second: BoardShopAction? = null,
+        val preview: (() -> Unit)? = null
     )
 
     private val boardOfferTextLayout = GlyphLayout()
@@ -462,7 +470,7 @@ class ShopScreen(
                 },
                 { game.assets.cosmetics.ballRegion(ball) },
                 if (owned) {
-                    BoardShopAction("OWNED") { openCustomization() }
+                    BoardShopAction("OWNED") { openCustomization(ball) }
                 } else {
                     when {
                         offer.coins != null -> BoardShopAction("${offer.coins} COINS") {
@@ -477,7 +485,7 @@ class ShopScreen(
                             }
                         }
 
-                        else -> BoardShopAction("VIEW") { openCustomization() }
+                        else -> BoardShopAction("VIEW") { openBallDetails(ball) }
                     }
                 },
                 if (owned || epicProduct == null) {
@@ -494,7 +502,8 @@ class ShopScreen(
                             }
                         }
                     }
-                }
+                },
+                preview = { openBallDetails(ball) }
             )
         }
 
@@ -606,7 +615,7 @@ class ShopScreen(
         val back = game.assets.boards.placement("shop_board", "shop_back_button", board)
         val bag = game.assets.boards.placement("shop_board", "shop_open_bag_button", board)
         actions += back to { goBack() }
-        actions += bag to { game.navigate(VolleyOrbsScreen(game, returnDestination, shopMode, returnToShop = true, backToBag = false)) }
+        actions += bag to { game.navigate(VolleyOrbsScreen(game, returnDestination, shopMode, returnToShop = true)) }
         return board
     }
 
@@ -708,7 +717,8 @@ class ShopScreen(
         }
         // Selecting the artwork/name follows the primary action; the currency buttons above
         // retain priority when a product offers both Coins and Gems.
-        offer.first?.takeIf { it.enabled }?.let { actions += slot to it.run }
+        val previewAction = offer.preview ?: offer.first?.takeIf { it.enabled }?.run
+        previewAction?.let { actions += slot to it }
     }
 
     private fun drawBoardPagination(
@@ -755,7 +765,7 @@ class ShopScreen(
 
     private fun drawArrowPulse(rect: Rectangle, pulse: Float) {
         if (pulse <= 0f || game.progress.settings.reduceMotion) return
-        val glow = game.assets.particles.findRegion("glow")
+        val glow = game.assets.softGlowRegion
         batch.color = Color(1f, .77f, .32f, .28f * pulse)
         batch.draw(
             glow,
@@ -1035,7 +1045,7 @@ class ShopScreen(
             panel.x + panel.width * (1f - p)
         }
         batch.color = Color(ForgeUiPalette.ivory).also { it.a = (1f - p) * .30f }
-        batch.draw(game.assets.particles.findRegion("glow"), x - bandW / 2f, panel.y, bandW, panel.height)
+        batch.draw(game.assets.softGlowRegion, x - bandW / 2f, panel.y, bandW, panel.height)
         batch.color = Color.WHITE
     }
 
@@ -1100,7 +1110,7 @@ class ShopScreen(
             )
             if ((label == "COINS" || label == "GEMS") && walletPulse > 0f) {
                 batch.color = Color(ForgeUiPalette.primary).also { it.a = walletPulse * .16f }
-                batch.draw(game.assets.particles.findRegion("glow"), chipX - 8f, chipY - 8f, chipWidth + 16f, chipHeight + 16f)
+                batch.draw(game.assets.softGlowRegion, chipX - 8f, chipY - 8f, chipWidth + 16f, chipHeight + 16f)
                 batch.color = Color.WHITE
             }
             game.assets.shopFont.color = muted
@@ -1142,7 +1152,7 @@ class ShopScreen(
             if (activeTab == tab) {
                 val pulse = selectionPulse()
                 batch.color = Color(ForgeUiPalette.primary).also { it.a = .09f + pulse * .08f }
-                batch.draw(game.assets.particles.findRegion("glow"), rect.x, rect.y - 12f, rect.width, 18f)
+                batch.draw(game.assets.softGlowRegion, rect.x, rect.y - 12f, rect.width, 18f)
                 batch.color = Color.WHITE
                 game.assets.uiRenderer.drawGradientProgress(
                     batch,
@@ -1725,7 +1735,7 @@ class ShopScreen(
         val visual = Pressable.visualRect(rect, pressed, game.progress.settings.reduceMotion)
         if (pressed) {
             batch.color = Color(ForgeUiPalette.primary).also { it.a = .14f }
-            batch.draw(game.assets.particles.findRegion("glow"), visual.x - 10f, visual.y - 10f, visual.width + 20f, visual.height + 20f)
+            batch.draw(game.assets.softGlowRegion, visual.x - 10f, visual.y - 10f, visual.width + 20f, visual.height + 20f)
             batch.color = Color.WHITE
         }
         game.assets.uiRenderer.drawGradientButton(batch, visual, gradientStyleFor(tint))
@@ -1773,16 +1783,23 @@ class ShopScreen(
     }
 
     /** ملاحظة صيانة: الدالة `openCustomization` تفتح شاشة التخصيص الكاملة، وتُخبرها إن كانت اللعبة متوقفة مؤقتًا حتى تعرف طريق الرجوع الصحيح. */
-    private fun openCustomization() {
+    private fun openCustomization(ball: BallSpriteDefinition? = null) {
         game.navigate(
             CustomizationScreen(
                 game,
                 returnToPausedGame = returnDestination == ShopReturnDestination.PAUSED_GAME,
                 returnToShop = true,
                 shopReturnDestination = returnDestination,
-                shopReturnMode = shopMode
+                shopReturnMode = shopMode,
+                initialBallSpriteName = ball?.spriteName
             )
         )
+    }
+
+    private fun openBallDetails(ball: BallSpriteDefinition) {
+        game.navigate(BallPowerDetailScreen(game, ball,
+            returnToPausedGame = returnDestination == ShopReturnDestination.PAUSED_GAME,
+            returnToShop = true, shopReturnDestination = returnDestination, shopReturnMode = shopMode))
     }
 
     /** ملاحظة صيانة: الدالة `handleRewardTap` تُستدعى فقط عند لمس زر الإعلان المكافئ؛ تختار الإجراء المناسب (عرض الإعلان/إعادة تحميله/رسالة انتظار) حسب حالة `RewardedAdGateway` الحالية دون منح أي مكافأة هنا. */

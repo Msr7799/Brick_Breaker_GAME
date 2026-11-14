@@ -12,7 +12,7 @@
 
 </div>
 
-Brick Breaker Ball is a portrait Android game built with **Kotlin and LibGDX**. Guide the paddle in Classic mode or aim a volley of balls at descending formations. Collect power-ups, unlock cosmetics, and advance through nine themed Volley worlds.
+Brick Breaker Ball is a portrait Android game built with **Kotlin and LibGDX**. Aim a volley of balls at descending formations, build your Orb loadout, unlock stronger balls, and advance through nine themed worlds.
 
 ## See the game
 
@@ -38,6 +38,19 @@ Google Play Games and AdMob require their respective Google services to be avail
 ## Android download
 
 Download the signed **APK** from [GitHub Releases](https://github.com/Msr7799/Brick_Breaker_GAME/releases/latest), or install the [Google Play version](https://play.google.com/store/apps/details?id=com.forgepulse.brickbreakerball). Release APKs are distributed through Releases, not committed to the source tree.
+
+## Ball progression
+
+Pearl White is the free starter. Other balls have a visible Coins or Gems price; selected Normal and Rare balls can also be earned by completing campaign stages. Every rarity contains several strength steps, and owned balls remain permanently unlocked.
+
+| Rarity | Ball power | Extra starting balls |
+| --- | --- | --- |
+| Normal | 1–3 / 12 | 0–6 |
+| Rare | 4–6 / 12 | 10–18 |
+| Legendary | 7–9 / 12 | 22–30 |
+| Epic | 10–12 / 12 | 32–40 |
+
+The power rating is separate from campaign attack growth and equipped Orb effects. Tap any Shop ball to inspect its ability; the OWNED button opens that exact ball in the collection.
 
 ## Project map
 
@@ -103,7 +116,7 @@ Paths in the table after `atlases/` share the `app/src/main/assets/` prefix.
 
 <!-- FILE_INDEX_START -->
 <details>
-<summary><strong>Complete public file index · 488 files</strong></summary>
+<summary><strong>Complete public file index · 487 files</strong></summary>
 
 <details>
 <summary>Android resources / mipmap-anydpi-v26 · 2</summary>
@@ -307,14 +320,13 @@ Paths in the table after `atlases/` share the `app/src/main/assets/` prefix.
 </details>
 
 <details>
-<summary>Code / ui · 35</summary>
+<summary>Code / ui · 34</summary>
 
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/AppUpdateScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/AppUpdateScreen.kt) — App Update Screen logic for game screens and controls.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/BagScrollMath.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BagScrollMath.kt) — Bag Scroll Math logic for game screens and controls.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerDetailScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerDetailScreen.kt) — Ball Power Detail Screen logic for game screens and controls.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerPreview.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerPreview.kt) — Ball Power Preview logic for game screens and controls.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/CharmTutorial.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CharmTutorial.kt) — Charm Tutorial logic for game screens and controls.
-- [`app/src/main/java/com/example/brick_breaker_ball/ui/CharmsBagScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CharmsBagScreen.kt) — Charms Bag Screen logic for game screens and controls.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/CloudSaveScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CloudSaveScreen.kt) — Cloud Save Screen logic for game screens and controls.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/CosmeticUnlockRevealScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CosmeticUnlockRevealScreen.kt) — Cosmetic Unlock Reveal Screen logic for game screens and controls.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/CustomizationScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CustomizationScreen.kt) — Customization Screen logic for game screens and controls.

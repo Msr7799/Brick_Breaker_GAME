@@ -72,7 +72,7 @@ class RewardFxSystem(private val game: BrickBreakerGame) {
         if (!active) return
         val reduceMotion = game.progress.settings.reduceMotion
         val p = (elapsed / duration).coerceIn(0f, 1f)
-        val glow = game.assets.particles.findRegion("glow")
+        val glow = game.assets.softGlowRegion
         val spark = game.assets.particles.findRegion("spark")
         val star = game.assets.particles.findRegion("star")
         val shockwave = game.assets.particles.findRegion("shockwave")

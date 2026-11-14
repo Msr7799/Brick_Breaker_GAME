@@ -1,9 +1,3 @@
-/*
- * المسار: app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerDetailScreen.kt
- * الوظيفة: عرض تفاصيل الكرة وقدراتها.
- * الحسابات: تحجيم المعاينة والنص حسب مساحة البطاقة.
- */
-
 package com.example.brick_breaker_ball.ui
 
 import com.badlogic.gdx.Gdx
@@ -11,183 +5,162 @@ import com.badlogic.gdx.Input
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.g2d.TextureRegion
 import com.badlogic.gdx.math.Rectangle
+import com.badlogic.gdx.utils.Align
 import com.example.brick_breaker_ball.BrickBreakerGame
 import com.example.brick_breaker_ball.cosmetics.BallAbilityCatalog
 import com.example.brick_breaker_ball.cosmetics.BallCollectionCatalog
+import com.example.brick_breaker_ball.cosmetics.BallRarity
 import com.example.brick_breaker_ball.cosmetics.BallSpriteDefinition
 import com.example.brick_breaker_ball.cosmetics.VolleyBallSelection
-import kotlin.math.min
+import com.example.brick_breaker_ball.gameplay.GameplayMode
 
-/** Full-screen power card for one ball. Every catalog ball uses this reusable screen. */
+/** Inspect every ball, including locked entries, without changing the equipped loadout. */
 class BallPowerDetailScreen(
     game: BrickBreakerGame,
     private val ball: BallSpriteDefinition,
-    private val returnToPausedGame: Boolean = false
+    private val returnToPausedGame: Boolean = false,
+    private val returnToShop: Boolean = false,
+    private val shopReturnDestination: ShopReturnDestination = if (returnToPausedGame)
+        ShopReturnDestination.PAUSED_GAME else ShopReturnDestination.MAIN_MENU,
+    private val shopReturnMode: GameplayMode = game.progress.settings.gameplayMode,
+    private val returnToCollection: (() -> Unit)? = null
 ) : ForgeScreen(game) {
     private val profile = BallAbilityCatalog.profileForBall(ball)
-    private val collectionOffer = BallCollectionCatalog.offer(ball)
+    private val offer = BallCollectionCatalog.offer(ball)
     private val preview by lazy { BallPowerPreview(game, returnToPausedGame) }
+    private val help = VisualHelpOverlay()
     private var elapsed = 0f
-    private val visualHelp = VisualHelpOverlay()
+    private val ink = Color(.035f, .055f, .09f, .98f)
+    private val surface = Color(.065f, .095f, .145f, 1f)
+    private val muted = Color(.59f, .67f, .77f, 1f)
+    private val accent = when (offer.rarity) {
+        BallRarity.NORMAL -> Color(.38f, .84f, 1f, 1f)
+        BallRarity.RARE -> Color(.40f, .61f, 1f, 1f)
+        BallRarity.LEGENDARY -> Color(1f, .77f, .32f, 1f)
+        BallRarity.EPIC -> Color(.82f, .49f, 1f, 1f)
+    }
 
     override fun render(delta: Float) {
-        visualHelp.update(delta, game.progress.settings.reduceMotion)
-        elapsed = (elapsed + delta.coerceAtMost(.1f)).coerceAtMost(1.2f)
-        begin("world_4_zerog")
-        val insets = safeInsets
-        val safeHeight = visibleHeight - insets.top - insets.bottom
-        val boardAreaHeight = minOf(1470f, safeHeight - 100f)
-        val bounds = Rectangle(
-            visibleLeft + insets.left + 24f,
-            visibleBottom + insets.bottom + (safeHeight - boardAreaHeight) / 2f,
-            visibleWidth - insets.left - insets.right - 48f,
-            boardAreaHeight
-        )
-        val boardAtlas = game.assets.boards2
-        val buttons = game.assets.ballCollectionButtons
-        val board = boardAtlas.contain("scroll_board", bounds)
-        val scale = board.width / 560f
-        fun bx(value: Float) = board.x + value * scale
-        fun by(value: Float) = board.y + value * scale
-        fun bs(value: Float) = value * scale
-        batch.color = Color.WHITE
-        batch.draw(boardAtlas.requireRegion("scroll_board"), board.x, board.y, board.width, board.height)
-        fittedText(game.assets.titleFont, "BALLS", bx(72f), by(850f), bs(354f), .80f)
-        val badge = Rectangle(bx(105f), by(745f), bs(350f), bs(48f))
-        batch.draw(buttons.requireRegion("tab_dark"), badge.x, badge.y, badge.width, badge.height)
-        val rarityStars = collectionOffer.rarity.ordinal + 1
-        repeat(rarityStars) { index ->
-            VisualGameUi.icon(batch, game.assets, VisualGameUi.Icon.STAR,
-                Rectangle(bx(280f - rarityStars * 19f + index * 38f), by(752f), bs(32f), bs(32f)))
+        elapsed += delta.coerceIn(0f, .1f)
+        help.update(delta, game.progress.settings.reduceMotion)
+        beginStaticBackground(TextureRegion(game.assets.splash), .84f)
+        val inset = safeInsets
+        val usableW = visibleWidth - inset.left - inset.right - 48f
+        val usableH = visibleHeight - inset.top - inset.bottom - 40f
+        val scale = minOf(usableW / 820f, usableH / 1400f)
+        val x = visibleLeft + inset.left + (visibleWidth - inset.left - inset.right - 820f * scale) / 2f
+        val y = visibleBottom + inset.bottom + (visibleHeight - inset.top - inset.bottom - 1400f * scale) / 2f
+        fun area(px: Float, py: Float, w: Float, h: Float) = Rectangle(x + px * scale, y + py * scale, w * scale, h * scale)
+        fun label(text: String, px: Float, py: Float, w: Float, size: Float, color: Color = Color.WHITE) {
+            val font = game.assets.hudLabelFont
+            font.color = color
+            fittedText(font, text, x + px * scale, y + py * scale, w * scale, size * scale)
+            font.color = Color.WHITE
         }
-
-        val reveal = if (game.progress.settings.reduceMotion) 1f else smooth(elapsed / .35f)
-        val diameter = bs(140f) * (.88f + .12f * reveal)
-        game.assets.cosmetics.ballRegion(ball)?.let { region ->
-            drawBallClean(region, bx(280f), by(645f), diameter, reveal)
-        }
-
-        fittedText(game.assets.titleFont, ball.name.uppercase(), bx(65f), by(530f), bs(430f), .76f)
-        val previewBalls = preview.balls(profile)
-        VisualGameUi.panel(batch, game.assets, Rectangle(bx(64f), by(330f), bs(432f), bs(150f)))
-        VisualGameUi.icon(batch, game.assets, VisualGameUi.Icon.BALLS,
-            Rectangle(bx(88f), by(384f), bs(65f), bs(65f)))
-        VisualGameUi.number(batch, game.assets, "$previewBalls",
-            Rectangle(bx(150f), by(389f), bs(100f), bs(56f)), 1.20f)
-        VisualGameUi.icon(batch, game.assets, VisualGameUi.Icon.HIT,
-            Rectangle(bx(286f), by(384f), bs(65f), bs(65f)))
-        VisualGameUi.number(batch, game.assets, "${preview.damage(profile)}",
-            Rectangle(bx(350f), by(389f), bs(100f), bs(56f)), 1.20f)
-        VisualGameUi.meter(batch, game.assets,
-            Rectangle(bx(90f), by(350f), bs(380f), bs(20f)), preview.damage(profile), reveal)
-        // The special ability is shown with a single symbol; its details are optional help.
-        val specialIcon = when (profile.kind) {
-            com.example.brick_breaker_ball.cosmetics.BallAbilityKind.INFERNO_BURST -> VisualGameUi.Icon.BLAST
-            com.example.brick_breaker_ball.cosmetics.BallAbilityKind.ARC_CHAIN -> VisualGameUi.Icon.BLAST
-            com.example.brick_breaker_ball.cosmetics.BallAbilityKind.ARMOR_BREAKER -> VisualGameUi.Icon.SHIELD
-            com.example.brick_breaker_ball.cosmetics.BallAbilityKind.FORTUNE_CORE -> VisualGameUi.Icon.COIN
-            com.example.brick_breaker_ball.cosmetics.BallAbilityKind.MOMENTUM_CORE -> VisualGameUi.Icon.BALLS
-            else -> VisualGameUi.Icon.HIT
-        }
-        VisualGameUi.icon(batch, game.assets, specialIcon,
-            Rectangle(bx(112f), by(271f), bs(48f), bs(48f)))
-        if (profile.openingBreakerEveryVolleys > 0) {
-            VisualGameUi.number(batch, game.assets, "1 / ${profile.openingBreakerEveryVolleys}",
-                Rectangle(bx(180f), by(273f), bs(130f), bs(42f)), .68f)
-            VisualGameUi.icon(batch, game.assets, VisualGameUi.Icon.BLAST,
-                Rectangle(bx(330f), by(271f), bs(48f), bs(48f)))
-        }
-
-        val owned = game.developmentAccess.canUseCosmetic(
-            VolleyBallSelection.canUse(game.progress.settings.gameplayMode, ball, game.cosmeticProgression.ownsBall(ball))
-        )
-        val equipped = VolleyBallSelection.isEquipped(game.progress.settings, ball)
-        if (equipped || !owned) VisualGameUi.icon(batch, game.assets,
-            if (owned) VisualGameUi.Icon.CHECK else VisualGameUi.Icon.LOCK,
-            Rectangle(bx(440f), by(571f), bs(48f), bs(48f)))
-
-        val straight = Rectangle(bx(82f), by(174f), bs(191f), bs(80f))
-        val shotgun = Rectangle(bx(287f), by(174f), bs(191f), bs(80f))
-        val shotgunSelected = owned && profile.shotgunAvailable && game.progress.isShotgunEnabled(ball.spriteName)
-        VisualGameUi.modeButton(batch, game.assets, straight, false,
-            owned && !shotgunSelected, owned)
-        VisualGameUi.modeButton(batch, game.assets, shotgun, true,
-            shotgunSelected, owned && profile.shotgunAvailable)
-
-        val equip = Rectangle(bx(82f), by(88f), bs(396f), bs(76f))
-        VisualGameUi.actionButton(batch, game.assets, equip, owned && !equipped)
-        VisualGameUi.icon(batch, game.assets, when {
-            !owned -> VisualGameUi.Icon.COIN
-            equipped -> VisualGameUi.Icon.CHECK
-            else -> VisualGameUi.Icon.EQUIP
-        }, Rectangle(equip.x + equip.width * .38f, equip.y + bs(10f), equip.width * .24f, equip.height - bs(20f)))
-        val back = Rectangle(bx(145f), by(24f), bs(270f), bs(60f))
-        batch.draw(buttons.requireRegion("wide_dark"), back.x, back.y, back.width, back.height)
-        VisualGameUi.icon(batch, game.assets, VisualGameUi.Icon.BACK,
-            Rectangle(back.x + back.width * .34f, back.y + bs(6f), back.width * .32f, back.height - bs(12f)))
-        val helpButton = Rectangle(bx(450f), by(832f), bs(62f), bs(62f))
+        val screen = Rectangle(visibleLeft, visibleBottom, visibleWidth, visibleHeight)
+        fill(area(0f, 0f, 820f, 1400f), ink)
+        fill(area(0f, 1397f, 820f, 3f), accent)
+        label("BALL DETAILS", 36f, 1348f, 650f, .58f, muted)
+        val helpButton = area(724f, 1292f, 60f, 60f)
         VisualGameUi.helpButton(batch, game.assets, helpButton)
-        val helpScreen = Rectangle(visibleLeft, visibleBottom, visibleWidth, visibleHeight)
-        visualHelp.focus.set(when (visualHelp.page) {
-            2 -> Rectangle(straight.x, straight.y, shotgun.x + shotgun.width - straight.x, straight.height)
-            3 -> equip
-            else -> Rectangle(bx(64f), by(330f), bs(432f), bs(150f))
-        })
-        visualHelp.draw(batch, game.assets, helpScreen, game.progress.settings.reduceMotion,
-            balls = previewBalls, damage = preview.damage(profile), spreadAvailable = profile.shotgunAvailable)
-        end()
+        label(offer.rarity.name, 120f, 1275f, 580f, .60f, accent)
 
-        if (visualHelp.active) {
-            if (Gdx.input.isKeyJustPressed(Input.Keys.BACK)) visualHelp.tap(true)
-            else if (Gdx.input.justTouched()) visualHelp.tap(
-                VisualHelpOverlay.closeBounds(helpScreen).contains(touchPoint().x, touchPoint().y))
-            return
+        game.assets.cosmetics.ballRegion(ball)?.let { region ->
+            val diameter = 234f * scale
+            val ratio = minOf(diameter / region.regionWidth, diameter / region.regionHeight)
+            val w = region.regionWidth * ratio
+            val h = region.regionHeight * ratio
+            batch.color = Color.WHITE
+            batch.draw(region, x + 410f * scale - w / 2f, y + 1122f * scale - h / 2f, w, h)
         }
-        if (tapped(helpButton)) {
-            visualHelp.open(VisualHelpOverlay.Topic.BALLS)
-            return
-        }
+        label(ball.name.uppercase(), 32f, 958f, 756f, .88f)
+        val owned = game.developmentAccess.canUseCosmetic(VolleyBallSelection.canUse(
+            shopReturnMode, ball, game.cosmeticProgression.ownsBall(ball)))
+        val equipped = VolleyBallSelection.isEquipped(game.progress.settings, ball)
+        label(if (equipped) "EQUIPPED" else if (owned) "OWNED" else "PREVIEW · ${game.cosmeticProgression.ballRequirement(ball)}",
+            36f, 912f, 748f, .43f, if (owned) accent else muted)
 
-
-        if (owned && profile.shotgunAvailable) {
-            if (tapped(straight)) game.progress.setShotgunEnabled(ball.spriteName, false)
-            if (tapped(shotgun)) game.progress.setShotgunEnabled(ball.spriteName, true)
-        }
-
-        if (tapped(equip)) {
-            if (owned && !equipped) {
-                VolleyBallSelection.equip(game.progress.settings, ball)
-                game.progress.saveSettings()
-            } else if (!owned) {
-                game.navigate(
-                    ShopScreen(
-                        game,
-                        if (returnToPausedGame) ShopReturnDestination.PAUSED_GAME else ShopReturnDestination.MAIN_MENU,
-                        game.progress.settings.gameplayMode,
-                        "BALLS"
-                    )
-                )
+        val reveal = if (game.progress.settings.reduceMotion) 1f else (elapsed / .42f).coerceIn(0f, 1f)
+        fun stat(py: Float, title: String, value: String, power: Float) {
+            fill(area(32f, py, 756f, 112f), surface)
+            label(title, 54f, py + 83f, 500f, .48f, muted)
+            label(value, 560f, py + 83f, 200f, .70f)
+            val gap = 5f
+            val width = (706f - gap * 11) / 12f
+            repeat(12) { i ->
+                val lit = (power * 12f * reveal - i).coerceIn(0f, 1f)
+                val color = Color(.13f, .19f, .26f, 1f).lerp(accent, lit)
+                fill(area(54f + i * (width + gap), py + 22f, width, 16f), color)
             }
         }
-        if (tapped(back) || Gdx.input.isKeyJustPressed(Input.Keys.BACK)) {
-            game.navigate(CustomizationScreen(game, returnToPausedGame))
+        stat(762f, "HIT DAMAGE · STAGE ${preview.stageNumber}", "${preview.damage(profile)}", profile.baseHitDamage / 12f)
+        stat(632f, "VOLLEY SIZE · +${profile.startingBalls} FROM BALL", "${preview.balls(profile)}", profile.startingBalls / 40f)
+
+        fill(area(32f, 432f, 756f, 180f), surface)
+        label(profile.title, 54f, 572f, 706f, .57f, accent)
+        val font = game.assets.smallFont
+        val oldX = font.data.scaleX
+        val oldY = font.data.scaleY
+        font.data.setScale(.47f * scale)
+        font.color = Color(.83f, .88f, .94f, 1f)
+        font.draw(batch, profile.description, x + 54f * scale, y + 529f * scale,
+            706f * scale, Align.left, true)
+        font.data.setScale(oldX, oldY)
+        font.color = Color.WHITE
+
+        val straight = area(32f, 290f, 367f, 120f)
+        val spread = area(421f, 290f, 367f, 120f)
+        val shotgun = owned && profile.shotgunAvailable && game.progress.isShotgunEnabled(ball.spriteName)
+        fun mode(rect: Rectangle, selected: Boolean, icon: VisualGameUi.Icon, text: String, unlocked: Boolean) {
+            fill(rect, if (selected) Color(accent).mul(.34f, .34f, .34f, 1f) else surface)
+            if (selected) fill(Rectangle(rect.x, rect.y, rect.width, 3f * scale), accent)
+            VisualGameUi.icon(batch, game.assets, icon,
+                Rectangle(rect.x + 20f * scale, rect.y + 26f * scale, 72f * scale, 68f * scale), if (unlocked) 1f else .35f)
+            label(text, (rect.x - x) / scale + 108f, (rect.y - y) / scale + 70f, 230f, .46f,
+                if (unlocked) Color.WHITE else muted)
+        }
+        mode(straight, owned && !shotgun, VisualGameUi.Icon.STRAIGHT, "STRAIGHT", owned)
+        mode(spread, shotgun, VisualGameUi.Icon.SPREAD, if (profile.shotgunAvailable) "SPREAD" else "SPREAD LOCKED", owned && profile.shotgunAvailable)
+        val equip = area(32f, 166f, 756f, 100f)
+        fill(equip, if (equipped) surface else accent)
+        label(if (!owned) "VIEW PRICE" else if (equipped) "EQUIPPED" else "EQUIP BALL", 48f, 229f, 724f, .66f,
+            if (equipped) accent else ink)
+        val back = area(32f, 42f, 756f, 94f)
+        fill(back, surface)
+        label("BACK", 48f, 103f, 724f, .56f, muted)
+        help.focus.set(area(32f, 632f, 756f, 242f))
+        help.draw(batch, game.assets, screen, game.progress.settings.reduceMotion,
+            balls = preview.balls(profile), damage = preview.damage(profile), spreadAvailable = profile.shotgunAvailable)
+        end()
+
+        if (help.active) {
+            if (Gdx.input.isKeyJustPressed(Input.Keys.BACK)) help.tap(true)
+            else if (Gdx.input.justTouched()) help.tap(VisualHelpOverlay.closeBounds(screen).contains(touchPoint().x, touchPoint().y))
+            return
+        }
+        if (tapped(helpButton)) { help.open(VisualHelpOverlay.Topic.BALLS); return }
+        if (owned) {
+            if (tapped(straight)) game.progress.setShotgunEnabled(ball.spriteName, false)
+            if (profile.shotgunAvailable && tapped(spread)) game.progress.setShotgunEnabled(ball.spriteName, true)
+        }
+        if (tapped(equip)) {
+            if (!owned) game.navigate(ShopScreen(game, shopReturnDestination, shopReturnMode, "BALLS", ball.spriteName))
+            else if (!equipped) {
+                VolleyBallSelection.equip(game.progress.settings, ball)
+                game.progress.saveSettings()
+                game.uiFeedback.emit(UiFeedbackKind.CONFIRM)
+            }
+        }
+        if (tapped(back) || Gdx.input.isKeyJustPressed(Input.Keys.BACK) || Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            if (returnToShop) game.navigate(ShopScreen(game, shopReturnDestination, shopReturnMode, "BALLS", ball.spriteName))
+            else if (returnToCollection != null) returnToCollection.invoke()
+            else game.navigate(CustomizationScreen(game, returnToPausedGame, initialBallSpriteName = ball.spriteName))
         }
     }
 
-    private fun drawBallClean(region: TextureRegion, centerX: Float, centerY: Float, diameter: Float, alpha: Float) {
-        // No glow/shadow panel is drawn here. This intentionally removes the faint square halo
-        // that used to appear around transparent ball PNGs in the unlock/detail preview.
-        val side = min(region.regionWidth, region.regionHeight)
-        val xOffset = ((region.regionWidth - side) / 2).coerceAtLeast(0)
-        val yOffset = ((region.regionHeight - side) / 2).coerceAtLeast(0)
-        val square = TextureRegion(region, xOffset, yOffset, side, side)
-        batch.color = Color(1f, 1f, 1f, alpha)
-        batch.draw(square, centerX - diameter / 2f, centerY - diameter / 2f, diameter, diameter)
+    private fun fill(rect: Rectangle, color: Color) {
+        batch.color = color
+        batch.draw(game.assets.solidUiRegion, rect.x, rect.y, rect.width, rect.height)
         batch.color = Color.WHITE
-    }
-
-    private fun smooth(value: Float): Float {
-        val t = value.coerceIn(0f, 1f)
-        return t * t * (3f - 2f * t)
     }
 }

@@ -1114,7 +1114,7 @@ class VolleySession(
             brick.health - 1 else brick.health
     }
 
-    /** Player attack also scales; bound Volley ball hits while displaying actual stage HP. */
+    /** Campaign attack is independent of the target's health; ball upgrades supply its power. */
     private fun importedBallAttack(brick: Brick): Int {
         val seed = stage.authoredBricks.getOrNull(brick.id - 1)
         if (stage.sourceScene == null) return 1

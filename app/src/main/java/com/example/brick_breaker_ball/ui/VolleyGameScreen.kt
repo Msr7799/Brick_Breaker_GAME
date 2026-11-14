@@ -864,7 +864,7 @@ class VolleyGameScreen(
     private fun openCharmsBag() {
         pauseAndSave()
         game.navigate(
-            VolleyOrbsScreen(game, ShopReturnDestination.PAUSED_GAME, GameplayMode.VOLLEY, returnToShop = false, backToBag = false),
+            VolleyOrbsScreen(game, ShopReturnDestination.PAUSED_GAME, GameplayMode.VOLLEY, returnToShop = false),
             ScreenTransitionStyle.FADE_THROUGH
         )
     }
@@ -1226,7 +1226,7 @@ class VolleyGameScreen(
         if (hitFlash > 0f) {
             val size = 82f + (1f - hitFlash) * 26f
             batch.color = Color(1f, .9f, .6f, hitFlash * .42f)
-            batch.draw(game.assets.particles.findRegion("glow"), hitX - size / 2f, hitY - size / 2f, size, size)
+            batch.draw(game.assets.softGlowRegion, hitX - size / 2f, hitY - size / 2f, size, size)
             batch.color = Color.WHITE
         }
     }
@@ -1236,7 +1236,7 @@ class VolleyGameScreen(
             val pulse = if (game.progress.settings.reduceMotion) .5f else .5f + .5f * MathUtils.sin(Gdx.graphics.frameId * .05f + pickup.id)
             val size = (64f + pulse * 7f) * if (isLandscape) 1.25f else 1f
             batch.color = Color(.42f, .92f, 1f, .18f)
-            batch.draw(game.assets.particles.findRegion("glow"), pickup.position.x - size * .66f, pickup.position.y - size * .66f, size * 1.32f, size * 1.32f)
+            batch.draw(game.assets.softGlowRegion, pickup.position.x - size * .66f, pickup.position.y - size * .66f, size * 1.32f, size * 1.32f)
             batch.color = Color.WHITE
             drawRegionFitCentered(assetCatalog.bonusNode(pickup.type), pickup.position.x, pickup.position.y, size, size * .78f)
             fittedText(
@@ -1288,12 +1288,6 @@ class VolleyGameScreen(
             val diameter = ball.radius * 2f * 1.45f * vortexScale
             val x = ball.position.x - diameter / 2f
             val y = ball.position.y - diameter / 2f
-            if ((VolleyModifier.FIRE in session.activeModifiers || session.isBallIgnited(ball.id)) &&
-                !game.progress.settings.reduceMotion) {
-                val halo = diameter * 1.7f
-                batch.color = Color(1f, .46f, .16f, .38f)
-                batch.draw(game.assets.particles.findRegion("glow"), ball.position.x - halo / 2f, ball.position.y - halo / 2f, halo, halo)
-            }
             batch.color = Color(1f, 1f, 1f, if (vortexRemaining > 0f) .2f + vortexScale * .8f else 1f)
             val direction = MathUtils.radiansToDegrees * atan2(ball.velocity.y, ball.velocity.x) - 90f
             batch.draw(selectedBallRegion, x, y, diameter / 2f, diameter / 2f, diameter, diameter, 1f, 1f, direction)
@@ -1318,7 +1312,7 @@ class VolleyGameScreen(
         if (charged) {
             val glowSize = max(drawWidth, drawHeight) * 1.05f
             batch.color = Color(.24f, .92f, 1f, .20f)
-            batch.draw(game.assets.particles.findRegion("glow"), session.launcherX - glowSize / 2f, VolleySession.CANNON_PIVOT_Y - glowSize * .18f, glowSize, glowSize)
+            batch.draw(game.assets.softGlowRegion, session.launcherX - glowSize / 2f, VolleySession.CANNON_PIVOT_Y - glowSize * .18f, glowSize, glowSize)
         }
         batch.color = Color.WHITE
         batch.draw(
@@ -1341,7 +1335,7 @@ class VolleyGameScreen(
             val muzzle = session.launchOrigin(aimDirection, aimGuideOrigin)
             val flashSize = 54f * (muzzleFlash / .09f)
             batch.color = Color(1f, .82f, .48f, .64f)
-            batch.draw(game.assets.particles.findRegion("glow"), muzzle.x - flashSize / 2f, muzzle.y - flashSize / 2f, flashSize, flashSize)
+            batch.draw(game.assets.softGlowRegion, muzzle.x - flashSize / 2f, muzzle.y - flashSize / 2f, flashSize, flashSize)
             batch.color = Color.WHITE
         }
         if (!session.firing) {
@@ -1480,7 +1474,7 @@ class VolleyGameScreen(
         batch.draw(game.assets.solidUiRegion, cancelStrip.x, cancelStrip.y, cancelStrip.width, cancelStrip.height)
         batch.color = if (armed) Color(1f, .12f, .22f, .34f) else Color(.44f, .12f, 1f, .30f)
         batch.draw(
-            game.assets.particles.findRegion("glow"),
+            game.assets.softGlowRegion,
             cancelStrip.x + cancelStrip.width * .21f,
             cancelStrip.y - cancelStrip.height * .34f,
             cancelStrip.width * .58f,

@@ -43,13 +43,18 @@ class CustomizationScreen(
     private val bagReturnToShop: Boolean = false,
     private val returnToShop: Boolean = false,
     private val shopReturnDestination: ShopReturnDestination = ShopReturnDestination.MAIN_MENU,
-    private val shopReturnMode: GameplayMode = game.progress.settings.gameplayMode
+    private val shopReturnMode: GameplayMode = game.progress.settings.gameplayMode,
+    private val initialBallSpriteName: String? = null
 ) : ForgeScreen(game) {
-    private var ballRarityFilter = BallCollectionCatalog.offer(VolleyBallSelection.selectionSprite(game.progress.settings)).rarity
+    private var ballRarityFilter = BallCollectionCatalog.offer(initialBallSpriteName
+        ?: VolleyBallSelection.selectionSprite(game.progress.settings)).rarity
     private val powerPreview by lazy { BallPowerPreview(game, returnToPausedGame) }
     private val visualHelp = VisualHelpOverlay()
     private var ballScrollOffset = 0f
-    private var previewBallKey: String? = null
+    private var previewBallKey: String? = initialBallSpriteName?.let { sprite ->
+        game.assets.cosmetics.balls.firstOrNull { it.spriteName == sprite }?.let { "${it.groupName}/${it.spriteName}" }
+    }
+    private var initialFocusPending = initialBallSpriteName != null
     private var boardTouchActive = false
     private var boardTouchMoved = false
     private var boardTouchStartY = 0f
@@ -150,6 +155,11 @@ class CustomizationScreen(
             .coerceAtLeast(0f)
         boardBallRowStep = rowStep
         boardBallMaxScroll = maxScroll
+        if (initialFocusPending) {
+            val selectedIndex = balls.indexOfFirst { it.spriteName == initialBallSpriteName }
+            ballScrollOffset = (selectedIndex.coerceAtLeast(0) * rowStep).coerceIn(0f, maxScroll)
+            initialFocusPending = false
+        }
         if (!boardTouchActive && boardScrollVelocity != 0f && !game.progress.settings.reduceMotion) {
             ballScrollOffset = (ballScrollOffset + boardScrollVelocity * delta).coerceIn(0f, maxScroll)
             boardScrollVelocity *= (1f - 8f * delta.coerceIn(0f, .1f)).coerceAtLeast(0f)
@@ -218,14 +228,25 @@ class CustomizationScreen(
                 game.assets.hudLabelFont,
                 definition.name.uppercase(),
                 textX,
-                row.y + row.height * .70f,
+                row.y + row.height * .82f,
                 textWidth,
                 .62f
             )
+            val offer = BallCollectionCatalog.offer(definition)
+            val ownershipText = when {
+                equipped -> "EQUIPPED"
+                owned -> "OWNED"
+                offer.coins != null -> "${offer.coins} COINS" + (offer.stage?.let { " / STAGE $it" } ?: "")
+                offer.gems != null -> "${offer.gems} GEMS"
+                else -> game.cosmeticProgression.ballRequirement(definition)
+            }
+            game.assets.smallFont.color = if (owned) Color(.55f, .90f, 1f, 1f) else Color(.98f, .82f, .48f, 1f)
+            fittedText(game.assets.smallFont, ownershipText, textX, row.y + row.height * .56f, textWidth, .42f)
+            game.assets.smallFont.color = Color.WHITE
             val ability = BallAbilityCatalog.profileForBall(definition)
             VisualGameUi.stats(batch, game.assets,
                 Rectangle(textX, row.y + row.height * .12f, textWidth, row.height * .33f),
-                powerPreview.balls(ability), powerPreview.damage(ability))
+                powerPreview.balls(ability), powerPreview.damage(ability), power = ability.baseHitDamage)
             if (equipped || !owned) VisualGameUi.icon(batch, game.assets,
                 if (owned) VisualGameUi.Icon.CHECK else VisualGameUi.Icon.LOCK,
                 Rectangle(iconBox.x + iconBox.width * .65f, iconBox.y, iconBox.width * .34f, iconBox.height * .34f))
@@ -258,7 +279,7 @@ class CustomizationScreen(
             val ability = BallAbilityCatalog.profileForBall(chosen)
             VisualGameUi.stats(batch, game.assets,
                 Rectangle(content.x + 16f, back.y + back.height + 10f, content.width - 32f, 44f),
-                powerPreview.balls(ability), powerPreview.damage(ability))
+                powerPreview.balls(ability), powerPreview.damage(ability), power = ability.baseHitDamage)
         }
         val helpButton = Rectangle(titleArea.x + titleArea.width - 64f,
             titleArea.y + titleArea.height * .30f, 64f, 64f)
@@ -314,7 +335,8 @@ class CustomizationScreen(
                                 game,
                                 if (returnToPausedGame) ShopReturnDestination.PAUSED_GAME else ShopReturnDestination.MAIN_MENU,
                                 game.progress.settings.gameplayMode,
-                                "BALLS"
+                                "BALLS",
+                                chosen?.spriteName
                             )
                         )
                     }
@@ -345,7 +367,12 @@ class CustomizationScreen(
                     val selectedBall = balls[index]
                     val key = "${selectedBall.groupName}/${selectedBall.spriteName}"
                     if (previewBallKey == key) {
-                        game.navigate(BallPowerDetailScreen(game, selectedBall, returnToPausedGame))
+                        game.navigate(BallPowerDetailScreen(game, selectedBall, returnToPausedGame,
+                            returnToCollection = {
+                                game.navigate(CustomizationScreen(game, returnToPausedGame, returnToBag,
+                                    bagReturnDestination, bagReturnMode, bagReturnToShop, returnToShop,
+                                    shopReturnDestination, shopReturnMode, selectedBall.spriteName))
+                            }))
                     } else {
                         previewBallKey = key
                     }
@@ -358,8 +385,9 @@ class CustomizationScreen(
     private fun leaveCustomization() {
         game.progress.saveSettings()
         when {
-            returnToBag -> game.navigate(VolleyOrbsScreen(game, bagReturnDestination, bagReturnMode, bagReturnToShop, backToBag = false))
-            returnToShop -> game.navigate(ShopScreen(game, shopReturnDestination, shopReturnMode, "BALLS"))
+            returnToBag -> game.navigate(VolleyOrbsScreen(game, bagReturnDestination, bagReturnMode, bagReturnToShop))
+            returnToShop -> game.navigate(ShopScreen(game, shopReturnDestination, shopReturnMode, "BALLS",
+                selectedBallDefinition()?.spriteName))
             returnToPausedGame -> game.resumePausedGame(showLoading = false)
             else -> game.openMenu()
         }

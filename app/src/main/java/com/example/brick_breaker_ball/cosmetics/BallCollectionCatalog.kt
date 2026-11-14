@@ -21,7 +21,8 @@ data class BallCollectionOffer(
 ) {
     init {
         require(listOfNotNull(stage, coins, gems).isNotEmpty())
-        require(stage == null || (coins == null && gems == null))
+        require(coins == null || coins > 0)
+        require(gems == null || gems > 0)
     }
 }
 
@@ -58,12 +59,14 @@ object BallCollectionCatalog {
 
                 frame <= 21 -> BallCollectionOffer(
                     BallRarity.NORMAL,
-                    stage = stageWithin(frame, 0, 21, 1, 48)
+                    stage = stageWithin(frame, 0, 21, 2, 48),
+                    coins = 500 + frame * 180
                 )
 
                 frame in 22..28 || frame in 45..47 -> BallCollectionOffer(
                     BallRarity.RARE,
-                    stage = stageWithin(frame, 22, 47, 49, 86)
+                    stage = stageWithin(frame, 22, 47, 49, 86),
+                    coins = 6_000 + (frame - 22) * 300
                 )
 
                 else -> BallCollectionOffer(BallRarity.RARE, coins = 8_000 + (frame % 7) * 1_500)
@@ -71,6 +74,8 @@ object BallCollectionCatalog {
         }
         val number = spriteName.substringBefore('_').toIntOrNull() ?: 38
         return when {
+            number == 41 -> BallCollectionOffer(BallRarity.NORMAL, stage = 1)
+
             number in legendaryOriginals -> BallCollectionOffer(
                 BallRarity.LEGENDARY,
                 gems = 120 + ((number * 7) % 10) * 30
@@ -78,7 +83,8 @@ object BallCollectionCatalog {
 
             number in rareOriginals && number <= 55 -> BallCollectionOffer(
                 BallRarity.RARE,
-                stage = stageWithin(number, 41, 55, 50, 90)
+                stage = stageWithin(number, 41, 55, 50, 90),
+                coins = 5_000 + (number - 41) * 350
             )
 
             number in rareOriginals -> BallCollectionOffer(
@@ -88,8 +94,39 @@ object BallCollectionCatalog {
 
             else -> BallCollectionOffer(
                 BallRarity.NORMAL,
-                stage = stageWithin(number, 1, 40, 1, 76)
+                stage = stageWithin(number, 1, 40, 2, 76),
+                coins = 300 + (number - 1).coerceAtLeast(0) * 100
             )
+        }
+    }
+
+    private fun identity(sprite: String): String = if (sprite.startsWith("new_ball_"))
+        "new_ball_${sprite.removePrefix("new_ball_").toIntOrNull() ?: 0}"
+        else "${sprite.substringBefore('_').toIntOrNull() ?: 38}_catalog"
+
+    private val powerOrder by lazy {
+        ((1..105).map { "${it}_catalog" } + (0..59).map { "new_ball_$it" })
+            .groupBy { offer(it).rarity }
+            .mapValues { (_, sprites) ->
+                sprites.sortedWith(compareBy<String> { if (it == "41_catalog") 0 else 1 }
+                    .thenBy { offer(it).stage ?: Int.MAX_VALUE }
+                    .thenBy { offer(it).coins ?: offer(it).gems?.times(100) ?: 0 }
+                    .thenBy { it })
+            }
+    }
+
+    /** Strength grows within every rarity. The starter is always the weakest/free entry. */
+    fun power(spriteName: String): Pair<Int, Int> {
+        if (identity(spriteName) == "41_catalog") return 1 to 0
+        val rarity = offer(spriteName).rarity
+        val order = powerOrder.getValue(rarity)
+        val index = order.indexOf(identity(spriteName)).coerceAtLeast(0)
+        val step = (index * 3 / order.size).coerceIn(0, 2)
+        return when (rarity) {
+            BallRarity.NORMAL -> (1 + step) to (step * 3)
+            BallRarity.RARE -> (4 + step) to (10 + step * 4)
+            BallRarity.LEGENDARY -> (7 + step) to (22 + step * 4)
+            BallRarity.EPIC -> (10 + step) to (32 + step * 4)
         }
     }
 

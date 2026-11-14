@@ -42,11 +42,11 @@ data class BallAbilityProfile(
 ) {
     val tierLabel: String get() = "TIER $tier"
 
-    /** Ball count strengthens each hit without changing flight speed. */
-    val ballsPerDamage: Int get() = if (kind == BallAbilityKind.MOMENTUM_CORE) 20 else 30
+    /** Only Momentum converts a small part of volley size into attack. */
+    val ballsPerDamage: Int get() = 60
 
     fun hitDamageForVolley(ballCount: Int): Int = baseHitDamage +
-        ballCount.coerceIn(0, 160) / ballsPerDamage
+        if (kind == BallAbilityKind.MOMENTUM_CORE) ballCount.coerceIn(0, 160) / 60 else 0
 
     fun shortStat(): String = "+$startingBalls BALLS  |  ${baseHitDamage} BASE HIT"
 
@@ -58,14 +58,14 @@ data class BallAbilityProfile(
             BallAbilityKind.ARMOR_BREAKER -> "+$bonusDamage ARMOR DMG / $triggerEveryHits HITS"
             BallAbilityKind.VOID_PHASE -> "+$bonusDamage PHASE HIT / $triggerEveryHits HITS"
             BallAbilityKind.FORTUNE_CORE -> "+$fortuneBonusScore / $fortuneEveryBreaks BREAKS"
-            BallAbilityKind.MOMENTUM_CORE -> "+1 HIT / 20 BALLS"
+            BallAbilityKind.MOMENTUM_CORE -> "+1 HIT / 60 BALLS"
         }
 }
 
 object BallAbilityCatalog {
     private val numberPattern = Regex("^(\\d{2,3})_")
 
-    val default: BallAbilityProfile get() = profileForSprite(CosmeticDefaults.BALL_SPRITE)
+    val default: BallAbilityProfile get() = profileForSprite(VolleyBallSelection.STARTER_SPRITE)
 
     fun ballNumber(spriteName: String): Int = if (spriteName.startsWith("new_ball_")) {
         106 + (spriteName.removePrefix("new_ball_").toIntOrNull() ?: 0)
@@ -83,7 +83,11 @@ object BallAbilityCatalog {
             BallRarity.LEGENDARY -> 3
             BallRarity.EPIC -> 4
         }
-        return profileForArchetype((number - 1) % 7, tier, (number - 1) / 7)
+        val (damage, extraBalls) = BallCollectionCatalog.power(spriteName)
+        return profileForArchetype((number - 1) % 7, tier, (number - 1) / 7).copy(
+            baseHitDamage = damage,
+            startingBalls = extraBalls
+        )
     }
 
     fun profile(kind: BallAbilityKind, tier: Int): BallAbilityProfile {
@@ -184,7 +188,7 @@ object BallAbilityCatalog {
                 BallAbilityProfile(
                     kind = BallAbilityKind.MOMENTUM_CORE,
                     title = "MOMENTUM CORE",
-                    description = "Adds one hit damage for every 20 balls in the volley without changing ball speed.",
+                    description = "Adds one hit damage for every 60 balls in the volley without changing ball speed.",
                     tier = tier,
                     masteryScorePercent = mastery
                 )

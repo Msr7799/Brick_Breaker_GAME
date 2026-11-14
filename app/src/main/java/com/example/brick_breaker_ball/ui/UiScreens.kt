@@ -250,7 +250,7 @@ abstract class ForgeScreen(protected val game: BrickBreakerGame) : ScreenAdapter
         val visual = Rectangle(baseVisual.x, baseVisual.y - 22f * (1f - enter), baseVisual.width, baseVisual.height)
         if (pressed) {
             batch.color = Color(ForgeUiPalette.primary).also { it.a = .16f }
-            batch.draw(game.assets.particles.findRegion("glow"), visual.x - 12f, visual.y - 12f, visual.width + 24f, visual.height + 24f)
+            batch.draw(game.assets.softGlowRegion, visual.x - 12f, visual.y - 12f, visual.width + 24f, visual.height + 24f)
             batch.color = Color.WHITE
         }
         game.assets.uiRenderer.drawGradientButton(batch, visual, style)
@@ -790,7 +790,7 @@ class MainMenuScreen(game: BrickBreakerGame) : ForgeScreen(game) {
             tapped(targets.youtube) -> game.platformActions.openGameplayVideo()
 
             tapped(targets.charmsBag) -> game.setScreen(
-                VolleyOrbsScreen(game, ShopReturnDestination.MAIN_MENU, GameplayMode.VOLLEY, returnToShop = false, backToBag = false)
+                VolleyOrbsScreen(game, ShopReturnDestination.MAIN_MENU, GameplayMode.VOLLEY, returnToShop = false)
             )
 
             tapped(targets.customize) -> game.navigate(CustomizationScreen(game), ScreenTransitionStyle.FADE_THROUGH)
@@ -952,7 +952,7 @@ class WorldMapScreen(game: BrickBreakerGame, initialWorld: Int? = null) : ForgeS
             val visualColumn = if (leftToRight) index % 2 else 1 - index % 2
             (245f + visualColumn * 405f) to (1206f - row * CARD_ROW_SPACING + scrollOffset)
         }
-        val glow = game.assets.particles.findRegion("glow")
+        val glow = game.assets.softGlowRegion
         points.zipWithNext().forEach { (start, end) ->
             repeat(15) { step ->
                 val t = step / 14f
@@ -1497,7 +1497,7 @@ class ResultsScreen(
             tapped(retry) -> game.play(level.id)
 
             orbLoot.isNotEmpty() && tapped(bag) -> game.navigate(VolleyOrbsScreen(game, ShopReturnDestination.MAIN_MENU,
-                GameplayMode.VOLLEY, returnToShop = false, backToBag = false))
+                GameplayMode.VOLLEY, returnToShop = false))
 
             tapped(menu) -> game.openMenu()
         }
@@ -1739,7 +1739,7 @@ class SettingsScreen(
         val pressed = Gdx.input.isTouched && UiMetrics.containsExpanded(touch, point.x, point.y)
         if (pressed) {
             batch.color = Color(ForgeUiPalette.ivory).also { it.a = .12f }
-            batch.draw(game.assets.particles.findRegion("glow"), touch.x - 14f, touch.y - 14f, touch.width + 28f, touch.height + 28f)
+            batch.draw(game.assets.softGlowRegion, touch.x - 14f, touch.y - 14f, touch.width + 28f, touch.height + 28f)
         }
         batch.color = Color.WHITE
         val pressScale = if (pressed && !game.progress.settings.reduceMotion) .985f else 1f
@@ -1762,7 +1762,7 @@ class SettingsScreen(
         val visual = Pressable.visualRect(rect, pressed, game.progress.settings.reduceMotion)
         if (pressed) {
             batch.color = Color(ForgeUiPalette.primary).also { it.a = .11f }
-            batch.draw(game.assets.particles.findRegion("glow"), visual.x - 8f, visual.y - 8f, visual.width + 16f, visual.height + 16f)
+            batch.draw(game.assets.softGlowRegion, visual.x - 8f, visual.y - 8f, visual.width + 16f, visual.height + 16f)
             batch.color = Color.WHITE
         }
         game.assets.uiRenderer.drawCompactRoundedGradientButton(batch, visual, ForgeUiRenderer.GradientStyle.PRIMARY)

@@ -32,6 +32,8 @@ object CosmeticDefaults {
 object VolleyBallSelection {
     const val STARTER_SPRITE = "41_pearl_white"
     const val STARTER_GROUP = CosmeticDefaults.BALL_GROUP
+    private var displaySource: List<BallSpriteDefinition>? = null
+    private var displayOrder: List<BallSpriteDefinition> = emptyList()
 
     fun isStarter(ball: BallSpriteDefinition): Boolean = ball.groupName == STARTER_GROUP && ball.spriteName == STARTER_SPRITE
 
@@ -51,10 +53,20 @@ object VolleyBallSelection {
 
     fun canUse(mode: GameplayMode, ball: BallSpriteDefinition, normallyOwned: Boolean): Boolean = normallyOwned || (mode == GameplayMode.VOLLEY && isStarter(ball))
 
-    fun inDisplayOrder(balls: List<BallSpriteDefinition>, mode: GameplayMode): List<BallSpriteDefinition> = if (mode != GameplayMode.VOLLEY) {
-        balls
-    } else {
-        balls.sortedWith(compareBy<BallSpriteDefinition> { !isStarter(it) })
+    fun inDisplayOrder(balls: List<BallSpriteDefinition>, mode: GameplayMode): List<BallSpriteDefinition> {
+        if (mode != GameplayMode.VOLLEY) return balls
+        if (displaySource !== balls) {
+            val offers = balls.associateWith(BallCollectionCatalog::offer)
+            val powers = balls.associateWith { BallCollectionCatalog.power(it.spriteName) }
+            displayOrder = balls.sortedWith(compareBy<BallSpriteDefinition> { !isStarter(it) }
+                .thenBy { offers.getValue(it).rarity.ordinal }
+                .thenBy { powers.getValue(it).first }
+                .thenBy { powers.getValue(it).second }
+                .thenBy { offers.getValue(it).coins ?: offers.getValue(it).gems?.times(100) ?: 0 }
+                .thenBy { it.index })
+            displaySource = balls
+        }
+        return displayOrder
     }
 
     fun equip(settings: GameSettings, ball: BallSpriteDefinition) {

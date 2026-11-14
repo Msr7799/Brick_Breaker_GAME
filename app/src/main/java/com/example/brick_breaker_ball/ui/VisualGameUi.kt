@@ -47,7 +47,7 @@ internal object VisualGameUi {
         prepare(assets)
         if (selected) {
             batch.setColor(1f, .67f, .16f, .20f * opacity)
-            batch.draw(assets.particles.findRegion("glow"), rect.x - 8f, rect.y - 8f, rect.width + 16f, rect.height + 16f)
+            batch.draw(assets.softGlowRegion, rect.x - 8f, rect.y - 8f, rect.width + 16f, rect.height + 16f)
         }
         batch.setColor(1f, if (selected) .93f else .83f, if (selected) .73f else .72f, opacity)
         stone.draw(batch, rect.x, rect.y, rect.width, rect.height)
@@ -144,7 +144,8 @@ internal object VisualGameUi {
         batch.color = Color.WHITE
     }
 
-    fun stats(batch: SpriteBatch, assets: GameAssets, rect: Rectangle, balls: Int, damage: Int, reveal: Float = 1f) {
+    fun stats(batch: SpriteBatch, assets: GameAssets, rect: Rectangle, balls: Int, damage: Int,
+              reveal: Float = 1f, power: Int = damage) {
         val side = minOf(rect.height * .96f, rect.width * .15f)
         icon(batch, assets, Icon.BALLS, Rectangle(rect.x, rect.y, side, rect.height))
         number(batch, assets, "$balls", Rectangle(rect.x + side, rect.y, rect.width * .18f, rect.height), .72f)
@@ -152,7 +153,7 @@ internal object VisualGameUi {
         icon(batch, assets, Icon.HIT, Rectangle(start, rect.y, side, rect.height))
         number(batch, assets, "$damage", Rectangle(start + side, rect.y, rect.width * .13f, rect.height), .72f)
         meter(batch, assets, Rectangle(rect.x + rect.width * .67f, rect.y + rect.height * .24f,
-            rect.width * .33f, rect.height * .52f), damage, reveal)
+            rect.width * .33f, rect.height * .52f), power, reveal)
     }
 
     fun modeButton(batch: SpriteBatch, assets: GameAssets, rect: Rectangle, spread: Boolean,

@@ -161,7 +161,7 @@ class CosmeticUnlockRevealScreen(game: BrickBreakerGame, private val unlocks: Li
     }
 
     private fun drawEnergy() {
-        val glow = game.assets.particles.findRegion("glow")
+        val glow = game.assets.softGlowRegion
         repeat(14) { index ->
             val phase = elapsed * (35f + index) + index * 71f
             val x = 40f + ((index * 137f + phase * .7f) % 820f)

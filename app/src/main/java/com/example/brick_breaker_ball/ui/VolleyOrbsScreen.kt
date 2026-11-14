@@ -20,7 +20,6 @@ class VolleyOrbsScreen(
     private val returnDestination: ShopReturnDestination,
     private val bagMode: GameplayMode,
     private val returnToShop: Boolean,
-    private val backToBag: Boolean = true,
     guideFromShop: Boolean = false
 ) : ForgeScreen(game) {
     private companion object {
@@ -162,9 +161,12 @@ class VolleyOrbsScreen(
 
         val tabY = board.y + h * .718f
         tab(Rectangle(x, tabY, w * .32f, h * .051f), "ORBS", true) {}
-        tab(Rectangle(x + w * .34f, tabY, w * .32f, h * .051f), "ITEMS", false) {
+        tab(Rectangle(x + w * .34f, tabY, w * .32f, h * .051f), "BALLS", false) {
             rememberView()
-            game.navigate(CharmsBagScreen(game, returnDestination, bagMode, returnToShop))
+            game.navigate(CustomizationScreen(game,
+                returnToPausedGame = returnDestination == ShopReturnDestination.PAUSED_GAME,
+                returnToBag = true, bagReturnDestination = returnDestination,
+                bagReturnMode = bagMode, bagReturnToShop = returnToShop))
         }
         tab(Rectangle(x + w * .68f, tabY, w * .32f, h * .051f), "SHOP", false) {
             rememberView()
@@ -658,7 +660,7 @@ class VolleyOrbsScreen(
             labeledAction(rect, title, null, selected, action)
         } else labeledAction(rect, title, when (title) {
             "SHOP" -> VisualGameUi.Icon.COIN
-            "ITEMS" -> VisualGameUi.Icon.GRID
+            "BALLS" -> VisualGameUi.Icon.BALLS
             else -> VisualGameUi.Icon.ORB
         }, selected, action)
     }
@@ -827,7 +829,6 @@ class VolleyOrbsScreen(
         rememberView()
         when {
             returnToShop -> game.navigate(ShopScreen(game, returnDestination, bagMode, initialTabName = "ORBS"))
-            backToBag -> game.navigate(CharmsBagScreen(game, returnDestination, bagMode, returnToShop))
             returnDestination == ShopReturnDestination.PAUSED_GAME -> game.resumePausedGame(showLoading = false)
             else -> game.openMenu()
         }
