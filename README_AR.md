@@ -52,6 +52,12 @@
 
 تقييم القوة مستقل عن تطور هجوم الحملة وتأثيرات ORBS المجهّزة. اضغط على صورة أي كرة في المتجر لعرض قدرتها، أو زر OWNED لفتح نفس الكرة في قائمة الكرات.
 
+### عرض الكرات
+
+تفتح BALLS شاشة عرض كبيرة للكرة، مع تصنيفات الندرة وأسهم التنقل والسحب الأفقي. تعرض أربع بطاقات مستقلة ضرر الضربة العادية وعدد الكرات والقدرة الخاصة وقوة الكرة في المجموعة. تشترك حالات الكرة المملوكة والمجهزة والمقفلة في الشاشة نفسها؛ وتظهر للكرة المقفلة تكلفتها الفعلية وشرط فتحها بالتقدم، بينما تتم المشتريات من المتجر.
+
+تعرض الشاشة درجة الندرة وموعد زيادة هجوم الحملة الموجودين فعليًا. لا يوجد مستوى تطوير مستقل أو عملية شراء تطوير لكل كرة. تُحفظ خيارات التجهيز والإطلاق المستقيم أو المنتشر من خلال إعدادات اللعبة الحالية. تتكيف الواجهة مع الشاشات الطولية والعريضة، وتحترم الحركة الاختيارية إعداد Reduce Motion.
+
 ## مواجهات الزعماء
 
 يظهر زعيم كل عالم بعد نهاية تشكيل المرحلة. تحميه أقفال على بركس الجمجمة: قفلان للعوالم 1–3، وثلاثة للعوالم 4–6، وأربعة للعوالم 7–9. اكسر جميع الأقفال قبل أن تتمكن من إنقاص حياة الزعيم. هزيمته لا تمسح أهداف المرحلة المتبقية.
@@ -120,7 +126,7 @@
 
 <!-- FILE_INDEX_START -->
 <details>
-<summary><strong>فهرس الملفات العامة كاملًا · 487 ملفًا</strong></summary>
+<summary><strong>فهرس الملفات العامة كاملًا · 490 ملفًا</strong></summary>
 
 <details>
 <summary>Android resources / mipmap-anydpi-v26 · 2</summary>
@@ -324,16 +330,19 @@
 </details>
 
 <details>
-<summary>Code / ui · 34</summary>
+<summary>Code / ui · 37</summary>
 
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/AppUpdateScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/AppUpdateScreen.kt) — منطق App Update Screen ضمن شاشات اللعبة والتحكم.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/BagScrollMath.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BagScrollMath.kt) — منطق Bag Scroll Math ضمن شاشات اللعبة والتحكم.
-- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerDetailScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerDetailScreen.kt) — منطق Ball Power Detail Screen ضمن شاشات اللعبة والتحكم.
-- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerPreview.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerPreview.kt) — منطق Ball Power Preview ضمن شاشات اللعبة والتحكم.
+- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerDetailScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerDetailScreen.kt) — ربط معاينة المتجر بشاشة عرض الكرة الموحدة.
+- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerPreview.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerPreview.kt) — قراءة العدد والضرر الحقيقيين ومواعيد زيادة هجوم الحملة.
+- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseArt.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseArt.kt) — أسطح الواجهة المستديرة ومؤثرات المنصة الشفافة وإدارة مواردها.
+- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseLayout.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseLayout.kt) — توزيع الواجهة ومساحات اللمس للشاشات الطولية والعريضة.
+- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseScreen.kt) — عرض الكرة الموحد وحالات الملكية وأزرار التصفح.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/CharmTutorial.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CharmTutorial.kt) — منطق Charm Tutorial ضمن شاشات اللعبة والتحكم.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/CloudSaveScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CloudSaveScreen.kt) — منطق Cloud Save Screen ضمن شاشات اللعبة والتحكم.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/CosmeticUnlockRevealScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CosmeticUnlockRevealScreen.kt) — منطق Cosmetic Unlock Reveal Screen ضمن شاشات اللعبة والتحكم.
-- [`app/src/main/java/com/example/brick_breaker_ball/ui/CustomizationScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CustomizationScreen.kt) — منطق Customization Screen ضمن شاشات اللعبة والتحكم.
+- [`app/src/main/java/com/example/brick_breaker_ball/ui/CustomizationScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CustomizationScreen.kt) — ربط مجموعة الكرات والحقيبة واللعبة المتوقفة بشاشة عرض الكرة.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/DailyRewardsScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/DailyRewardsScreen.kt) — منطق Daily Rewards Screen ضمن شاشات اللعبة والتحكم.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/ForgeUiPalette.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/ForgeUiPalette.kt) — منطق Forge Ui Palette ضمن شاشات اللعبة والتحكم.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/ForgeUiRenderer.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/ForgeUiRenderer.kt) — منطق Forge Ui Renderer ضمن شاشات اللعبة والتحكم.

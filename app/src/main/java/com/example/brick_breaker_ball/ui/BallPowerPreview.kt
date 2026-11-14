@@ -9,6 +9,7 @@ import com.example.brick_breaker_ball.cosmetics.VolleyBallSelection
 import com.example.brick_breaker_ball.cosmetics.BallAbilityProfile
 import com.example.brick_breaker_ball.gameplay.VolleyGeneratorFeature
 import com.example.brick_breaker_ball.gameplay.VolleyOrbEffects
+import com.example.brick_breaker_ball.gameplay.VolleyModifier
 import java.util.Random
 
 /** Collection and detail use the same stage + active-orb count, without advancing a run. */
@@ -19,19 +20,23 @@ internal class BallPowerPreview(game: BrickBreakerGame, returnToPausedGame: Bool
     private val equippedBonus = BallAbilityCatalog.profileForSprite(
         VolleyBallSelection.selectionSprite(game.progress.settings)).startingBalls
     val stageNumber: Int get() = stage.levelId
+    val campaignAttack: Int get() = if (stage.sourceScene == null) 1
+        else VolleySourceHealth.ballAttack(stage.levelId, 0)
+    val nextAttackStage: Int? get() = ((stage.levelId - 1) / 12 * 12 + 13)
+        .takeIf { stage.sourceScene != null && it <= VolleyStageRepository.TOTAL_LEVELS }
     private val orbBalls = VolleyOrbEffects(game.progress.equippedOrbs, Random(0), stage.levelId,
         game.progress.selectedDifficulty == VolleyDifficulty.EXTREME, combatBoost = 1.5f).startingBalls()
 
     fun balls(profile: BallAbilityProfile): Int {
         val snapshot = paused?.second
         return (if (snapshot != null) snapshot.ballCount -
-            (snapshot.ballStartingBonus ?: equippedBonus) + profile.startingBalls
+            (snapshot.ballStartingBonus ?: equippedBonus) + profile.startingBalls +
+            orbBalls - (snapshot.orbStartingBonus ?: orbBalls)
         else stage.startingBalls + profile.startingBalls + orbBalls).coerceIn(1, 160)
     }
 
     fun damage(profile: BallAbilityProfile): Int {
-        val campaignAttack = if (stage.sourceScene == null) 1
-            else VolleySourceHealth.ballAttack(stage.levelId, 0)
-        return (profile.hitDamageForVolley(balls(profile)) + (paused?.second?.bonusDamageFlat ?: 0)) * campaignAttack
+        val megaBonus = if (paused?.second?.activeModifiers?.contains(VolleyModifier.MEGA) == true) 1 else 0
+        return (profile.hitDamageForVolley(balls(profile)) + (paused?.second?.bonusDamageFlat ?: 0) + megaBonus) * campaignAttack
     }
 }

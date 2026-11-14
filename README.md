@@ -52,6 +52,12 @@ Pearl White is the free starter. Other balls have a visible Coins or Gems price;
 
 The power rating is separate from campaign attack growth and equipped Orb effects. Tap any Shop ball to inspect its ability; the OWNED button opens that exact ball in the collection.
 
+### Ball showcase
+
+BALLS opens a full-size ball showcase with rarity tabs, left/right arrows, and horizontal swiping. Four separate cards show the current standard hit damage, volley size, special ability, and collection strength. Owned, equipped, and locked states share the same screen; locked entries show their real price and campaign unlock condition, with purchases handled by the Shop.
+
+The showcase displays the existing rarity tier and campaign attack milestone. There is no separate per-ball upgrade level or upgrade purchase. Straight/Spread choices and equipping use the game's saved settings. The layout adapts to portrait and wide displays, and optional movement respects Reduce Motion.
+
 ## Boss encounters
 
 Each world ends with a guarded boss behind the complete stage formation. Worlds 1–3 have two skull locks, worlds 4–6 have three, and worlds 7–9 have four. Break every lock before the boss can take damage. Defeating the boss does not erase remaining stage objectives.
@@ -120,7 +126,7 @@ Paths in the table after `atlases/` share the `app/src/main/assets/` prefix.
 
 <!-- FILE_INDEX_START -->
 <details>
-<summary><strong>Complete public file index · 487 files</strong></summary>
+<summary><strong>Complete public file index · 490 files</strong></summary>
 
 <details>
 <summary>Android resources / mipmap-anydpi-v26 · 2</summary>
@@ -324,16 +330,19 @@ Paths in the table after `atlases/` share the `app/src/main/assets/` prefix.
 </details>
 
 <details>
-<summary>Code / ui · 34</summary>
+<summary>Code / ui · 37</summary>
 
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/AppUpdateScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/AppUpdateScreen.kt) — App Update Screen logic for game screens and controls.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/BagScrollMath.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BagScrollMath.kt) — Bag Scroll Math logic for game screens and controls.
-- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerDetailScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerDetailScreen.kt) — Ball Power Detail Screen logic for game screens and controls.
-- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerPreview.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerPreview.kt) — Ball Power Preview logic for game screens and controls.
+- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerDetailScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerDetailScreen.kt) — Routes Shop previews into the shared ball showcase.
+- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerPreview.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerPreview.kt) — Reads actual ball count, damage, and campaign attack milestones.
+- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseArt.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseArt.kt) — Managed rounded surfaces and transparent platform effects.
+- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseLayout.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseLayout.kt) — Shared portrait/wide bounds for drawing and touch targets.
+- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseScreen.kt) — Shared ball showcase, state-aware controls, and browsing.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/CharmTutorial.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CharmTutorial.kt) — Charm Tutorial logic for game screens and controls.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/CloudSaveScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CloudSaveScreen.kt) — Cloud Save Screen logic for game screens and controls.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/CosmeticUnlockRevealScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CosmeticUnlockRevealScreen.kt) — Cosmetic Unlock Reveal Screen logic for game screens and controls.
-- [`app/src/main/java/com/example/brick_breaker_ball/ui/CustomizationScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CustomizationScreen.kt) — Customization Screen logic for game screens and controls.
+- [`app/src/main/java/com/example/brick_breaker_ball/ui/CustomizationScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CustomizationScreen.kt) — Routes the collection, Bag, and paused game into the ball showcase.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/DailyRewardsScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/DailyRewardsScreen.kt) — Daily Rewards Screen logic for game screens and controls.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/ForgeUiPalette.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/ForgeUiPalette.kt) — Forge Ui Palette logic for game screens and controls.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/ForgeUiRenderer.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/ForgeUiRenderer.kt) — Forge Ui Renderer logic for game screens and controls.
