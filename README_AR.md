@@ -54,9 +54,9 @@
 
 ### عرض الكرات
 
-تفتح BALLS شاشة عرض كبيرة للكرة، مع تصنيفات الندرة وأسهم التنقل والسحب الأفقي. تعرض أربع بطاقات مستقلة ضرر الضربة العادية وعدد الكرات والقدرة الخاصة وقوة الكرة في المجموعة. تشترك حالات الكرة المملوكة والمجهزة والمقفلة في الشاشة نفسها؛ وتظهر للكرة المقفلة تكلفتها الفعلية وشرط فتحها بالتقدم، بينما تتم المشتريات من المتجر.
+تستخدم BALLS الحجر المحفور والخشب والزخارف الخيالية نفسها الموجودة في المتجر وحقيبة ORBS. تظهر الكرة بحجم كبير فوق حلقة إضاءة شفافة، مع تبويبات الندرة والأسهم والسحب الأفقي. تعرض صينية واحدة مختصرة ضرر الضربة العادية و**إجمالي** كرات الدفعة والقدرة الخاصة. تُوسم مكافآت النقاط بكلمة SCORE، بينما شرائح القوة تقييم للكرة داخل المجموعة وليست مستوى تطوير.
 
-تعرض الشاشة درجة الندرة وموعد زيادة هجوم الحملة الموجودين فعليًا. لا يوجد مستوى تطوير مستقل أو عملية شراء تطوير لكل كرة. تُحفظ خيارات التجهيز والإطلاق المستقيم أو المنتشر من خلال إعدادات اللعبة الحالية. تتكيف الواجهة مع الشاشات الطولية والعريضة، وتحترم الحركة الاختيارية إعداد Reduce Motion.
+اضغط على الإحصائية أو شرائح القوة أو شريط هجوم الحملة أو **؟** لعرض الشرح الكامل. يظهر زر رئيسي واحد حسب الحالة: EQUIP أو EQUIPPED أو UNLOCK، مع السعر الفعلي وبديل الفتح بالتقدم إن وجد. يفتح UNLOCK الكرة نفسها في المتجر من دون إنفاق عملات داخل هذه الشاشة. تتوفر أزرار مصورة للإطلاق المستقيم والمنتشر للكرات التي تدعمه؛ والضغط المطول عليها يوضح معناها. تبقى بيانات الحفظ والملكية والأسعار ومعادلات القتال كما هي، ولا يوجد شراء تطوير مستقل لكل كرة. يدعم التوزيع الشاشات الطولية والعريضة والمناطق الآمنة وإعداد Reduce Motion.
 
 ## مواجهات الزعماء
 
@@ -336,9 +336,9 @@
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/BagScrollMath.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BagScrollMath.kt) — منطق Bag Scroll Math ضمن شاشات اللعبة والتحكم.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerDetailScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerDetailScreen.kt) — ربط معاينة المتجر بشاشة عرض الكرة الموحدة.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerPreview.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerPreview.kt) — قراءة العدد والضرر الحقيقيين ومواعيد زيادة هجوم الحملة.
-- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseArt.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseArt.kt) — أسطح الواجهة المستديرة ومؤثرات المنصة الشفافة وإدارة مواردها.
+- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseArt.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseArt.kt) — خامات الأطلس الخيالية المشتركة وإضاءة المنصة الشفافة.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseLayout.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseLayout.kt) — توزيع الواجهة ومساحات اللمس للشاشات الطولية والعريضة.
-- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseScreen.kt) — عرض الكرة الموحد وحالات الملكية وأزرار التصفح.
+- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseScreen.kt) — عرض الكرة الخيالي والإحصائيات المختصرة والشرح الاختياري والتحكم المحفوظ.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/CharmTutorial.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CharmTutorial.kt) — منطق Charm Tutorial ضمن شاشات اللعبة والتحكم.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/CloudSaveScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CloudSaveScreen.kt) — منطق Cloud Save Screen ضمن شاشات اللعبة والتحكم.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/CosmeticUnlockRevealScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CosmeticUnlockRevealScreen.kt) — منطق Cosmetic Unlock Reveal Screen ضمن شاشات اللعبة والتحكم.

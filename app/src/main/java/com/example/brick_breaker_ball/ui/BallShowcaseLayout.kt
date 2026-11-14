@@ -2,7 +2,7 @@ package com.example.brick_breaker_ball.ui
 
 import com.badlogic.gdx.math.Rectangle
 
-/** One set of render and touch bounds, recalculated only when the usable viewport changes. */
+/** Shared render/touch bounds. A single equipment tray replaces stacked information cards. */
 internal class BallShowcaseLayout {
     val page = Rectangle()
     val header = Rectangle()
@@ -13,99 +13,78 @@ internal class BallShowcaseLayout {
     val hero = Rectangle()
     val previous = Rectangle()
     val next = Rectangle()
-    val status = Rectangle()
     val ball = Rectangle()
     val pedestal = Rectangle()
     val name = Rectangle()
     val identity = Rectangle()
     val position = Rectangle()
-    val ability = Rectangle()
+    val tray = Rectangle()
     val progression = Rectangle()
+    val unlockHint = Rectangle()
     val primary = Rectangle()
     val straight = Rectangle()
     val spread = Rectangle()
+    val infoPanel = Rectangle()
+    val infoClose = Rectangle()
+    val infoBody = Rectangle()
     val tabs = Array(4) { Rectangle() }
-    val stats = Array(4) { Rectangle() }
-    val statsRegion = Rectangle()
-    val modesRegion = Rectangle()
+    val stats = Array(3) { Rectangle() }
     var scale = 1f
         private set
     var wide = false
         private set
-    private var lastLeft = Float.NaN
-    private var lastBottom = Float.NaN
-    private var lastWidth = Float.NaN
-    private var lastHeight = Float.NaN
+    private val last = FloatArray(4) { Float.NaN }
+    private var lastModes: Boolean? = null
 
-    fun update(left: Float, bottom: Float, width: Float, height: Float) {
-        if (left == lastLeft && bottom == lastBottom && width == lastWidth && height == lastHeight) return
-        lastLeft = left; lastBottom = bottom; lastWidth = width; lastHeight = height
+    fun update(left: Float, bottom: Float, width: Float, height: Float, showModes: Boolean) {
+        if (last[0] == left && last[1] == bottom && last[2] == width && last[3] == height && lastModes == showModes) return
+        last[0] = left; last[1] = bottom; last[2] = width; last[3] = height; lastModes = showModes
         wide = width / height.coerceAtLeast(1f) >= 1.12f
-        val designWidth = if (wide) 1440f else 860f
-        val designHeight = if (wide) 900f else 1552f
-        scale = minOf(width / designWidth, height / designHeight).coerceAtLeast(.01f)
-        val x = left + (width - designWidth * scale) / 2f
-        val y = bottom + (height - designHeight * scale) / 2f
-        fun place(rect: Rectangle, px: Float, py: Float, w: Float, h: Float) {
-            rect.set(x + px * scale, y + py * scale, w * scale, h * scale)
-        }
-        place(page, 0f, 0f, designWidth, designHeight)
+        val dw = if (wide) 1440f else 860f
+        val dh = if (wide) 900f else 1552f
+        scale = minOf(width / dw, height / dh).coerceAtLeast(.01f)
+        val x = left + (width - dw * scale) / 2f
+        val y = bottom + (height - dh * scale) / 2f
+        fun place(rect: Rectangle, px: Float, py: Float, w: Float, h: Float) = rect.set(x + px * scale, y + py * scale, w * scale, h * scale)
+        place(page, 0f, 0f, dw, dh)
         if (wide) {
-            place(header, 112f, 806f, 550f, 66f)
-            place(back, 24f, 806f, 72f, 66f)
-            place(help, 1344f, 806f, 72f, 66f)
-            place(coins, 868f, 806f, 214f, 66f)
-            place(gems, 1098f, 806f, 214f, 66f)
-            tabs.forEachIndexed { i, rect -> place(rect, 24f + i * 352f, 734f, 336f, 60f) }
-            place(hero, 24f, 24f, 664f, 690f)
-            place(ability, 712f, 334f, 704f, 118f)
-            place(progression, 712f, 238f, 704f, 80f)
-            place(primary, 712f, 126f, 704f, 96f)
-            place(straight, 712f, 24f, 344f, 86f)
-            place(spread, 1072f, 24f, 344f, 86f)
-            stats.forEachIndexed { i, rect ->
-                place(rect, 712f + (i % 2) * 360f, 596f - (i / 2) * 134f, 344f, 118f)
-            }
+            place(back, 24f, 802f, 80f, 80f); place(header, 122f, 794f, 658f, 96f); place(help, 1336f, 802f, 80f, 80f)
+            place(coins, 824f, 808f, 226f, 64f); place(gems, 1074f, 808f, 226f, 64f)
+            tabs.forEachIndexed { i, r -> place(r, 24f + i * 352f, 708f, 336f, 76f) }
+            place(hero, 24f, 24f, 664f, 664f); place(tray, 712f, 284f, 704f, 404f)
+            stats.forEachIndexed { i, r -> place(r, 744f + i * 216f, 458f, 208f, 198f) }
+            place(progression, 800f, 324f, 528f, 64f); place(unlockHint, 800f, 232f, 528f, 36f)
+            place(primary, 712f, 106f, if (showModes) 464f else 704f, 104f)
+            place(straight, 1192f, 114f, 104f, 88f); place(spread, 1312f, 114f, 104f, 88f)
+            place(infoPanel, 250f, 114f, 940f, 652f)
         } else {
-            place(header, 112f, 1468f, 632f, 64f)
-            place(back, 20f, 1468f, 76f, 64f)
-            place(help, 764f, 1468f, 76f, 64f)
-            place(coins, 20f, 1398f, 402f, 56f)
-            place(gems, 438f, 1398f, 402f, 56f)
-            tabs.forEachIndexed { i, rect -> place(rect, 20f + i * 209f, 1316f, 193f, 64f) }
-            place(hero, 20f, 742f, 820f, 554f)
-            place(ability, 20f, 370f, 820f, 132f)
-            place(progression, 20f, 248f, 820f, 106f)
-            place(primary, 20f, 128f, 820f, 104f)
-            place(straight, 20f, 20f, 402f, 92f)
-            place(spread, 438f, 20f, 402f, 92f)
-            stats.forEachIndexed { i, rect -> place(rect, 20f + i * 209f, 518f, 193f, 208f) }
+            place(back, 20f, 1460f, 84f, 84f); place(header, 114f, 1452f, 632f, 96f); place(help, 756f, 1460f, 84f, 84f)
+            place(coins, 140f, 1380f, 282f, 64f); place(gems, 438f, 1380f, 282f, 64f)
+            tabs.forEachIndexed { i, r -> place(r, 20f + i * 209f, 1288f, 193f, 76f) }
+            place(hero, 20f, 640f, 820f, 628f); place(tray, 20f, 238f, 820f, 382f)
+            stats.forEachIndexed { i, r -> place(r, 60f + i * 252f, 384f, 236f, 206f) }
+            place(progression, 152f, 272f, 556f, 64f); place(unlockHint, 152f, 176f, 556f, 40f)
+            place(primary, if (showModes) 20f else 80f, 60f, if (showModes) 580f else 700f, 104f)
+            place(straight, 616f, 68f, 104f, 88f); place(spread, 736f, 68f, 104f, 88f)
+            place(infoPanel, 40f, 310f, 780f, 932f)
         }
-        // The stage remains large on both layouts; all controls use the exact same bounds for input.
         val s = scale
-        previous.set(hero.x + 12f * s, hero.y + hero.height * .42f, 76f * s, 112f * s)
+        val diameter = 360f * s
+        ball.set(hero.x + (hero.width - diameter) / 2f, hero.y + hero.height * .60f - diameter / 2f, diameter, diameter)
+        pedestal.set(hero.x + hero.width / 2f - 224f * s, ball.y - 42f * s, 448f * s, 100f * s)
+        previous.set(hero.x + 12f * s, ball.y + diameter / 2f - 56f * s, 76f * s, 112f * s)
         next.set(hero.x + hero.width - 88f * s, previous.y, previous.width, previous.height)
-        status.set(hero.x + hero.width / 2f - 142f * s, hero.y + hero.height - 70f * s, 284f * s, 46f * s)
-        val diameter = if (wide) 326f else 310f
-        ball.set(hero.x + (hero.width - diameter * s) / 2f,
-            hero.y + hero.height * .49f - diameter * s / 2f + 40f * s, diameter * s, diameter * s)
-        pedestal.set(hero.x + hero.width / 2f - 224f * s, ball.y - 42f * s, 448f * s, 112f * s)
-        name.set(hero.x + 38f * s, hero.y + 76f * s, hero.width - 76f * s, 70f * s)
-        identity.set(name.x, hero.y + 45f * s, name.width, 30f * s)
-        position.set(name.x, hero.y + 12f * s, name.width, 28f * s)
-        val statLeft = stats.minOf { it.x }
-        val statBottom = stats.minOf { it.y }
-        statsRegion.set(statLeft, statBottom, stats.maxOf { it.x + it.width } - statLeft,
-            stats.maxOf { it.y + it.height } - statBottom)
-        modesRegion.set(straight.x, straight.y, spread.x + spread.width - straight.x, straight.height)
+        name.set(hero.x + 38f * s, hero.y + 106f * s, hero.width - 76f * s, 76f * s)
+        identity.set(hero.x + hero.width / 2f - 150f * s, hero.y + 64f * s, 300f * s, 30f * s)
+        position.set(hero.x + hero.width / 2f - 100f * s, hero.y + 16f * s, 200f * s, 30f * s)
+        infoClose.set(infoPanel.x + infoPanel.width - 96f * s, infoPanel.y + infoPanel.height - 100f * s, 72f * s, 72f * s)
+        infoBody.set(infoPanel.x + 56f * s, infoPanel.y + 62f * s, infoPanel.width - 112f * s, infoPanel.height - 216f * s)
     }
 
     fun contains(rect: Rectangle, x: Float, y: Float): Boolean {
-        // Wide layouts already have large physical controls. Portrait arrows need extra width too.
-        val minimum = (if (wide) 60f else 112f) * scale
-        val extraX = ((minimum - rect.width) / 2f).coerceAtLeast(0f)
-        val extraY = ((minimum - rect.height) / 2f).coerceAtLeast(0f)
-        return x >= rect.x - extraX && x <= rect.x + rect.width + extraX &&
-            y >= rect.y - extraY && y <= rect.y + rect.height + extraY
+        val minimum = (if (wide) 88f else 120f) * scale
+        val ex = ((minimum - rect.width) / 2f).coerceAtLeast(0f)
+        val ey = ((minimum - rect.height) / 2f).coerceAtLeast(0f)
+        return x >= rect.x - ex && x <= rect.x + rect.width + ex && y >= rect.y - ey && y <= rect.y + rect.height + ey
     }
 }

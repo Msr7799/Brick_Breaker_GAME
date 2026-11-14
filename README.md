@@ -54,9 +54,9 @@ The power rating is separate from campaign attack growth and equipped Orb effect
 
 ### Ball showcase
 
-BALLS opens a full-size ball showcase with rarity tabs, left/right arrows, and horizontal swiping. Four separate cards show the current standard hit damage, volley size, special ability, and collection strength. Owned, equipped, and locked states share the same screen; locked entries show their real price and campaign unlock condition, with purchases handled by the Shop.
+BALLS uses the same carved stone, wood, and fantasy ornaments as the Shop and Orb bag. A large ball sits above a transparent light ring, with rarity tabs, arrows, and horizontal swiping. One compact tray shows standard hit damage, **total** volley size, and the special ability. Score rewards are explicitly labeled SCORE; strength pips are a collection rating, not an upgrade level.
 
-The showcase displays the existing rarity tier and campaign attack milestone. There is no separate per-ball upgrade level or upgrade purchase. Straight/Spread choices and equipping use the game's saved settings. The layout adapts to portrait and wide displays, and optional movement respects Reduce Motion.
+Tap a stat, strength pips, the campaign attack bar, or **?** for the full explanation. A single main action shows EQUIP, EQUIPPED, or UNLOCK, with the actual price and any campaign unlock alternative. UNLOCK opens the focused Shop without spending currency on this screen. Supported balls also offer icon buttons for Straight/Spread; hold either for help. Existing saves, ownership, prices, and combat formulas are preserved, with no individual ball upgrade purchase. Portrait/wide layouts respect safe areas and Reduce Motion.
 
 ## Boss encounters
 
@@ -336,9 +336,9 @@ Paths in the table after `atlases/` share the `app/src/main/assets/` prefix.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/BagScrollMath.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BagScrollMath.kt) — Bag Scroll Math logic for game screens and controls.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerDetailScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerDetailScreen.kt) — Routes Shop previews into the shared ball showcase.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerPreview.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallPowerPreview.kt) — Reads actual ball count, damage, and campaign attack milestones.
-- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseArt.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseArt.kt) — Managed rounded surfaces and transparent platform effects.
+- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseArt.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseArt.kt) — Shared fantasy atlas materials and transparent platform light.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseLayout.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseLayout.kt) — Shared portrait/wide bounds for drawing and touch targets.
-- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseScreen.kt) — Shared ball showcase, state-aware controls, and browsing.
+- [`app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/BallShowcaseScreen.kt) — Fantasy ball showcase, compact stats, optional explanations, and saved controls.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/CharmTutorial.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CharmTutorial.kt) — Charm Tutorial logic for game screens and controls.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/CloudSaveScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CloudSaveScreen.kt) — Cloud Save Screen logic for game screens and controls.
 - [`app/src/main/java/com/example/brick_breaker_ball/ui/CosmeticUnlockRevealScreen.kt`](app/src/main/java/com/example/brick_breaker_ball/ui/CosmeticUnlockRevealScreen.kt) — Cosmetic Unlock Reveal Screen logic for game screens and controls.

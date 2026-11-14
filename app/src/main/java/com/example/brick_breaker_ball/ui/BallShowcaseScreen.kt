@@ -21,7 +21,7 @@ import com.example.brick_breaker_ball.cosmetics.VolleyBallSelection
 import com.example.brick_breaker_ball.gameplay.GameplayMode
 import kotlin.math.abs
 
-/** Shared collection and Shop inspection surface; all game rules remain in the existing catalogs. */
+/** Shared collection and Shop inspection; rules, prices and saves remain in their existing owners. */
 open class BallShowcaseScreen(
     game: BrickBreakerGame,
     initialBallSpriteName: String? = null,
@@ -33,9 +33,10 @@ open class BallShowcaseScreen(
 ) : ForgeScreen(game) {
     private data class Entry(val ball: BallSpriteDefinition, val offer: BallCollectionOffer,
                              val profile: BallAbilityProfile)
+    private enum class InfoTopic { OVERVIEW, DAMAGE, BALLS, ABILITY, POWER, CAMPAIGN, SHOT }
     private val entries = VolleyBallSelection.inDisplayOrder(game.assets.cosmetics.balls, mode)
         .map { Entry(it, BallCollectionCatalog.offer(it), BallAbilityCatalog.profileForBall(it)) }
-    private val groups = BallRarity.entries.map { rarity -> entries.filter { it.offer.rarity == rarity } }
+    private val groups = BallRarity.entries.map { value -> entries.filter { it.offer.rarity == value } }
     private val remembered = IntArray(4)
     private val initial = entries.firstOrNull { it.ball.spriteName == initialBallSpriteName }
         ?: entries.firstOrNull { VolleyBallSelection.isEquipped(game.progress.settings, it.ball) }
@@ -45,27 +46,22 @@ open class BallShowcaseScreen(
     private val current: Entry get() = groups[rarity.ordinal][index]
     private val preview = BallPowerPreview(game, returnToPausedGame)
     private val layout = BallShowcaseLayout()
-    private val art = BallShowcaseArt()
-    private val help = VisualHelpOverlay()
-    private val background = TextureRegion(game.assets.splash)
-    private val heroBackground = TextureRegion(game.assets.splash)
+    private val art = BallShowcaseArt(game.assets)
     private val measure = GlyphLayout()
     private val scratch = Rectangle()
-    private val pageBounds = Rectangle()
-    private val white = Color.valueOf("F2F4FFFF")
-    private val muted = Color.valueOf("B4C2D8FF")
-    private val ink = Color.valueOf("111827FF")
-    private val face = Color.valueOf("283B59FF")
-    private val border = Color.valueOf("516783FF")
-    private val deep = Color.valueOf("18263EFF")
-    private val positive = Color.valueOf("BBEF91FF")
-    private val accents = arrayOf(Color.valueOf("8DDAF0FF"), Color.valueOf("91ACFFFF"),
-        Color.valueOf("FFD286FF"), Color.valueOf("D7A8FFFF"))
+    private val cream = Color.valueOf("FFF0CCFF")
+    private val muted = Color.valueOf("D1BD99FF")
+    private val gold = Color.valueOf("F4CD78FF")
+    private val track = Color.valueOf("3B3027FF")
+    private val positive = Color.valueOf("D5F1A1FF")
+    private val accents = arrayOf(Color.valueOf("D5CBB4FF"), Color.valueOf("89C7D1FF"),
+        Color.valueOf("F4C46FFF"), Color.valueOf("CF9FE2FF"))
     private val accent: Color get() = accents[rarity.ordinal]
     private val abilityLights = arrayOf(Color.valueOf("9DC9FFFF"), Color.valueOf("FFAC59FF"),
         Color.valueOf("83CFFFFF"), Color.valueOf("B8D9F0FF"), Color.valueOf("B594FFFF"),
         Color.valueOf("FFD589FF"), Color.valueOf("83E7DFFF"))
     private val ambient: Color get() = abilityLights[current.profile.kind.ordinal]
+    private val arrowRegion = game.assets.boards2.requireRegion("orange_back_arrow_button")
     private val icons = mapOf(
         "balls" to game.assets.visualUiArt.region("balls"),
         "damage" to game.assets.visualUiArt.region("damage"),
@@ -85,22 +81,21 @@ open class BallShowcaseScreen(
     private var ballRegion: TextureRegion? = null
     private var owned = false
     private var equipped = false
-    private var collectionText = ""
     private var positionText = ""
-    private var identityText = ""
-    private var statusText = ""
-    private var requirement = ""
+    private var ballName = ""
+    private var unlockText = ""
     private var priceText = ""
-    private var abilityText = ""
-    private var extraAbility = ""
     private var primaryText = ""
-    private var primaryCaption = ""
-    private var nextBoostText = ""
-    private val statTitles = arrayOf("HIT DAMAGE", "VOLLEY SIZE", "SPECIAL", "BALL POWER")
-    private val statIcons = arrayOf("damage", "balls", "blast", "star")
-    private val statValues = Array(4) { "" }
-    private val statCaptions = Array(4) { "" }
+    private var campaignText = ""
+    private var campaignMultiplierText = ""
+    private val statValues = Array(3) { "" }
+    private val statUnits = arrayOf("HIT", "TOTAL", "")
+    private var abilityCadence = ""
+    private var abilityText = ""
     private var specialIcon = "blast"
+    private var infoTopic: InfoTopic? = null
+    private var informationTitle = ""
+    private var informationBody = ""
     private var cachedCoins = -1
     private var cachedGems = -1
     private var coinsText = ""
@@ -113,13 +108,14 @@ open class BallShowcaseScreen(
     private var touchStartY = 0f
     private var heroGesture = false
     private var touchDragged = false
+    private var touchHeld = 0f
 
     init { remembered[rarity.ordinal] = index; refresh() }
 
     override fun show() {
         refresh()
         installMouseWheelHandler { amount ->
-            if (help.active || amount == 0f) false else { browse(if (amount > 0f) 1 else -1); true }
+            if (infoTopic != null || amount == 0f) false else { browse(if (amount > 0f) 1 else -1); true }
         }
     }
 
@@ -137,58 +133,40 @@ open class BallShowcaseScreen(
         owned = available(entry)
         equipped = owned && VolleyBallSelection.isEquipped(game.progress.settings, entry.ball)
         ballRegion = game.assets.cosmetics.ballRegion(entry.ball)
-        collectionText = "${entries.count(::available)} / ${entries.size} OWNED"
-        positionText = "${index + 1} / ${groups[rarity.ordinal].size}  |  SWIPE TO EXPLORE"
-        identityText = "${rarity.name}  |  RARITY TIER ${p.tier} / 4"
-        statusText = when { equipped -> "EQUIPPED"; owned -> "OWNED"; else -> "LOCKED" }
-        priceText = when {
-            entry.offer.coins != null -> "${entry.offer.coins} COINS"
-            entry.offer.gems != null -> "${entry.offer.gems} GEMS"
-            else -> "CAMPAIGN REWARD"
-        }
-        requirement = entry.offer.stage?.let { "COMPLETE STAGE $it TO UNLOCK" }
-            ?: if (entry.offer.playProductId != null) "ALSO AVAILABLE WITH GOOGLE PLAY" else "PERMANENT BALL UNLOCK"
-        primaryText = when { equipped -> "EQUIPPED"; owned -> "EQUIP BALL"; canShop() -> "OPEN IN SHOP"; else -> "COMPLETE STAGE ${entry.offer.stage}" }
-        primaryCaption = when { equipped -> "READY FOR YOUR NEXT VOLLEY"; owned -> "USE THIS BALL"; canShop() -> priceText; else -> "EARN THIS BALL BY PLAYING" }
+        ballName = entry.ball.name.uppercase()
+        positionText = "${index + 1} / ${groups[rarity.ordinal].size}"
+        priceText = (entry.offer.coins ?: entry.offer.gems)?.toString() ?: ""
+        unlockText = if (!owned && entry.offer.stage != null)
+            "${if (canShop()) "OR " else ""}STAGE ${entry.offer.stage}" else ""
+        primaryText = when { equipped -> "EQUIPPED"; owned -> "EQUIP"; canShop() -> "UNLOCK"; else -> "STAGE ${entry.offer.stage}" }
         statValues[0] = preview.damage(p).toString()
         statValues[1] = preview.balls(p).toString()
-        statValues[3] = "${p.baseHitDamage} / 12"
-        statCaptions[0] = "STAGE ${preview.stageNumber}"
-        statCaptions[1] = "+${p.startingBalls} FROM BALL"
-        statCaptions[3] = "POWER RATING"
+        abilityText = p.description
+        abilityCadence = ""
         when (p.kind) {
             BallAbilityKind.IMPACT_CORE -> {
-                statValues[2] = "+${p.scoreBonusPercent}%"; statCaptions[2] = "BREAK SCORE"; specialIcon = "star"
-                abilityText = "Each brick destroyed grants +${p.scoreBonusPercent}% score."
+                statValues[2] = "+${p.scoreBonusPercent}%"; statUnits[2] = "SCORE"; specialIcon = "star"
             }
-            BallAbilityKind.INFERNO_BURST -> {
-                statValues[2] = "${p.triggerEveryHits} HITS"; statCaptions[2] = "FIRE SPLASH"; specialIcon = "fire"
-                abilityText = "Every ${p.triggerEveryHits} direct hits, a charged fire hit splashes nearby bricks."
-            }
-            BallAbilityKind.ARC_CHAIN -> {
-                statValues[2] = "${p.triggerEveryHits} HITS"; statCaptions[2] = "CHAIN STRIKE"; specialIcon = "blast"
-                abilityText = "Every ${p.triggerEveryHits} direct hits, strike ${p.chainTargets} nearby breakable brick."
+            BallAbilityKind.INFERNO_BURST, BallAbilityKind.ARC_CHAIN -> {
+                statValues[2] = p.triggerEveryHits.toString(); statUnits[2] = "HITS"
+                specialIcon = if (p.kind == BallAbilityKind.INFERNO_BURST) "fire" else "blast"
             }
             BallAbilityKind.ARMOR_BREAKER, BallAbilityKind.VOID_PHASE -> {
-                statValues[2] = "+${p.bonusDamage}"; statCaptions[2] = "EVERY ${p.triggerEveryHits} HITS"
+                statValues[2] = "+${p.bonusDamage}"; statUnits[2] = "BASE HIT"
+                abilityCadence = "${p.triggerEveryHits} HITS"
                 specialIcon = if (p.kind == BallAbilityKind.VOID_PHASE) "orb" else "shield"
-                abilityText = "Every ${p.triggerEveryHits} direct hits, add +${p.bonusDamage} base damage to the struck brick."
             }
             BallAbilityKind.FORTUNE_CORE -> {
-                statValues[2] = "+${p.fortuneBonusScore}"; statCaptions[2] = "${p.fortuneEveryBreaks} BRICKS"; specialIcon = "coin"
-                abilityText = "Every ${p.fortuneEveryBreaks} bricks destroyed, earn +${p.fortuneBonusScore} score."
+                statValues[2] = "+${p.fortuneBonusScore}"; statUnits[2] = "SCORE"
+                abilityCadence = "${p.fortuneEveryBreaks} BRICKS"; specialIcon = "star"
             }
             BallAbilityKind.MOMENTUM_CORE -> {
-                statValues[2] = "+1 HIT"; statCaptions[2] = "PER ${p.ballsPerDamage} BALLS"; specialIcon = "balls"
-                abilityText = "Adds one hit damage for every ${p.ballsPerDamage} balls in the volley."
+                statValues[2] = "+1"; statUnits[2] = "BASE HIT"
+                abilityCadence = "${p.ballsPerDamage} BALLS"; specialIcon = "balls"
             }
         }
-        extraAbility = "MASTERY +${p.masteryScorePercent}% SCORE" +
-            if (p.openingBreakerEveryVolleys > 0) "  |  BREAKER EVERY ${p.openingBreakerEveryVolleys} VOLLEYS" else ""
-        nextBoostText = preview.nextAttackStage?.let {
-            "${preview.campaignAttack}x > ${preview.campaignAttack + 1}x AT STAGE $it"
-        } ?: "${preview.campaignAttack}x | FINAL CAMPAIGN BOOST REACHED"
-        statIcons[2] = specialIcon
+        campaignText = preview.nextAttackStage?.let { "${preview.stageNumber} / $it" } ?: "MAX"
+        campaignMultiplierText = "${preview.campaignAttack}x"
     }
 
     private fun canShop(): Boolean = current.offer.coins != null || current.offer.gems != null || current.offer.playProductId != null
@@ -197,8 +175,7 @@ open class BallShowcaseScreen(
         val target = (index + direction).coerceIn(0, groups[rarity.ordinal].lastIndex)
         if (target == index) return
         index = target; remembered[rarity.ordinal] = index
-        transitionDirection = direction.toFloat(); selectionAge = 0f
-        refresh()
+        transitionDirection = direction.toFloat(); selectionAge = 0f; refresh()
     }
 
     private fun selectRarity(value: BallRarity) {
@@ -213,206 +190,209 @@ open class BallShowcaseScreen(
         val dt = delta.coerceIn(0f, .05f)
         if (!reduced) clock += dt
         selectionAge = if (reduced) 1f else (selectionAge + dt / .24f).coerceAtMost(1f)
-        help.update(dt, reduced)
         val insets = safeInsets
         layout.update(visibleLeft + insets.left + 16f, visibleBottom + insets.bottom + 12f,
             (visibleWidth - insets.left - insets.right - 32f).coerceAtLeast(1f),
-            (visibleHeight - insets.top - insets.bottom - 24f).coerceAtLeast(1f))
-        pageBounds.set(visibleLeft, visibleBottom, visibleWidth, visibleHeight)
-        beginStaticBackground(background, .80f)
+            (visibleHeight - insets.top - insets.bottom - 24f).coerceAtLeast(1f), current.profile.shotgunAvailable)
+        beginStaticBackground(game.assets.worldMapImage(1, mode), .64f)
         drawHeader()
         drawHero(reduced)
+        art.tray(batch, layout.tray, layout.scale)
         drawStats()
-        drawAbility()
         drawProgression()
         drawActions()
-        help.focus.set(when (help.page) { 0 -> layout.hero; 1 -> layout.statsRegion; 2 -> layout.modesRegion; else -> layout.primary })
-        help.draw(batch, game.assets, pageBounds, reduced, balls = preview.balls(current.profile),
-            damage = preview.damage(current.profile), spreadAvailable = current.profile.shotgunAvailable)
+        if (infoTopic != null) drawInformation()
         end()
         handleInput()
     }
 
     private fun drawHeader() {
-        panel(layout.back, deep, border, pressed(layout.back))
-        chevron(layout.back, false, true)
-        text(game.assets.titleFont, "BALLS", part(layout.header, 0f, .28f, 1f, .72f), 47f, white, Align.left)
-        text(game.assets.hudLabelFont, collectionText, part(layout.header, 0f, -.02f, 1f, .30f), 21f, muted, Align.left)
-        icon("help", layout.help, .84f)
+        arrow(layout.back, false, true)
+        art.title(batch, layout.header, layout.scale)
+        text(game.assets.titleFont, "BALLS", part(layout.header, .10f, .13f, .80f, .74f), 47f, cream)
+        icon("help", layout.help, if (pressed(layout.help)) .75f else 1f)
         if (cachedCoins != game.economy.coins) { cachedCoins = game.economy.coins; coinsText = cachedCoins.toString() }
         if (cachedGems != game.economy.gems) { cachedGems = game.economy.gems; gemsText = cachedGems.toString() }
-        wallet(layout.coins, "coin", coinsText)
-        wallet(layout.gems, "gem", gemsText)
+        wallet(layout.coins, "coin", coinsText); wallet(layout.gems, "gem", gemsText)
         BallRarity.entries.forEach { value ->
-            val rect = layout.tabs[value.ordinal]
-            val selected = value == rarity
-            panel(rect, if (selected) face else deep, if (selected) accents[value.ordinal] else border, pressed(rect))
-            text(game.assets.hudLabelFont, value.name, rect, if (layout.wide) 26f else 23f,
-                if (selected) accents[value.ordinal] else muted)
+            val rect = layout.tabs[value.ordinal]; val selected = value == rarity
+            art.stone(batch, rect, layout.scale, pressed(rect), selected)
+            text(game.assets.hudLabelFont, value.name, part(rect, .07f, .20f, .86f, .65f),
+                if (layout.wide) 26f else 23f, if (selected) cream else muted)
+            if (selected) {
+                val mark = part(rect, .24f, .13f, .52f, .035f)
+                batch.color = accents[value.ordinal]
+                batch.draw(game.assets.solidUiRegion, mark.x, mark.y, mark.width, mark.height)
+                batch.color = Color.WHITE
+            }
         }
     }
 
     private fun wallet(rect: Rectangle, key: String, value: String) {
-        panel(rect, deep, border)
+        art.stone(batch, rect, layout.scale)
         icon(key, part(rect, .05f, .15f, .20f, .70f))
-        text(game.assets.hudValueFont, value, part(rect, .28f, .05f, .66f, .90f), 29f, white)
+        text(game.assets.hudValueFont, value, part(rect, .28f, .12f, .63f, .76f), 29f, cream)
     }
 
     private fun drawHero(reduced: Boolean) {
-        panel(layout.hero, deep, accent)
-        // Reuse the forest illustration, cropped to the hero area. It stays behind the ball.
-        val h = layout.hero
-        val margin = 20f * layout.scale
-        val targetRatio = (h.width - margin * 2f) / (h.height - margin * 2f)
-        val sourceWidth = game.assets.splash.width
-        val sourceHeight = game.assets.splash.height
-        val cropHeight = minOf(sourceHeight, (sourceWidth / targetRatio).toInt())
-        val cropWidth = minOf(sourceWidth, (sourceHeight * targetRatio).toInt())
-        heroBackground.setRegion((sourceWidth - cropWidth) / 2, (sourceHeight - cropHeight) / 2, cropWidth, cropHeight)
-        batch.setColor(.31f, .38f, .53f, .57f)
-        batch.draw(heroBackground, h.x + margin, h.y + margin, h.width - margin * 2f, h.height - margin * 2f)
-        batch.setColor(ambient.r, ambient.g, ambient.b, .17f)
-        batch.draw(game.assets.softGlowRegion, h.x + h.width * .09f, h.y + h.height * .14f, h.width * .82f, h.height * .82f)
-        batch.color = Color.WHITE
-        // Transparent radial light and an elliptical platform; no opaque glow atlas or square shadow.
         val ball = layout.ball
         val reveal = 1f - (1f - selectionAge) * (1f - selectionAge)
         val drift = if (reduced) 0f else MathUtils.sin(clock * 1.8f) * 5f * layout.scale
         val slide = (1f - reveal) * transitionDirection * 42f * layout.scale
-        batch.setColor(ambient.r, ambient.g, ambient.b, .22f)
-        batch.draw(game.assets.softGlowRegion, ball.x - ball.width * .27f, ball.y - ball.height * .27f,
-            ball.width * 1.54f, ball.height * 1.54f)
+        // Smooth alpha light only: never the opaque atlas glow that produced square shadows.
+        batch.setColor(ambient.r, ambient.g, ambient.b, .24f)
+        batch.draw(game.assets.softGlowRegion, ball.x - ball.width * .30f, ball.y - ball.height * .30f,
+            ball.width * 1.60f, ball.height * 1.60f)
         batch.color = Color.WHITE
-        art.ring(batch, layout.pedestal, accent, .72f)
+        art.ring(batch, layout.pedestal, accent)
         ballRegion?.let { region ->
             val ratio = minOf(ball.width / region.regionWidth, ball.height / region.regionHeight)
-            val w = region.regionWidth * ratio; val height = region.regionHeight * ratio
+            val w = region.regionWidth * ratio; val h = region.regionHeight * ratio
             batch.setColor(1f, 1f, 1f, .45f + .55f * reveal)
             batch.draw(region, ball.x + (ball.width - w) / 2f + slide,
-                ball.y + (ball.height - height) / 2f + drift, w, height)
+                ball.y + (ball.height - h) / 2f + drift, w, h)
             batch.color = Color.WHITE
         }
-        panel(layout.status, deep, if (owned) accent else border)
-        icon(if (owned) "check" else "lock", part(layout.status, .06f, .14f, .17f, .72f))
-        text(game.assets.hudLabelFont, statusText, part(layout.status, .25f, 0f, .70f, 1f), 23f, if (owned) accent else muted)
         arrow(layout.previous, false, index > 0)
         arrow(layout.next, true, index < groups[rarity.ordinal].lastIndex)
-        panel(part(h, .04f, .012f, .92f, .275f), deep, deep, opacity = .92f)
-        text(game.assets.titleFont, current.ball.name.uppercase(), layout.name, 47f, white)
-        text(game.assets.hudLabelFont, identityText, layout.identity, 24f, accent)
+        text(game.assets.titleFont, ballName, layout.name, 47f, cream)
+        icon("star", part(layout.identity, 0f, .02f, .10f, .96f))
+        powerMeter(part(layout.identity, .15f, .28f, .85f, .44f))
         text(game.assets.hudLabelFont, positionText, layout.position, 20f, muted)
     }
 
     private fun arrow(rect: Rectangle, right: Boolean, enabled: Boolean) {
-        panel(rect, deep, border, enabled && pressed(rect), opacity = if (enabled) .92f else .36f)
-        chevron(rect, right, enabled)
-    }
-
-    private fun chevron(rect: Rectangle, right: Boolean, enabled: Boolean) {
-        val cx = rect.x + rect.width / 2f
-        val cy = rect.y + rect.height / 2f
-        val halfW = 10f * layout.scale
-        val halfH = 17f * layout.scale
-        val direction = if (right) 1f else -1f
-        batch.color = if (enabled) white else muted
-        line(cx - halfW * direction, cy + halfH, cx + halfW * direction, cy)
-        line(cx + halfW * direction, cy, cx - halfW * direction, cy - halfH)
+        val ratio = minOf(rect.width / arrowRegion.regionWidth, rect.height / arrowRegion.regionHeight) * .88f
+        val w = arrowRegion.regionWidth * ratio; val h = arrowRegion.regionHeight * ratio
+        val x = rect.x + (rect.width - w) / 2f; val y = rect.y + (rect.height - h) / 2f
+        val dim = if (enabled && pressed(rect)) .76f else 1f
+        batch.setColor(dim, dim, dim, if (enabled) 1f else .25f)
+        // Mirror the draw, never mutate the atlas region shared with other screens.
+        batch.draw(arrowRegion, if (right) x + w else x, y, if (right) -w else w, h)
         batch.color = Color.WHITE
-    }
-
-    private fun line(x1: Float, y1: Float, x2: Float, y2: Float) {
-        val dx = x2 - x1; val dy = y2 - y1
-        val thickness = 5f * layout.scale
-        batch.draw(game.assets.solidUiRegion, x1, y1 - thickness / 2f, 0f, thickness / 2f,
-            kotlin.math.sqrt(dx * dx + dy * dy), thickness, 1f, 1f,
-            MathUtils.atan2(dy, dx) * MathUtils.radiansToDegrees)
     }
 
     private fun drawStats() {
         layout.stats.forEachIndexed { i, rect ->
-            panel(rect, face, border)
-            if (layout.wide) {
-                icon(statIcons[i], part(rect, .04f, .25f, .20f, .58f))
-                text(game.assets.hudLabelFont, statTitles[i], part(rect, .27f, .69f, .69f, .23f), 20f, muted)
-                text(game.assets.hudValueFont, statValues[i], part(rect, .27f, .29f, .69f, .39f), 34f, white)
-                text(game.assets.hudLabelFont, statCaptions[i], part(rect, .06f, .03f, .88f, .22f), 18f, accent)
-            } else {
-                icon(statIcons[i], part(rect, .30f, .65f, .40f, .28f))
-                text(game.assets.hudLabelFont, statTitles[i], part(rect, .06f, .49f, .88f, .16f), 22f, muted)
-                text(game.assets.hudValueFont, statValues[i], part(rect, .05f, .23f, .90f, .24f), 42f, white)
-                text(game.assets.hudLabelFont, statCaptions[i], part(rect, .06f, .055f, .88f, .16f), 18f, accent, wrap = true)
-            }
-            if (i == 3) powerMeter(part(rect, .10f, if (layout.wide) .015f else .018f, .80f, .025f))
+            val key = when (i) { 0 -> "damage"; 1 -> "balls"; else -> specialIcon }
+            icon(key, part(rect, .31f, .61f, .38f, .35f), if (pressed(rect)) .75f else 1f)
+            text(game.assets.hudValueFont, statValues[i], part(rect, .04f, .29f, .92f, .30f), 48f, cream)
+            text(game.assets.hudLabelFont, statUnits[i], part(rect, .04f, .13f, .92f, .15f), 21f, gold)
+            if (i == 2 && abilityCadence.isNotEmpty())
+                text(game.assets.hudLabelFont, abilityCadence, part(rect, .03f, -.03f, .94f, .14f), 17f, muted)
         }
+        if (unlockText.isNotEmpty()) text(game.assets.hudLabelFont, unlockText, layout.unlockHint, 23f, gold)
     }
 
     private fun powerMeter(rect: Rectangle) {
-        val gap = 3f * layout.scale
-        val width = (rect.width - gap * 11f) / 12f
+        val gap = 4f * layout.scale; val width = (rect.width - gap * 11f) / 12f
         repeat(12) { i ->
-            batch.color = if (i < current.profile.baseHitDamage) accent else border
+            batch.color = if (i < current.profile.baseHitDamage) accent else track
             batch.draw(game.assets.solidUiRegion, rect.x + i * (width + gap), rect.y, width, rect.height)
         }
         batch.color = Color.WHITE
     }
 
-    private fun drawAbility() {
-        val rect = layout.ability
-        panel(rect, deep, border)
-        icon(specialIcon, part(rect, .025f, .26f, .105f, .58f))
-        text(game.assets.hudLabelFont, current.profile.title, part(rect, .15f, .70f, .81f, .23f), 25f, accent, Align.left)
-        text(game.assets.hudLabelFont, abilityText, part(rect, .15f, .24f, .81f, .44f), 24f, white, Align.left, true)
-        text(game.assets.hudLabelFont, extraAbility, part(rect, .15f, .04f, .81f, .18f), 17f, muted, Align.left)
-    }
-
     private fun drawProgression() {
         val rect = layout.progression
-        panel(rect, deep, border)
-        if (owned) {
-            text(game.assets.hudLabelFont, "CAMPAIGN ATTACK | STAGE ${preview.stageNumber}", part(rect, .04f, .57f, .92f, .30f), 23f, muted, Align.left)
-            text(game.assets.hudValueFont, nextBoostText, part(rect, .04f, .19f, .92f, .33f), 27f, positive, Align.left)
-            val target = preview.nextAttackStage
-            val fraction = if (target == null) 1f else ((preview.stageNumber - (target - 12)).toFloat() / 12f).coerceIn(0f, 1f)
-            val track = part(rect, .04f, .07f, .92f, .035f)
-            batch.color = border; batch.draw(game.assets.solidUiRegion, track.x, track.y, track.width, track.height)
-            batch.color = accent; batch.draw(game.assets.solidUiRegion, track.x, track.y, track.width * fraction, track.height)
-            batch.color = Color.WHITE
-        } else {
-            icon(if (current.offer.gems != null) "gem" else "coin", part(rect, .03f, .21f, .09f, .58f))
-            text(game.assets.hudValueFont, priceText, part(rect, .14f, .51f, .82f, .37f), 32f, accent, Align.left)
-            text(game.assets.hudLabelFont, (if (current.offer.stage != null && canShop()) "OR " else "") + requirement,
-                part(rect, .14f, .12f, .82f, .31f), 23f, muted, Align.left)
-        }
+        icon("damage", part(rect, 0f, .23f, .09f, .70f))
+        text(game.assets.hudValueFont, campaignMultiplierText, part(rect, .10f, .22f, .18f, .70f), 31f, positive)
+        text(game.assets.hudLabelFont, campaignText, part(rect, .36f, .29f, .52f, .54f), 22f, muted)
+        icon("help", part(rect, .92f, .32f, .07f, .51f))
+        val target = preview.nextAttackStage
+        val fraction = if (target == null) 1f else ((preview.stageNumber - (target - 12)).toFloat() / 12f).coerceIn(0f, 1f)
+        val bar = part(rect, .35f, .10f, .54f, .07f)
+        batch.color = track; batch.draw(game.assets.solidUiRegion, bar.x, bar.y, bar.width, bar.height)
+        batch.color = gold; batch.draw(game.assets.solidUiRegion, bar.x, bar.y, bar.width * fraction, bar.height)
+        batch.color = Color.WHITE
     }
 
     private fun drawActions() {
         val active = !equipped && (owned || canShop())
-        panel(layout.primary, if (active) accent else face, if (active) accent else border, active && pressed(layout.primary))
-        val primaryIcon = if (owned) "check" else if (!canShop()) "lock"
-            else if (current.offer.gems != null) "gem" else "coin"
-        icon(primaryIcon, part(layout.primary, .035f, .22f, .085f, .60f))
-        text(game.assets.hudLabelFont, primaryText, part(layout.primary, .13f, .42f, .82f, .40f), 34f, if (active) ink else white)
-        text(game.assets.hudLabelFont, primaryCaption, part(layout.primary, .13f, .13f, .82f, .23f), 20f, if (active) ink else muted)
-        val spread = owned && current.profile.shotgunAvailable && game.progress.isShotgunEnabled(current.ball.spriteName)
-        modeButton(layout.straight, "straight", "STRAIGHT", owned && !spread, owned)
-        modeButton(layout.spread, "spread", if (current.profile.shotgunAvailable) "SPREAD" else "SPREAD LOCKED",
-            spread, owned && current.profile.shotgunAvailable)
+        art.action(batch, layout.primary, layout.scale, active, active && pressed(layout.primary))
+        val price = !owned && canShop() && priceText.isNotEmpty()
+        icon(if (equipped) "check" else if (owned) "balls" else "lock", part(layout.primary, .06f, .20f, .10f, .60f))
+        text(game.assets.hudLabelFont, primaryText, part(layout.primary, .18f, .18f, if (price) .38f else .72f, .64f),
+            34f, cream)
+        if (price) {
+            icon(if (current.offer.gems != null) "gem" else "coin", part(layout.primary, .59f, .25f, .10f, .50f))
+            text(game.assets.hudValueFont, priceText, part(layout.primary, .71f, .20f, .22f, .60f), 30f, cream)
+        }
+        if (current.profile.shotgunAvailable) {
+            val spread = game.progress.isShotgunEnabled(current.ball.spriteName)
+            modeButton(layout.straight, "straight", owned && !spread)
+            modeButton(layout.spread, "spread", owned && spread)
+        }
     }
 
-    private fun modeButton(rect: Rectangle, key: String, label: String, selected: Boolean, enabled: Boolean) {
-        panel(rect, if (selected) face else deep, if (selected) accent else border, enabled && pressed(rect))
-        icon(key, part(rect, .05f, .14f, .23f, .72f), if (enabled) 1f else .36f)
-        text(game.assets.hudLabelFont, label, part(rect, .30f, .15f, .62f, .70f), 24f, if (enabled) white else muted)
-        if (selected || !enabled) icon(if (selected) "check" else "lock", part(rect, .86f, .10f, .105f, .30f))
+    private fun modeButton(rect: Rectangle, key: String, selected: Boolean) {
+        art.stone(batch, rect, layout.scale, pressed(rect), selected)
+        icon(key, part(rect, .14f, .19f, .72f, .69f), if (owned) 1f else .45f)
+        if (selected) {
+            val pip = part(rect, .36f, .10f, .28f, .05f)
+            batch.color = gold; batch.draw(game.assets.solidUiRegion, pip.x, pip.y, pip.width, pip.height)
+            batch.color = Color.WHITE
+        }
+    }
+
+    private fun openInformation(topic: InfoTopic) {
+        touchActive = false; infoTopic = topic
+        val p = current.profile
+        val offer = current.offer
+        val unlock = if (owned) "This ball is permanently available. Equip it with the main button."
+            else listOfNotNull(offer.coins?.let { "$it coins" }, offer.gems?.let { "$it gems" },
+                offer.stage?.let { "complete campaign stage $it" }, offer.playProductId?.let { "Google Play purchase" })
+                .joinToString(" OR ") + ". UNLOCK opens the focused Shop; it does not spend currency here."
+        informationTitle = when (topic) {
+            InfoTopic.OVERVIEW -> "BALL GUIDE"; InfoTopic.DAMAGE -> "HIT DAMAGE"; InfoTopic.BALLS -> "VOLLEY SIZE"
+            InfoTopic.ABILITY -> p.title; InfoTopic.POWER -> "BALL STRENGTH"; InfoTopic.CAMPAIGN -> "CAMPAIGN ATTACK"
+            InfoTopic.SHOT -> "SHOT PATTERN"
+        }
+        informationBody = when (topic) {
+            InfoTopic.OVERVIEW -> "${current.ball.name} / ${rarity.name}\n\n" +
+                "Tap the hammer, balls, special ability or strength pips for their meaning. The small attack bar tracks campaign milestones.\n\n" +
+                "Swipe the ball or use the arrows to browse. ${if (p.shotgunAvailable) "The two small buttons choose Straight or Spread; hold either for help.\n\n" else ""}" + unlock
+            InfoTopic.DAMAGE -> "${statValues[0]} standard damage per hit at stage ${preview.stageNumber}.\n\n" +
+                "Ball base hit: ${p.baseHitDamage}. Campaign attack: ${preview.campaignAttack}x. This preview includes Momentum and saved flat damage or active Mega when applicable.\n\n" +
+                "It is a standard-hit baseline, not a guaranteed value against every target. Ability triggers, ORB effects, armor and boss protection are resolved during play."
+            InfoTopic.BALLS -> "${statValues[1]} TOTAL balls in the preview volley.\n\n" +
+                "This ball contributes +${p.startingBalls} starting balls. The total also includes the stage allowance, equipped ORBs and saved run changes when returning from a paused game.\n\n" +
+                "The total is capped at 160. It is not the number added by this ball alone."
+            InfoTopic.ABILITY -> "$abilityText\n\n" +
+                "Mastery: +${p.masteryScorePercent}% score. Score bonuses award points; they do not increase hit damage or wallet currency." +
+                (if (p.openingBreakerEveryVolleys > 0) "\n\nOpening breaker: every ${p.openingBreakerEveryVolleys} volleys." else "")
+            InfoTopic.POWER -> "${p.baseHitDamage} / 12 base strength.\n\n" +
+                "The pips compare this ball's innate hit strength across the collection. They are not an upgrade level or upgrade progress.\n\n" +
+                "${rarity.name} is its rarity. Stage attack and ORB effects are separate. This game has no individual ball upgrade purchase."
+            InfoTopic.CAMPAIGN -> "Stage ${preview.stageNumber} / ${preview.campaignAttack}x attack.\n\n" +
+                (preview.nextAttackStage?.let { "Next: ${preview.campaignAttack + 1}x at stage $it. The small bar shows progress toward that milestone." }
+                    ?: "The final campaign attack milestone is reached.") +
+                "\n\nThis existing campaign multiplier applies to all balls. It is earned through campaign progress, not a paid upgrade for the selected ball."
+            InfoTopic.SHOT -> "Straight sends the volley along your aim. Spread fans the volley out.\n\n" +
+                "Tap a pattern button to save it for this ball. The gold underline marks the active pattern. Both patterns use the same ball count.\n\n" +
+                (if (owned) "This ball supports both patterns." else "Unlock this ball before changing its pattern.")
+        }
+    }
+
+    private fun drawInformation() {
+        batch.setColor(0f, 0f, 0f, .78f)
+        batch.draw(game.assets.solidUiRegion, visibleLeft, visibleBottom, visibleWidth, visibleHeight)
+        batch.color = Color.WHITE
+        art.tray(batch, layout.infoPanel, layout.scale)
+        text(game.assets.titleFont, informationTitle, part(layout.infoPanel, .07f, .85f, .74f, .10f), 33f, gold)
+        art.stone(batch, layout.infoClose, layout.scale)
+        text(game.assets.hudValueFont, "X", layout.infoClose, 28f, cream)
+        text(game.assets.hudLabelFont, informationBody, layout.infoBody, if (layout.wide) 26f else 29f,
+            cream, Align.left, true)
     }
 
     private fun handleInput() {
-        if (help.active) {
+        if (infoTopic != null) {
             touchActive = false
-            if (Gdx.input.isKeyJustPressed(Input.Keys.BACK) || Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) help.tap(true)
+            if (Gdx.input.isKeyJustPressed(Input.Keys.BACK) || Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) infoTopic = null
             else if (Gdx.input.justTouched()) {
                 val touch = touchPoint()
-                help.tap(VisualHelpOverlay.closeBounds(pageBounds).contains(touch.x, touch.y))
+                if (layout.contains(layout.infoClose, touch.x, touch.y) || !layout.infoPanel.contains(touch.x, touch.y)) infoTopic = null
             }
             return
         }
@@ -423,38 +403,43 @@ open class BallShowcaseScreen(
         if (Gdx.input.isTouched(1)) { touchActive = false; return }
         if (Gdx.input.justTouched() && Gdx.input.isTouched(0)) {
             touchStartX = touch.x; touchStartY = touch.y; touchActive = true
-            touchDragged = false
-            heroGesture = layout.hero.contains(touch.x, touch.y)
+            touchDragged = false; touchHeld = 0f; heroGesture = layout.hero.contains(touch.x, touch.y)
         } else if (touchActive && Gdx.input.isTouched(0)) {
             if (abs(touch.x - touchStartX) >= 24f * layout.scale || abs(touch.y - touchStartY) >= 24f * layout.scale) touchDragged = true
+            touchHeld += Gdx.graphics.deltaTime.coerceIn(0f, .05f)
+            if (!touchDragged && touchHeld >= .60f && current.profile.shotgunAvailable &&
+                (layout.contains(layout.straight, touchStartX, touchStartY) || layout.contains(layout.spread, touchStartX, touchStartY)))
+                openInformation(InfoTopic.SHOT)
         } else if (touchActive && !Gdx.input.isTouched(0)) {
             touchActive = false
             val dx = touch.x - touchStartX; val dy = touch.y - touchStartY
-            if (heroGesture && abs(dx) >= 78f * layout.scale && abs(dx) > abs(dy) * 1.3f) {
-                browse(if (dx < 0f) 1 else -1)
-            } else if (!touchDragged && abs(dx) < 24f * layout.scale && abs(dy) < 24f * layout.scale) {
-                activate(touch.x, touch.y)
-            }
+            if (heroGesture && abs(dx) >= 78f * layout.scale && abs(dx) > abs(dy) * 1.3f) browse(if (dx < 0f) 1 else -1)
+            else if (!touchDragged && abs(dx) < 24f * layout.scale && abs(dy) < 24f * layout.scale) activate(touch.x, touch.y)
         }
     }
 
     private fun activate(x: Float, y: Float) {
         when {
             layout.contains(layout.back, x, y) -> leave()
-            layout.contains(layout.help, x, y) -> help.open(VisualHelpOverlay.Topic.BALLS)
+            layout.contains(layout.help, x, y) -> openInformation(InfoTopic.OVERVIEW)
             layout.tabs.any { layout.contains(it, x, y) } -> selectRarity(BallRarity.entries[layout.tabs.indexOfFirst { layout.contains(it, x, y) }])
             layout.contains(layout.previous, x, y) -> browse(-1)
             layout.contains(layout.next, x, y) -> browse(1)
-            owned && layout.contains(layout.straight, x, y) -> game.progress.setShotgunEnabled(current.ball.spriteName, false)
-            owned && current.profile.shotgunAvailable && layout.contains(layout.spread, x, y) -> game.progress.setShotgunEnabled(current.ball.spriteName, true)
+            layout.stats.any { layout.contains(it, x, y) } -> openInformation(when (layout.stats.indexOfFirst { layout.contains(it, x, y) }) {
+                0 -> InfoTopic.DAMAGE; 1 -> InfoTopic.BALLS; else -> InfoTopic.ABILITY })
+            layout.contains(layout.identity, x, y) -> openInformation(InfoTopic.POWER)
+            layout.contains(layout.progression, x, y) -> openInformation(InfoTopic.CAMPAIGN)
+            current.profile.shotgunAvailable && layout.contains(layout.straight, x, y) -> {
+                if (owned) game.progress.setShotgunEnabled(current.ball.spriteName, false) else openInformation(InfoTopic.SHOT)
+            }
+            current.profile.shotgunAvailable && layout.contains(layout.spread, x, y) -> {
+                if (owned) game.progress.setShotgunEnabled(current.ball.spriteName, true) else openInformation(InfoTopic.SHOT)
+            }
             layout.contains(layout.primary, x, y) -> {
                 if (owned && !equipped) {
                     VolleyBallSelection.equip(game.progress.settings, current.ball)
-                    game.progress.saveSettings(); refresh()
-                    game.uiFeedback.emit(UiFeedbackKind.CONFIRM)
-                } else if (!owned && canShop()) {
-                    game.navigate(ShopScreen(game, shopReturnDestination, mode, "BALLS", current.ball.spriteName))
-                }
+                    game.progress.saveSettings(); refresh(); game.uiFeedback.emit(UiFeedbackKind.CONFIRM)
+                } else if (!owned && canShop()) game.navigate(ShopScreen(game, shopReturnDestination, mode, "BALLS", current.ball.spriteName))
             }
         }
     }
@@ -466,14 +451,11 @@ open class BallShowcaseScreen(
     }
 
     private fun pressed(rect: Rectangle): Boolean {
-        if (!touchActive || touchDragged || help.active || !Gdx.input.isTouched(0)) return false
+        if (!touchActive || touchDragged || infoTopic != null || !Gdx.input.isTouched(0)) return false
         val touch = touchPoint()
         return abs(touch.x - touchStartX) < 24f * layout.scale && abs(touch.y - touchStartY) < 24f * layout.scale &&
             layout.contains(rect, touchStartX, touchStartY) && layout.contains(rect, touch.x, touch.y)
     }
-
-    private fun panel(rect: Rectangle, fill: Color, outline: Color, down: Boolean = false, opacity: Float = 1f) =
-        art.panel(batch, rect, fill, outline, layout.scale, down, opacity)
 
     private fun part(rect: Rectangle, x: Float, y: Float, w: Float, h: Float): Rectangle =
         scratch.set(rect.x + rect.width * x, rect.y + rect.height * y, rect.width * w, rect.height * h)
