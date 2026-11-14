@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "sourceSha256": "45b6bea9b11ea6c15a27e342156d9278eda14586c085060dc6ad0e10ef49b43e",
-  "provenance": "Stage behavior overrides use stable zero-based indices.",
+  "sourceSha256": "0a1f3968b97935fe8753ed3f4d1ee948e03e38eb1d0d4db81fd4cb42c726dce7",
+  "provenance": "Recovered Godot node overrides; keys are stable zero-based source indices.",
   "matched_nodes": 788,
   "stages": {
     "81": {

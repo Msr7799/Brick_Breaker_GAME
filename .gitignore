@@ -14,3 +14,8 @@ keystore.properties
 .cxx/
 *.apk
 *.aab
+*.ico
+desktop.ini
+**/google-services.json
+/tools/
+/scripts/
