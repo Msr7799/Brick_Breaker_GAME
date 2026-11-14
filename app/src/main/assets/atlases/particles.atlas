@@ -1,0 +1,48 @@
+
+particles.png
+size: 2048, 1024
+format: RGBA8888
+filter: Linear, Linear
+repeat: none
+flame
+  rotate: false
+  xy: 963, 537
+  size: 367, 475
+  orig: 512, 512
+  offset: 74, 37
+  index: -1
+glow
+  rotate: false
+  xy: 2, 500
+  size: 512, 512
+  orig: 512, 512
+  offset: 0, 0
+  index: -1
+shockwave
+  rotate: false
+  xy: 2, 2
+  size: 466, 494
+  orig: 512, 512
+  offset: 23, 18
+  index: -1
+smoke
+  rotate: false
+  xy: 1334, 627
+  size: 348, 385
+  orig: 348, 385
+  offset: 0, 0
+  index: -1
+spark
+  rotate: false
+  xy: 518, 532
+  size: 441, 480
+  orig: 512, 512
+  offset: 38, 32
+  index: -1
+star
+  rotate: false
+  xy: 1334, 573
+  size: 50, 50
+  orig: 64, 64
+  offset: 7, 7
+  index: -1

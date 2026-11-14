@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Brick Breaker Ball</string>
+    <string name="share_game">Share Brick Breaker Ball</string>
+    <string name="game_services_project_id" translatable="false">6148685744</string>
+</resources>

@@ -1,0 +1,65 @@
+{
+  "balls": {
+    "file": "balls.png",
+    "crop": {
+      "x": 156,
+      "y": 117,
+      "width": 982,
+      "height": 953
+    }
+  },
+  "damage": {
+    "file": "damage.png",
+    "crop": {
+      "x": 141,
+      "y": 129,
+      "width": 1044,
+      "height": 935
+    }
+  },
+  "straight": {
+    "file": "straight.png",
+    "crop": {
+      "x": 119,
+      "y": 84,
+      "width": 1055,
+      "height": 1053
+    }
+  },
+  "spread": {
+    "file": "spread.png",
+    "crop": {
+      "x": 59,
+      "y": 70,
+      "width": 1193,
+      "height": 1055
+    }
+  },
+  "check": {
+    "file": "check.png",
+    "crop": {
+      "x": 149,
+      "y": 192,
+      "width": 1009,
+      "height": 870
+    }
+  },
+  "details": {
+    "file": "details.png",
+    "crop": {
+      "x": 189,
+      "y": 48,
+      "width": 971,
+      "height": 1070
+    }
+  },
+  "help": {
+    "file": "help.png",
+    "crop": {
+      "x": 90,
+      "y": 53,
+      "width": 1078,
+      "height": 1129
+    }
+  }
+}

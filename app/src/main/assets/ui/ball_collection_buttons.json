@@ -1,0 +1,115 @@
+{
+  "meta": {
+    "app": "BrickBreakerBall",
+    "version": "1.0.0",
+    "image": "ball_collection_buttons.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 1024,
+      "h": 512
+    },
+    "scale": 1
+  },
+  "frames": {
+    "wide_green": {
+      "frame": {
+        "x": 8,
+        "y": 8,
+        "w": 680,
+        "h": 104
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 680,
+        "h": 104
+      },
+      "sourceSize": {
+        "w": 680,
+        "h": 104
+      }
+    },
+    "wide_red": {
+      "frame": {
+        "x": 8,
+        "y": 120,
+        "w": 680,
+        "h": 104
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 680,
+        "h": 104
+      },
+      "sourceSize": {
+        "w": 680,
+        "h": 104
+      }
+    },
+    "wide_dark": {
+      "frame": {
+        "x": 8,
+        "y": 232,
+        "w": 680,
+        "h": 104
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 680,
+        "h": 104
+      },
+      "sourceSize": {
+        "w": 680,
+        "h": 104
+      }
+    },
+    "tab_green": {
+      "frame": {
+        "x": 8,
+        "y": 344,
+        "w": 450,
+        "h": 86
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 450,
+        "h": 86
+      },
+      "sourceSize": {
+        "w": 450,
+        "h": 86
+      }
+    },
+    "tab_dark": {
+      "frame": {
+        "x": 466,
+        "y": 344,
+        "w": 450,
+        "h": 86
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 450,
+        "h": 86
+      },
+      "sourceSize": {
+        "w": 450,
+        "h": 86
+      }
+    }
+  }
+}

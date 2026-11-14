@@ -1,0 +1,359 @@
+{
+  "meta": {
+    "app": "SpriteMapping",
+    "version": "1.0.0",
+    "image": "main-screen-volley.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 1440,
+      "h": 2930
+    },
+    "scale": 1
+  },
+  "frames": {
+    "info": {
+      "frame": {
+        "x": 1245,
+        "y": 168,
+        "w": 160,
+        "h": 139
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 139
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 139
+      }
+    },
+    "the-dimon-value": {
+      "frame": {
+        "x": 710,
+        "y": 481,
+        "w": 146,
+        "h": 71
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 146,
+        "h": 71
+      },
+      "sourceSize": {
+        "w": 146,
+        "h": 71
+      }
+    },
+    "the-dimon-pius-btn": {
+      "frame": {
+        "x": 860,
+        "y": 471,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      }
+    },
+    "the-coins-value": {
+      "frame": {
+        "x": 1105,
+        "y": 472,
+        "w": 198,
+        "h": 86
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 198,
+        "h": 86
+      },
+      "sourceSize": {
+        "w": 198,
+        "h": 86
+      }
+    },
+    "the-coins-pluse-btn": {
+      "frame": {
+        "x": 1306,
+        "y": 476,
+        "w": 98,
+        "h": 89
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 98,
+        "h": 89
+      },
+      "sourceSize": {
+        "w": 98,
+        "h": 89
+      }
+    },
+    "music-btn": {
+      "frame": {
+        "x": 60,
+        "y": 462,
+        "w": 151,
+        "h": 143
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 151,
+        "h": 143
+      },
+      "sourceSize": {
+        "w": 151,
+        "h": 143
+      }
+    },
+    "settings-btn": {
+      "frame": {
+        "x": 252,
+        "y": 458,
+        "w": 143,
+        "h": 155
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 143,
+        "h": 155
+      },
+      "sourceSize": {
+        "w": 143,
+        "h": 155
+      }
+    },
+    "charms-bag": {
+      "frame": {
+        "x": 0,
+        "y": 1439,
+        "w": 604,
+        "h": 245
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 604,
+        "h": 245
+      },
+      "sourceSize": {
+        "w": 604,
+        "h": 245
+      }
+    },
+    "shop": {
+      "frame": {
+        "x": 848,
+        "y": 1366,
+        "w": 592,
+        "h": 237
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 592,
+        "h": 237
+      },
+      "sourceSize": {
+        "w": 592,
+        "h": 237
+      }
+    },
+    "continue&new-game-btn": {
+      "frame": {
+        "x": 210,
+        "y": 1007,
+        "w": 920,
+        "h": 258
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 920,
+        "h": 258
+      },
+      "sourceSize": {
+        "w": 920,
+        "h": 258
+      }
+    },
+    "worlds-map": {
+      "frame": {
+        "x": 136,
+        "y": 1706,
+        "w": 1146,
+        "h": 290
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 1146,
+        "h": 290
+      },
+      "sourceSize": {
+        "w": 1146,
+        "h": 290
+      }
+    },
+    "balls": {
+      "frame": {
+        "x": 181,
+        "y": 2144,
+        "w": 991,
+        "h": 169
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 991,
+        "h": 169
+      },
+      "sourceSize": {
+        "w": 991,
+        "h": 169
+      }
+    },
+    "level-editor-btn": {
+      "frame": {
+        "x": 207,
+        "y": 2395,
+        "w": 1048,
+        "h": 222
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 1048,
+        "h": 222
+      },
+      "sourceSize": {
+        "w": 1048,
+        "h": 222
+      }
+    },
+    "youtube": {
+      "frame": {
+        "x": 59,
+        "y": 2755,
+        "w": 400,
+        "h": 159
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 400,
+        "h": 159
+      },
+      "sourceSize": {
+        "w": 400,
+        "h": 159
+      }
+    },
+    "share-my-app-btn": {
+      "frame": {
+        "x": 650,
+        "y": 2748,
+        "w": 164,
+        "h": 145
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 164,
+        "h": 145
+      },
+      "sourceSize": {
+        "w": 164,
+        "h": 145
+      }
+    },
+    "developer-btn": {
+      "frame": {
+        "x": 1162,
+        "y": 2623,
+        "w": 144,
+        "h": 141
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 144,
+        "h": 141
+      },
+      "sourceSize": {
+        "w": 144,
+        "h": 141
+      }
+    }
+  },
+  "overlays": {
+    "new-game-label": {
+      "source": {
+        "x": 200,
+        "y": 100,
+        "w": 608,
+        "h": 206
+      },
+      "target": {
+        "x": 388,
+        "y": 1020,
+        "w": 655,
+        "h": 182
+      }
+    },
+    "sound-off": {
+      "target": {
+        "x": 58,
+        "y": 459,
+        "w": 155,
+        "h": 149
+      }
+    }
+  }
+}

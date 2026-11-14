@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "worlds": {
+    "1": "grass",
+    "2": "grass",
+    "3": "blue",
+    "4": "brown",
+    "5": "blue",
+    "6": "black",
+    "7": "brown",
+    "8": "black",
+    "9": "black"
+  },
+  "styles": {
+    "blue": {
+      "ordinary": {
+        "SQ": "res://Enemies/Ice/enemy_ice_2x2.tscn",
+        "NW": "res://Enemies/Ice/enemy_ice_2x2_DL.tscn",
+        "NE": "res://Enemies/Ice/enemy_ice_2x2_DR.tscn",
+        "SW": "res://Enemies/Ice/enemy_ice_2x2_UL.tscn",
+        "SE": "res://Enemies/Ice/enemy_ice_2x2_UR.tscn"
+      },
+      "blocker": {
+        "SQ": "res://Enemies/Blocker/Ice_Block1/enemy_ice_block1_2x2_SQ.tscn",
+        "NW": "res://Enemies/Blocker/Ice_Block1/enemy_ice_block1_2x2_DL.tscn",
+        "NE": "res://Enemies/Blocker/Ice_Block1/enemy_ice_block1_2x2_DR.tscn",
+        "SW": "res://Enemies/Blocker/Ice_Block1/enemy_ice_block1_2x2_UL.tscn",
+        "SE": "res://Enemies/Blocker/Ice_Block1/enemy_ice_block1_2x2_UR.tscn"
+      }
+    },
+    "brown": {
+      "ordinary": {
+        "SQ": "res://Enemies/Sand/enemy_sand_2x2_SQ.tscn",
+        "NW": "res://Enemies/Sand/enemy_sand_2x2_DL.tscn",
+        "NE": "res://Enemies/Sand/enemy_sand_2x2_DR.tscn",
+        "SW": "res://Enemies/Sand/enemy_sand_2x2_UL.tscn",
+        "SE": "res://Enemies/Sand/enemy_sand_2x2_UR.tscn"
+      },
+      "blocker": {
+        "SQ": "res://Enemies/Blocker/Rock1/enemy_rock1_2x2_SQ.tscn",
+        "NW": "res://Enemies/Blocker/Rock1/enemy_rock1_2x2_DL.tscn",
+        "NE": "res://Enemies/Blocker/Rock1/enemy_rock1_2x2_DR.tscn",
+        "SW": "res://Enemies/Blocker/Rock1/enemy_rock1_2x2_UL.tscn",
+        "SE": "res://Enemies/Blocker/Rock1/enemy_rock1_2x2_UR.tscn"
+      }
+    },
+    "black": {
+      "ordinary": {
+        "SQ": "res://Enemies/Black/enemy_black_2x2.tscn",
+        "NW": "res://Enemies/Black/enemy_black_2x2_DL.tscn",
+        "NE": "res://Enemies/Black/enemy_black_2x2_DR.tscn",
+        "SW": "res://Enemies/Black/enemy_black_2x2_UL.tscn",
+        "SE": "res://Enemies/Black/enemy_black_2x2_UR.tscn"
+      },
+      "blocker": {
+        "SQ": "res://Enemies/Blocker/Black1/enemy_black_block1_SQ.tscn",
+        "NW": "res://Enemies/Blocker/Black1/enemy_black_block1_DL.tscn",
+        "NE": "res://Enemies/Blocker/Black1/enemy_black_block1_DR.tscn",
+        "SW": "res://Enemies/Blocker/Black1/enemy_black_block1_UL.tscn",
+        "SE": "res://Enemies/Blocker/Black1/enemy_black_block1_UR.tscn"
+      }
+    },
+    "grass": {
+      "ordinary": {
+        "SQ": "res://Enemies/Grass/enemy_grass_2x2.tscn",
+        "NW": "res://Enemies/Grass/enemy_grass_2x2_DL.tscn",
+        "NE": "res://Enemies/Grass/enemy_grass_2x2_DR.tscn",
+        "SW": "res://Enemies/Grass/enemy_grass_2x2_UL.tscn",
+        "SE": "res://Enemies/Grass/enemy_grass_2x2_UR.tscn"
+      },
+      "blocker": {
+        "SQ": "res://Enemies/Blocker/Black1/enemy_black_block1_SQ.tscn",
+        "NW": "res://Enemies/Blocker/Black1/enemy_black_block1_DL.tscn",
+        "NE": "res://Enemies/Blocker/Black1/enemy_black_block1_DR.tscn",
+        "SW": "res://Enemies/Blocker/Black1/enemy_black_block1_UL.tscn",
+        "SE": "res://Enemies/Blocker/Black1/enemy_black_block1_UR.tscn"
+      }
+    }
+  }
+}

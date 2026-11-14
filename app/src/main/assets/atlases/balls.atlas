@@ -1,0 +1,741 @@
+
+balls.png
+size: 2048, 2048
+format: RGBA8888
+filter: Linear, Linear
+repeat: none
+01_midnight_blue_half
+  rotate: false
+  xy: 290, 476
+  size: 136, 152
+  orig: 136, 152
+  offset: 0, 0
+  index: -1
+02_silver_smoke
+  rotate: false
+  xy: 290, 1414
+  size: 139, 152
+  orig: 139, 152
+  offset: 0, 0
+  index: -1
+03_violet_smoke
+  rotate: false
+  xy: 146, 146
+  size: 140, 152
+  orig: 140, 152
+  offset: 0, 0
+  index: -1
+04_crimson_smoke
+  rotate: false
+  xy: 1730, 1893
+  size: 140, 152
+  orig: 140, 152
+  offset: 0, 0
+  index: -1
+05_cyan_smoke
+  rotate: false
+  xy: 1874, 1893
+  size: 140, 152
+  orig: 140, 152
+  offset: 0, 0
+  index: -1
+06_forest_camo
+  rotate: false
+  xy: 290, 1258
+  size: 140, 152
+  orig: 140, 152
+  offset: 0, 0
+  index: -1
+07_obsidian_spike
+  rotate: false
+  xy: 290, 1102
+  size: 140, 152
+  orig: 140, 152
+  offset: 0, 0
+  index: -1
+08_desert_camo
+  rotate: false
+  xy: 290, 946
+  size: 140, 152
+  orig: 140, 152
+  offset: 0, 0
+  index: -1
+09_urban_camo
+  rotate: false
+  xy: 290, 632
+  size: 138, 152
+  orig: 138, 152
+  offset: 0, 0
+  index: -1
+100_pink_bolt
+  rotate: false
+  xy: 290, 332
+  size: 141, 140
+  orig: 141, 140
+  offset: 0, 0
+  index: -1
+101_engraved_swirl
+  rotate: false
+  xy: 146, 2
+  size: 140, 140
+  orig: 140, 140
+  offset: 0, 0
+  index: -1
+102_gold_mech
+  rotate: false
+  xy: 290, 188
+  size: 141, 140
+  orig: 141, 140
+  offset: 0, 0
+  index: -1
+103_purple_shard
+  rotate: false
+  xy: 431, 802
+  size: 140, 140
+  orig: 140, 140
+  offset: 0, 0
+  index: -1
+104_bronze_core
+  rotate: false
+  xy: 290, 44
+  size: 141, 140
+  orig: 141, 140
+  offset: 0, 0
+  index: -1
+105_gray_segmented
+  rotate: false
+  xy: 432, 658
+  size: 141, 140
+  orig: 141, 140
+  offset: 0, 0
+  index: -1
+10_lava_crack
+  rotate: false
+  xy: 2, 1888
+  size: 140, 157
+  orig: 140, 157
+  offset: 0, 0
+  index: -1
+11_blue_stone_crack
+  rotate: false
+  xy: 2, 1727
+  size: 140, 157
+  orig: 140, 157
+  offset: 0, 0
+  index: -1
+12_cyan_stone_crack
+  rotate: false
+  xy: 146, 1888
+  size: 140, 157
+  orig: 140, 157
+  offset: 0, 0
+  index: -1
+13_ice_crystal
+  rotate: false
+  xy: 2, 1566
+  size: 140, 157
+  orig: 140, 157
+  offset: 0, 0
+  index: -1
+14_frost_fang
+  rotate: false
+  xy: 146, 1727
+  size: 140, 157
+  orig: 140, 157
+  offset: 0, 0
+  index: -1
+15_smooth_blue_panel
+  rotate: false
+  xy: 290, 1888
+  size: 140, 157
+  orig: 140, 157
+  offset: 0, 0
+  index: -1
+16_aqua_bubble
+  rotate: false
+  xy: 2, 1405
+  size: 140, 157
+  orig: 140, 157
+  offset: 0, 0
+  index: -1
+17_storm_lightning
+  rotate: false
+  xy: 146, 1566
+  size: 140, 157
+  orig: 140, 157
+  offset: 0, 0
+  index: -1
+18_plasma_burst
+  rotate: false
+  xy: 290, 1727
+  size: 139, 157
+  orig: 139, 157
+  offset: 0, 0
+  index: -1
+19_molten_core
+  rotate: false
+  xy: 146, 616
+  size: 140, 153
+  orig: 140, 153
+  offset: 0, 0
+  index: -1
+20_tech_core
+  rotate: false
+  xy: 1298, 1892
+  size: 140, 153
+  orig: 140, 153
+  offset: 0, 0
+  index: -1
+21_blue_gem
+  rotate: false
+  xy: 2, 297
+  size: 140, 153
+  orig: 140, 153
+  offset: 0, 0
+  index: -1
+22_red_gem
+  rotate: false
+  xy: 146, 459
+  size: 140, 153
+  orig: 140, 153
+  offset: 0, 0
+  index: -1
+23_violet_gem
+  rotate: false
+  xy: 1442, 1892
+  size: 140, 153
+  orig: 140, 153
+  offset: 0, 0
+  index: -1
+24_smoke_marble
+  rotate: false
+  xy: 2, 140
+  size: 140, 153
+  orig: 140, 153
+  offset: 0, 0
+  index: -1
+25_hydro_mech
+  rotate: false
+  xy: 146, 302
+  size: 140, 153
+  orig: 140, 153
+  offset: 0, 0
+  index: -1
+26_shadow_gloss
+  rotate: false
+  xy: 1586, 1892
+  size: 140, 153
+  orig: 140, 153
+  offset: 0, 0
+  index: -1
+27_midnight_gloss
+  rotate: false
+  xy: 290, 1570
+  size: 139, 153
+  orig: 139, 153
+  offset: 0, 0
+  index: -1
+28_sun_vortex
+  rotate: false
+  xy: 434, 1890
+  size: 140, 155
+  orig: 140, 155
+  offset: 0, 0
+  index: -1
+29_violet_vortex
+  rotate: false
+  xy: 2, 1246
+  size: 140, 155
+  orig: 140, 155
+  offset: 0, 0
+  index: -1
+30_blue_energy_vortex
+  rotate: false
+  xy: 146, 1407
+  size: 140, 155
+  orig: 140, 155
+  offset: 0, 0
+  index: -1
+31_cosmic_field
+  rotate: false
+  xy: 578, 1890
+  size: 140, 155
+  orig: 140, 155
+  offset: 0, 0
+  index: -1
+32_ice_spiral
+  rotate: false
+  xy: 2, 1087
+  size: 140, 155
+  orig: 140, 155
+  offset: 0, 0
+  index: -1
+33_deep_ocean
+  rotate: false
+  xy: 146, 1248
+  size: 140, 155
+  orig: 140, 155
+  offset: 0, 0
+  index: -1
+34_layered_planet
+  rotate: false
+  xy: 722, 1890
+  size: 140, 155
+  orig: 140, 155
+  offset: 0, 0
+  index: -1
+35_teal_spiral
+  rotate: false
+  xy: 2, 928
+  size: 140, 155
+  orig: 140, 155
+  offset: 0, 0
+  index: -1
+36_teal_tunnel
+  rotate: false
+  xy: 146, 1089
+  size: 140, 155
+  orig: 140, 155
+  offset: 0, 0
+  index: -1
+37_neon_purple
+  rotate: false
+  xy: 290, 788
+  size: 137, 154
+  orig: 137, 154
+  offset: 0, 0
+  index: -1
+38_chrome_mirror
+  rotate: false
+  xy: 866, 1891
+  size: 140, 154
+  orig: 140, 154
+  offset: 0, 0
+  index: -1
+39_black_gloss
+  rotate: false
+  xy: 2, 770
+  size: 140, 154
+  orig: 140, 154
+  offset: 0, 0
+  index: -1
+40_gold_segment
+  rotate: false
+  xy: 146, 931
+  size: 140, 154
+  orig: 140, 154
+  offset: 0, 0
+  index: -1
+41_pearl_white
+  rotate: false
+  xy: 1010, 1891
+  size: 140, 154
+  orig: 140, 154
+  offset: 0, 0
+  index: -1
+42_smoky_stone
+  rotate: false
+  xy: 2, 612
+  size: 140, 154
+  orig: 140, 154
+  offset: 0, 0
+  index: -1
+43_amber_glass
+  rotate: false
+  xy: 146, 773
+  size: 140, 154
+  orig: 140, 154
+  offset: 0, 0
+  index: -1
+44_orange_glass
+  rotate: false
+  xy: 1154, 1891
+  size: 140, 154
+  orig: 140, 154
+  offset: 0, 0
+  index: -1
+45_mist_white
+  rotate: false
+  xy: 2, 454
+  size: 140, 154
+  orig: 140, 154
+  offset: 0, 0
+  index: -1
+46_gold_segmented
+  rotate: false
+  xy: 724, 1750
+  size: 139, 136
+  orig: 139, 136
+  offset: 0, 0
+  index: -1
+47_fire_flame
+  rotate: false
+  xy: 432, 518
+  size: 141, 136
+  orig: 141, 136
+  offset: 0, 0
+  index: -1
+48_stone_spiral
+  rotate: false
+  xy: 1157, 1467
+  size: 140, 136
+  orig: 140, 136
+  offset: 0, 0
+  index: -1
+49_magma_stripe
+  rotate: false
+  xy: 434, 1750
+  size: 141, 136
+  orig: 141, 136
+  offset: 0, 0
+  index: -1
+50_red_vortex
+  rotate: false
+  xy: 1301, 1468
+  size: 140, 136
+  orig: 140, 136
+  offset: 0, 0
+  index: -1
+51_solar_honeycomb
+  rotate: false
+  xy: 579, 1750
+  size: 141, 136
+  orig: 141, 136
+  offset: 0, 0
+  index: -1
+52_purple_swirl
+  rotate: false
+  xy: 867, 1467
+  size: 141, 136
+  orig: 141, 136
+  offset: 0, 0
+  index: -1
+53_silver_whirl
+  rotate: false
+  xy: 1445, 1610
+  size: 140, 136
+  orig: 140, 136
+  offset: 0, 0
+  index: -1
+54_steel_claw
+  rotate: false
+  xy: 1012, 1467
+  size: 141, 136
+  orig: 141, 136
+  offset: 0, 0
+  index: -1
+55_blue_cracked_ice
+  rotate: false
+  xy: 1445, 1470
+  size: 140, 136
+  orig: 140, 136
+  offset: 0, 0
+  index: -1
+56_skull_core
+  rotate: false
+  xy: 1589, 1752
+  size: 141, 136
+  orig: 141, 136
+  offset: 0, 0
+  index: -1
+57_dark_grid
+  rotate: false
+  xy: 1879, 1753
+  size: 140, 136
+  orig: 140, 136
+  offset: 0, 0
+  index: -1
+58_black_crack
+  rotate: false
+  xy: 578, 904
+  size: 138, 136
+  orig: 138, 136
+  offset: 0, 0
+  index: -1
+59_red_target
+  rotate: false
+  xy: 1879, 1613
+  size: 140, 136
+  orig: 140, 136
+  offset: 0, 0
+  index: -1
+60_gray_concentric
+  rotate: false
+  xy: 1879, 1473
+  size: 140, 136
+  orig: 140, 136
+  offset: 0, 0
+  index: -1
+61_inferno_cross
+  rotate: false
+  xy: 1589, 1612
+  size: 141, 136
+  orig: 141, 136
+  offset: 0, 0
+  index: -1
+62_golden_spiral
+  rotate: false
+  xy: 434, 1322
+  size: 140, 136
+  orig: 140, 136
+  offset: 0, 0
+  index: -1
+63_blue_starburst
+  rotate: false
+  xy: 1589, 1472
+  size: 141, 136
+  orig: 141, 136
+  offset: 0, 0
+  index: -1
+64_red_core_eye
+  rotate: false
+  xy: 1734, 1753
+  size: 141, 136
+  orig: 141, 136
+  offset: 0, 0
+  index: -1
+65_blue_hex_crack
+  rotate: false
+  xy: 434, 1182
+  size: 140, 136
+  orig: 140, 136
+  offset: 0, 0
+  index: -1
+66_purple_spark
+  rotate: false
+  xy: 1734, 1613
+  size: 141, 136
+  orig: 141, 136
+  offset: 0, 0
+  index: -1
+67_void_portal
+  rotate: false
+  xy: 434, 1042
+  size: 140, 136
+  orig: 140, 136
+  offset: 0, 0
+  index: -1
+68_silver_cross
+  rotate: false
+  xy: 1734, 1473
+  size: 141, 136
+  orig: 141, 136
+  offset: 0, 0
+  index: -1
+69_steel_emblem
+  rotate: false
+  xy: 578, 1324
+  size: 141, 136
+  orig: 141, 136
+  offset: 0, 0
+  index: -1
+70_shadow_crack
+  rotate: false
+  xy: 723, 1326
+  size: 140, 136
+  orig: 140, 136
+  offset: 0, 0
+  index: -1
+71_magenta_lightning
+  rotate: false
+  xy: 578, 1184
+  size: 141, 136
+  orig: 141, 136
+  offset: 0, 0
+  index: -1
+72_blue_smoke
+  rotate: false
+  xy: 723, 1186
+  size: 140, 136
+  orig: 140, 136
+  offset: 0, 0
+  index: -1
+73_bronze_band
+  rotate: false
+  xy: 578, 1044
+  size: 141, 136
+  orig: 141, 136
+  offset: 0, 0
+  index: -1
+74_teal_lightning
+  rotate: false
+  xy: 1157, 1327
+  size: 140, 136
+  orig: 140, 136
+  offset: 0, 0
+  index: -1
+75_green_lightning
+  rotate: false
+  xy: 867, 1327
+  size: 141, 136
+  orig: 141, 136
+  offset: 0, 0
+  index: -1
+76_blue_lightning
+  rotate: false
+  xy: 1012, 1327
+  size: 141, 136
+  orig: 141, 136
+  offset: 0, 0
+  index: -1
+77_slate_panel
+  rotate: false
+  xy: 723, 1046
+  size: 140, 136
+  orig: 140, 136
+  offset: 0, 0
+  index: -1
+78_blue_diamond_grid
+  rotate: false
+  xy: 1589, 1332
+  size: 141, 136
+  orig: 141, 136
+  offset: 0, 0
+  index: -1
+79_ink_splash
+  rotate: false
+  xy: 1445, 1330
+  size: 140, 136
+  orig: 140, 136
+  offset: 0, 0
+  index: -1
+80_blue_gloss
+  rotate: false
+  xy: 1734, 1333
+  size: 141, 136
+  orig: 141, 136
+  offset: 0, 0
+  index: -1
+81_purple_cell
+  rotate: false
+  xy: 1879, 1333
+  size: 141, 136
+  orig: 141, 136
+  offset: 0, 0
+  index: -1
+82_black_mesh
+  rotate: false
+  xy: 1157, 1749
+  size: 140, 138
+  orig: 140, 138
+  offset: 0, 0
+  index: -1
+83_purple_mesh
+  rotate: false
+  xy: 577, 1464
+  size: 141, 138
+  orig: 141, 138
+  offset: 0, 0
+  index: -1
+84_violet_arc
+  rotate: false
+  xy: 1157, 1607
+  size: 140, 138
+  orig: 140, 138
+  offset: 0, 0
+  index: -1
+85_blue_ribbed
+  rotate: false
+  xy: 722, 1608
+  size: 141, 138
+  orig: 141, 138
+  offset: 0, 0
+  index: -1
+86_purple_storm
+  rotate: false
+  xy: 1301, 1750
+  size: 140, 138
+  orig: 140, 138
+  offset: 0, 0
+  index: -1
+87_teal_vortex
+  rotate: false
+  xy: 722, 1466
+  size: 141, 138
+  orig: 141, 138
+  offset: 0, 0
+  index: -1
+88_green_starbolt
+  rotate: false
+  xy: 867, 1749
+  size: 141, 138
+  orig: 141, 138
+  offset: 0, 0
+  index: -1
+89_purple_wave
+  rotate: false
+  xy: 1301, 1608
+  size: 140, 138
+  orig: 140, 138
+  offset: 0, 0
+  index: -1
+90_navy_panel
+  rotate: false
+  xy: 867, 1607
+  size: 141, 138
+  orig: 141, 138
+  offset: 0, 0
+  index: -1
+91_silver_mesh
+  rotate: false
+  xy: 1445, 1750
+  size: 140, 138
+  orig: 140, 138
+  offset: 0, 0
+  index: -1
+92_blue_energy_core
+  rotate: false
+  xy: 1012, 1749
+  size: 141, 138
+  orig: 141, 138
+  offset: 0, 0
+  index: -1
+93_ice_portal
+  rotate: false
+  xy: 1012, 1607
+  size: 141, 138
+  orig: 141, 138
+  offset: 0, 0
+  index: -1
+94_purple_bolt
+  rotate: false
+  xy: 435, 374
+  size: 140, 140
+  orig: 140, 140
+  offset: 0, 0
+  index: -1
+95_blue_bolt
+  rotate: false
+  xy: 435, 230
+  size: 141, 140
+  orig: 141, 140
+  offset: 0, 0
+  index: -1
+96_maroon_crest
+  rotate: false
+  xy: 433, 1462
+  size: 140, 140
+  orig: 140, 140
+  offset: 0, 0
+  index: -1
+97_cyan_bolt
+  rotate: false
+  xy: 435, 86
+  size: 141, 140
+  orig: 141, 140
+  offset: 0, 0
+  index: -1
+98_woven_steel
+  rotate: false
+  xy: 578, 1606
+  size: 140, 140
+  orig: 140, 140
+  offset: 0, 0
+  index: -1
+99_ice_star
+  rotate: false
+  xy: 433, 1606
+  size: 141, 140
+  orig: 141, 140
+  offset: 0, 0
+  index: -1

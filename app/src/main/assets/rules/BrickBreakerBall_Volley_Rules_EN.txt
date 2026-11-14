@@ -1,0 +1,54 @@
+# VOLLEY RULES
+
+## 1. THE SHOT
+
+- Drag in the arena to aim from the cannon. Release to fire the whole volley.
+- Each number on a brick is its remaining HP. Bounce balls off walls and angled brick faces to reach gaps.
+- Clear every required brick to finish the stage. Solid obstacles may remain.
+
+## 2. TURNS AND DANGER
+
+- After the balls return, the surviving formation descends one brick row. Recall ends the shot and also advances the turn.
+- The first ball to return naturally normally sets the next launch position.
+- Keep required bricks and solid blockers above the danger line. A Rescue Ward can save one breach.
+
+## 3. BRICKS AND PICKUPS
+
+- Armored bricks need more hits. Regenerating bricks recover HP between turns. Steel reflects balls.
+- Portals move balls, explosive bricks hit nearby targets, and angled bricks change the bounce.
+- Collect extra balls and useful drops during the run. Stage and world artwork changes, but the HP number shows the current target.
+
+## 4. ORBS: EQUIP BEFORE THE RUN
+
+[[ORB_GALLERY]]
+
+- These are current playable Orb icons from your Bag. Each Orb has a family, rank, rarity and rolled stats.
+- Earn Orb drops by breaking eligible bricks. Open BAG > ORBS to inspect, upgrade and equip them.
+- A loadout has up to eight slots. Equipped Orb effects apply during Volley; an Orb sitting in the Bag is not active.
+- Select a slot, then tap an owned Orb to equip it immediately. The Bag marks the copy ACTIVE SLOT and shows the active count; changing a loadout while paused applies on resume.
+- The pictures show examples. Your equipped Orbs and their exact stats are shown in the Bag.
+
+## 5. WORLD BOSSES AND THE CORE
+
+[[BOSS_CORE_DIAGRAM]]
+
+- The final stage of each of the nine worlds has that world's own boss as the physical Core target.
+- The portrait moves with its Core brick. Hit the Core until its HP reaches zero, then clear any remaining required bricks.
+- If a custom stage has shield Guards, the Core ignores damage until those Guards are destroyed.
+- The picture shows the Mystery Forest boss. Each later world uses its own boss portrait.
+
+## 6. BALL POWER AND FIRING PATTERN
+
+- Ball rarity gives a visible starting bonus: Normal adds 0 balls and deals 1 base damage per hit; Rare adds 4 and deals 2; Legendary adds 8 and deals 3; Epic adds 12 and deals 4.
+- Every 30 balls in the volley add 1 base damage to each direct hit. Momentum balls gain that extra damage every 20 balls. Ball rarity does not change flight speed.
+- The ball detail card previews the selected stage's starting ball count and base hit. For imported RPG bricks it also shows one example brick's HP loss from a normal hit before Orb, Item and special effects; each imported brick can have a different attack scale.
+- Some owned Legendary and Epic balls let you choose STRAIGHT or SHOTGUN on the ball's detail card. Shotgun spreads each group of five balls across the aim direction.
+- Some Legendary and Epic balls charge the first ball of every third volley: its first non-boss brick hit destroys that brick regardless of HP. This charge never instantly destroys a boss Core.
+- Equipped Orbs gain 50% more flat damage, combat proc odds and extra starting balls in Volley, subject to each effect's cap. Their rolled base stats remain visible in the Bag.
+
+## 7. CONTROLS AND PROGRESSION
+
+- Hold 3X while balls are flying to speed up the volley. Tap Recall to end that shot early.
+- Pause to manage your run. Bag lets you prepare Orbs and usable Items.
+- There are nine worlds: the first seven have 18 stages each; the last two have 17 each. Each world ends with a boss.
+- On a clear, the game saves stage progress and rewards. If the wall breaches the danger line, the run ends unless a rescue applies.
