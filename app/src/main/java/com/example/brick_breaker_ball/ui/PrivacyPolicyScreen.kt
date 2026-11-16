@@ -91,14 +91,23 @@ class PrivacyPolicyScreen(
         }
 
         val onlineUrl = BuildConfig.PRIVACY_POLICY_URL.trim()
+        // Both online languages publish the same privacy terms as the bundled English copy.
+        val arabicUrl = onlineUrl.replace("/en/privacy", "/ar/privacy").takeIf { it != onlineUrl }
         val back: Rectangle
         val online: Rectangle?
-        if (onlineUrl.isNotEmpty()) {
+        val arabic: Rectangle?
+        if (onlineUrl.isNotEmpty() && arabicUrl != null) {
+            back = button("BACK", 48f, 105f, 246f, 82f)
+            online = button("OPEN ENGLISH", 310f, 105f, 246f, 82f)
+            arabic = button("OPEN ARABIC", 572f, 105f, 280f, 82f)
+        } else if (onlineUrl.isNotEmpty()) {
             back = button("BACK", 105f, 105f, 320f, 82f)
             online = button("OPEN ONLINE", 475f, 105f, 320f, 82f)
+            arabic = null
         } else {
             back = button("BACK", 250f, 105f, 400f, 82f)
             online = null
+            arabic = null
             game.assets.smallFont.color = ForgeUiPalette.textSecondary
             fittedText(
                 game.assets.smallFont,
@@ -121,6 +130,7 @@ class PrivacyPolicyScreen(
         when {
             tapped(back) -> goBack()
             online != null && tapped(online) -> Gdx.net.openURI(onlineUrl)
+            arabic != null && tapped(arabic) -> arabicUrl?.let { Gdx.net.openURI(it) }
         }
     }
 
