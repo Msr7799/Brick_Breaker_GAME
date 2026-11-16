@@ -39,4 +39,4 @@ After ownership is verified, we will review and process deletion of the game-man
 You may manage advertising preferences through your device and any in-app consent options available in your region. We use reasonable safeguards, including HTTPS connections and server-side identity verification, to help protect data we handle. No transmission or storage method can be guaranteed completely secure. We may revise this policy when the game, website or legal requirements change, and will update its effective date for material changes.
 
 12. Contact
-For privacy questions, requests to access or delete game-managed cloud data, or concerns about your account, contact Forge Pulse Games at alromaihi2224@gmail.com. This is the support email listed on our Google Play store page. Developer GitHub: https://github.com/msr7799 .
+For privacy questions, requests to access or delete game-managed cloud data, or concerns about your account, contact Forge Pulse Games at alromaihi2224@gmail.com. This is the support email listed on our Google Play store page. Developer Website: https://portfolio-msr-bh.vercel.app .
