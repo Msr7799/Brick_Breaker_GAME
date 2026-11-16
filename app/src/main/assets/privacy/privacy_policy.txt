@@ -1,39 +1,42 @@
 BRICK BREAKER BALL PRIVACY POLICY
-Effective date: November 14, 2026
+Effective date: November 16, 2026
 
-1. OVERVIEW
-Brick Breaker Ball is a mobile game published by ForgePulse Games. An account is optional for ordinary offline gameplay. Play Games / Firebase authentication is required for cloud progress backup and server-verified daily rewards. We do not ask you to enter an email address or password into the game for these features. The service processes your verified Firebase user ID to associate your saves and rewards with your account.
+1. Overview
+Brick Breaker Ball is an Android game published by Forge Pulse Games. You can play offline without creating an account. Connecting Google Play Games / Firebase Authentication is optional for ordinary gameplay but is needed for account-linked cloud progress and server-verified daily rewards. The game does not ask you to type your name, email address, phone number or password to play. When you connect an account, the service processes a verified Firebase user ID to associate cloud records with your game account.
 
-2. GAME DATA STORED ON YOUR DEVICE
-The game stores gameplay progress, settings, unlocked cosmetics, inventory, scores, and similar game state locally on your device. Android backup is disabled for this app. Clearing the app's storage or uninstalling the game removes locally stored game data.
+2. Data stored on your device
+The game stores progress, settings, scores, unlocked balls and cosmetics, inventory, virtual currency balances and related game state locally on your device. Android automatic app backup is disabled. Clearing app storage or uninstalling the game removes this local data, but does not by itself erase any account-linked cloud records.
 
-2A. CLOUD PROGRESS BACKUP
-In versions with cloud save enabled, signing in connects an account backup of campaign progress, stars, scores, selected balls, owned cosmetics, orbs, item inventory, settings, wallet balances, and reward or purchase receipt markers used to prevent repeated grants. Our Vercel service verifies your Firebase identity and stores the checkpoint in MongoDB under that account. A previous checkpoint may be retained for recovery. Authentication tokens are used for verification and are not stored in progress checkpoints. Saved Games in Google Play Games is not the storage provider for this backup. Reinstalling and reconnecting the same account can restore the last successfully synchronized checkpoint; changes that never synchronized may be lost. The website Stage Lab does not save Android account progress.
+3. Firebase account, MongoDB cloud saves and daily rewards
+When you sign in, Firebase Authentication identifies your game account. Our Vercel backend verifies your Firebase ID token and uses your Firebase user ID to find game records in MongoDB. MongoDB may store campaign progress, stars, scores, ball selections, cosmetics, orbs, items, settings, balances, purchase or reward receipt markers, and daily reward dates, streaks and claimed rewards. A previous progress checkpoint may be retained for recovery. Authentication tokens are verified but are not stored in progress checkpoints or the daily reward database. This is our own cloud backup service, not Google Play Games Saved Games. Reconnecting the same account after reinstalling may restore the last successfully synchronized checkpoint; changes not yet synchronized may be lost. The website Stage Lab does not store Android account progress.
 
-3. ADS
-If advertising is enabled in a production build, Brick Breaker Ball may use Google Mobile Ads to show rewarded advertisements. Google and its advertising partners may process device identifiers, ad interaction information, approximate location derived from network information, diagnostics, and other data as described in Google's own privacy documentation. When required, Google's User Messaging Platform presents consent choices before ads are requested, and the Settings screen provides an Ad Privacy entry point when Google requires one for your region/session.
+4. Website data and advertising
+Our website does not require registration or payment forms. Its pages may request Google AdSense advertisements, subject to account approval and ad availability. Google and advertising partners may use cookies or similar technologies and process browser and device information, IP address and ad interactions to deliver and measure ads, subject to applicable consent choices. Our hosting provider may process technical request data such as IP addresses, user agents and security logs.
 
-4. IN-APP PURCHASES
-If you make a purchase, payment is processed by Google Play. The developer does not receive your full payment-card details. The game may receive purchase identifiers, product information, purchase state, and transaction information needed to unlock purchased content, prevent duplicate grants, and restore eligible purchases.
+5. Advertising in the Android game
+When enabled in the production Android build, Google AdMob (Google Mobile Ads SDK) provides optional rewarded advertisements. Google and its advertising partners may process advertising identifiers, ad interactions, approximate location inferred from network data, and diagnostic information as described in Google's policies. Where applicable, Google's User Messaging Platform presents consent choices and the game provides an Ad Privacy option when required. Ad availability depends on the advertising service and account status.
 
-5. NETWORK AND DEVICE PERMISSIONS
-The game may use Internet and network-state access for advertising, billing, and related platform services. Vibration access is used only for optional gameplay haptic feedback. The game does not request access to your contacts, microphone, camera, or precise location.
+6. In-app purchases
+Google Play processes Android in-app purchases. We do not receive full payment-card details. The game may process purchase tokens, product identifiers, transaction state and receipt markers to unlock content, prevent duplicate grants and restore eligible purchases. Google Play retains payment and transaction records under its own policies.
 
-6. THIRD-PARTY SERVICES
-The Android version uses Google Play Games Services and Firebase Authentication for optional account connection; it may use Firebase Analytics and Crashlytics for usage and diagnostic information, plus Google Play Billing and Google Mobile Ads. If server daily rewards are enabled, our Vercel service processes your Firebase user ID and an authentication token, and MongoDB stores reward dates, streak and earned daily rewards. Tokens are used only for verification and are not kept in the rewards database. Those providers operate under their respective terms and privacy policies. Their data practices are controlled by their respective providers, not by Brick Breaker Ball.
+7. Permissions
+The Android game uses Internet and network-state access for account services, cloud saves, advertising and Google Play Billing. Vibration is used for optional haptic feedback. The game does not request access to contacts, microphone, camera or precise device location as part of ordinary gameplay.
 
-7. CHILDREN'S PRIVACY
-Brick Breaker Ball does not provide a form for users to submit personal information directly to the developer. If the game is distributed to audiences that require additional child-safety or advertising protections, the publisher must configure the store listing and advertising services accordingly.
+8. Third-party services
+The Android game may use Google Play Games Services, Firebase Authentication, Google Analytics for Firebase, Firebase Crashlytics, Google Play Billing and Google AdMob. The website uses Vercel hosting and may use Google AdSense; our account services store game records in MongoDB. Third-party providers handle their own information under their policies. Google privacy policy: https://policies.google.com/privacy . Google advertising: https://policies.google.com/technologies/ads . Firebase privacy and security: https://firebase.google.com/support/privacy .
 
-8. DATA RETENTION AND YOUR CHOICES
-Local game data remains on your device until it is deleted, overwritten, or removed with the app. Cloud checkpoints and server daily reward history may remain associated with your Firebase account until deletion is requested or required by applicable law. Uninstalling the app does not delete the account's cloud checkpoint. Contact the publisher using the contact link below for account data deletion requests. Data processed by Google services is retained according to Google's policies and your Google account or consent settings where applicable.
+9. Children's privacy
+Brick Breaker Ball is not directed to children under age 13. Age-of-consent requirements and additional protections for younger users vary by country. The game does not provide a form for users to submit personal information directly to the developer. Advertising, consent and store settings must follow applicable child and teen privacy requirements.
 
-9. SECURITY
-Reasonable technical measures are used to limit the amount of data handled directly by the game. No method of electronic storage or transmission can be guaranteed to be completely secure.
+10. Retention and requests to delete cloud data
+Local data remains until you clear it or uninstall the game. Game-managed MongoDB cloud checkpoints (including any retained previous checkpoint) and daily reward records can remain linked to your Firebase user ID after uninstalling or signing out.
 
-10. CHANGES TO THIS POLICY
-This policy may be updated when the game, its services, or legal requirements change. The effective date shown at the top will be updated when material changes are made.
+To request deletion of your game-managed cloud data, email alromaihi2224@gmail.com with the subject "Brick Breaker Ball - Cloud Data Deletion Request". State that you want your game cloud records deleted and include non-sensitive details that help us locate your connected game account. We may ask you to verify that the account is yours through an appropriate secure method. Never send passwords, authentication tokens or full payment details.
 
-11. CONTACT
-For questions about this privacy policy, contact ForgePulse Games through:
-https://github.com/msr7799
+After ownership is verified, we will review and process deletion of the game-managed MongoDB progress checkpoints, daily reward history and other game account records linked to that Firebase user ID, and the associated Firebase Authentication user record where applicable, subject to legal or security retention requirements. We will contact you about the outcome. This is a manual support-request process; the game does not currently provide an automatic cloud-data deletion button. Deleting the app does not automatically delete cloud data. Records held independently by Google Play, Google or other providers are governed by their policies and may require separate requests.
+
+11. Your choices, security and changes
+You may manage advertising preferences through your device and any in-app consent options available in your region. We use reasonable safeguards, including HTTPS connections and server-side identity verification, to help protect data we handle. No transmission or storage method can be guaranteed completely secure. We may revise this policy when the game, website or legal requirements change, and will update its effective date for material changes.
+
+12. Contact
+For privacy questions, requests to access or delete game-managed cloud data, or concerns about your account, contact Forge Pulse Games at alromaihi2224@gmail.com. This is the support email listed on our Google Play store page. Developer GitHub: https://github.com/msr7799 .
