@@ -735,11 +735,13 @@ class VolleyOrbsScreen(
     else "${game.progress.orbSlotCoinCost(slot)} COINS TO UNLOCK"
 
     private fun orbActivationSummary(orb: VolleyOrbDefinition): String {
-        val extraBalls = orb.stat("increased_ball_count")
         val flatDamage = orb.stat("damage").toInt() + orb.stat("additional_damage").toInt()
-        val bonusBalls = ceil(extraBalls.coerceAtLeast(0f) * 1.5f).toInt()
+        // Reference combat adds every equipped ORB's raw count, then floors the combined total.
+        // The old 1.5x display overstated READY and other ORBs without changing combat.
+        val bonusBalls = orb.referenceStat("increased_ball_count").coerceAtLeast(0.0)
+        val bonusBallsLabel = bonusBalls.toString().removeSuffix(".0")
         val main = when (orb.family) {
-            "READY" -> "+$bonusBalls START BALLS"
+            "READY" -> "+$bonusBallsLabel START BALLS"
             "CRIT" -> "HIT CHANCE: CRITICAL DAMAGE"
             "EMPOWER" -> "HIT CHANCE: BOOST LATER HITS"
             "EXPLOSIVE" -> "HIT CHANCE: NEARBY BLAST"
@@ -755,12 +757,12 @@ class VolleyOrbsScreen(
             "WARRIOR" -> "STAGE DAMAGE + BALLS"
             else -> when {
                 flatDamage > 0 -> "+${ceil(flatDamage * 1.5f).toInt()} FLAT HIT DAMAGE"
-                bonusBalls > 0 -> "+$bonusBalls START BALLS"
+                bonusBalls > 0.0 -> "+$bonusBallsLabel START BALLS"
                 else -> "PASSIVE VOLLEY EFFECT"
             }
         }
-        return if (bonusBalls > 0 && orb.family !in setOf("READY", "WARRIOR"))
-            "$main  |  +$bonusBalls BALLS" else main
+        return if (bonusBalls > 0.0 && orb.family !in setOf("READY", "WARRIOR"))
+            "$main  |  +$bonusBallsLabel BALLS" else main
     }
 
     private fun handleInput() {
