@@ -11,6 +11,7 @@ package com.example.brick_breaker_ball.gameplay
  */
 internal object RpgSourceHazardRules {
     const val SPIKE_REARM_SECONDS = 10f // campaign; endless source is 2s, not imported here
+    const val SPIKE_START_DELAY_SECONDS = .1f // Godot _ready awaits 0.1 seconds
     const val SPIKE_REVEAL_SECONDS = .2f
     const val SPIKE_HIDE_SECONDS = .2f
     const val VORTEX_ABSORB_SECONDS = .4f
@@ -31,11 +32,17 @@ internal object RpgSourceHazardRules {
         return current < cycle.activeSeconds
     }
 
-    fun spikeArmed(secondsRemaining: Float): Boolean = secondsRemaining <= 0f
+    fun spikeArmed(secondsRemaining: Float, elapsedSeconds: Float): Boolean =
+        elapsedSeconds >= SPIKE_START_DELAY_SECONDS && secondsRemaining <= 0f
 
     /** Godot animates hiding and reappearing over 0.2s each, while retaining an immutable hitbox. */
-    fun spikeVisualStrength(secondsRemaining: Float): Float {
-        if (secondsRemaining <= 0f) return 1f
+    fun spikeVisualStrength(secondsRemaining: Float, elapsedSeconds: Float): Float {
+        if (elapsedSeconds < SPIKE_START_DELAY_SECONDS) return 0f
+        if (secondsRemaining <= 0f)
+            return ((elapsedSeconds - SPIKE_START_DELAY_SECONDS) /
+                SPIKE_REVEAL_SECONDS).coerceIn(0f, 1f).takeIf {
+                    elapsedSeconds <= SPIKE_START_DELAY_SECONDS + SPIKE_REVEAL_SECONDS
+                } ?: 1f
         if (secondsRemaining > SPIKE_REARM_SECONDS - SPIKE_HIDE_SECONDS)
             return ((secondsRemaining - (SPIKE_REARM_SECONDS - SPIKE_HIDE_SECONDS)) /
                 SPIKE_HIDE_SECONDS).coerceIn(0f, 1f)
