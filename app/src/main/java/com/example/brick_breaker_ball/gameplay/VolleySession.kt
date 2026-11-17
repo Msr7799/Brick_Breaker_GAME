@@ -940,6 +940,7 @@ class VolleySession(
         orbMultishotUsed = false
         bonusDamageFlat = 0
         resetBoardContent()
+        vortexClock = 0f // new run: source traps reveal after 0.1s; vortex cycles restart active
         phase = VolleyPhase.READY_TO_AIM
         launcherX = 450f
         ballCount = initialBallCount()
@@ -1429,7 +1430,7 @@ class VolleySession(
                         return@repeat
                     }
                     if (sourceKind(brick) == "SPIKE_TRAP") {
-                        if (RpgSourceHazardRules.spikeArmed(spikeCooldowns[brick.id] ?: 0f)) {
+                        if (RpgSourceHazardRules.spikeArmed(spikeCooldowns[brick.id] ?: 0f, vortexClock)) {
                             ball.alive = false
                             spikeCooldowns[brick.id] = RpgSourceHazardRules.SPIKE_REARM_SECONDS
                             emit(VolleyEvent.Vfx(VolleyVfxKind.HAZARD, ball.position.x, ball.position.y))
@@ -2329,7 +2330,7 @@ class VolleySession(
             spikeCooldowns[brickId] ?: 0f else 0f
 
     fun sourceSpikeVisualStrength(brickId: Int): Float =
-        RpgSourceHazardRules.spikeVisualStrength(sourceSpikeCooldown(brickId))
+        RpgSourceHazardRules.spikeVisualStrength(sourceSpikeCooldown(brickId), vortexClock)
 
     fun sourceVortexActive(brickId: Int): Boolean {
         val brick = bricks.firstOrNull { it.id == brickId && sourceKind(it) == "VORTEX" }
