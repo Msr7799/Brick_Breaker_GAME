@@ -2323,7 +2323,7 @@ class VolleySession(
 
     private fun isSourceAlternatingBlocker(brick: Brick): Boolean =
         stage.sourceScene != null && stage.authoredBricks.getOrNull(brick.id - 1)
-            ?.sourceScene?.contains("/Blocker/Alt_Blocker/") == true
+            ?.sourceScene?.let(RpgAlternatingBlockerRules::isSourceGate) == true
 
     /**
      * Recovered RPG: Alt_Blocker.is_closed initially true, _ready() opens it;
@@ -2331,7 +2331,7 @@ class VolleySession(
      * and increments turn after descent, including across v2 snapshot restore.
      * Derive this state from persisted turn; no new save field or ID migration.
      */
-    private fun isSourceAlternatingBlockerOpen(): Boolean = turn % 2 == 1
+    private fun isSourceAlternatingBlockerOpen(): Boolean = RpgAlternatingBlockerRules.openAtTurn(turn)
 
     /** Source gate state for a visible mobile hint or regression test. */
     fun sourceAlternatingBlockerOpen(brickId: Int): Boolean? =
