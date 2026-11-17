@@ -39,24 +39,19 @@ Google Play Games and AdMob require their respective Google services to be avail
 
 Download the signed **APK** from [GitHub Releases](https://github.com/Msr7799/Brick_Breaker_GAME/releases/latest), or install the [Google Play version](https://play.google.com/store/apps/details?id=com.forgepulse.brickbreakerball). Release APKs are distributed through Releases, not committed to the source tree.
 
-## Ball progression
+## Player and ball progression
 
-Pearl White is the free starter. Other balls have a visible Coins or Gems price; selected Normal and Rare balls can also be earned by completing campaign stages. Every rarity contains several strength steps, and owned balls remain permanently unlocked.
+Pearl White is the free starter. Other ball appearances have a visible Coins or Gems price; selected Normal and Rare appearances can also be earned through campaign stages. Ownership remains permanent. Tap any Shop ball to inspect it; OWNED opens that exact ball in the collection.
 
-| Rarity | Ball power | Extra starting balls |
-| --- | --- | --- |
-| Normal | 1–3 / 12 | 0–6 |
-| Rare | 4–6 / 12 | 10–18 |
-| Legendary | 7–9 / 12 | 22–30 |
-| Epic | 10–12 / 12 | 32–40 |
+New campaign rounds use a separate saved player level and equipped ORBS for combat statistics. A level-1 player without ORBS starts with **10 balls and 1 damage per hit**. Ball appearances do not add attack, extra balls, or automatic abilities. The level contributes 10% base attack per ten levels, with the original two rounding steps; its starting-ball bonus is capped at +10. Stage number never substitutes for player level or scales damage to the target's HP.
 
-The power rating is separate from campaign attack growth and equipped Orb effects. Tap any Shop ball to inspect its ability; the OWNED button opens that exact ball in the collection.
+Normal, Hard and Extreme retain their distinct stage-health curves. Fractional brick health is retained internally and truncated for display; ordinary source bricks die below 1 HP. Hit-count targets and permanent blockers keep their separate rules. Player XP starts at level 1 / 0 XP independently of existing campaign unlocks. Older paused rounds retain their saved combat rules until finished; no historical XP is invented.
 
 ### Ball showcase
 
-BALLS uses the same carved stone, wood, and fantasy ornaments as the Shop and Orb bag. A large ball sits above a transparent light ring, with rarity tabs, arrows, and horizontal swiping. One compact tray shows standard hit damage, **total** volley size, and the special ability. Score rewards are explicitly labeled SCORE; strength pips are a collection rating, not an upgrade level.
+BALLS uses the same carved stone, wood, and fantasy ornaments as the Shop and Orb bag. A large ball sits above a transparent light ring, with rarity tabs, arrows, and horizontal swiping. Its compact tray shows actual hit damage, **total** volley size and player level, with XP progress and optional explanations. Rarity describes the appearance collection, not a separate combat multiplier.
 
-Tap a stat, strength pips, the campaign attack bar, or **?** for the full explanation. A single main action shows EQUIP, EQUIPPED, or UNLOCK, with the actual price and any campaign unlock alternative. UNLOCK opens the focused Shop without spending currency on this screen. Supported balls also offer icon buttons for Straight/Spread; hold either for help. Existing saves, ownership, prices, and combat formulas are preserved, with no individual ball upgrade purchase. Portrait/wide layouts respect safe areas and Reduce Motion.
+Tap a stat or **?** for the full explanation. A single main action shows EQUIP, EQUIPPED, or UNLOCK, with the actual price and campaign unlock alternative. UNLOCK opens the focused Shop without spending currency on this screen. Older paused rounds show their legacy statistics. Ownership, inventory and campaign completion remain saved. Portrait/wide layouts respect safe areas and Reduce Motion. No individual ball power upgrade is sold.
 
 ## Boss encounters
 

@@ -67,7 +67,9 @@ data class VolleyAuthoredBrickSeed(
     /** Base health before level difficulty scaling. */
     val sourceBaseHealth: Float? = null,
     val sourceBurnCharges: Int = 1,
-    val sourceProtectionPerRound: Int = 2
+    val sourceProtectionPerRound: Int = 2,
+    /** Decimal source value, before narrowing for older saved combat rules. */
+    val sourceBaseHealthExact: Double? = null
 )
 
 data class VolleyRailSeed(

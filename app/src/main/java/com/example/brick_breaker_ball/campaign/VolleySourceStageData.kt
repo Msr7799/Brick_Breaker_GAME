@@ -73,7 +73,8 @@ internal object VolleySourceStageData {
             val brick = bricks[index]
             bricks[index] = brick.copy(type = BrickType.ARMORED_DARK, shieldLock = true,
                 sourceKind = "BOSS_GUARD", sourceScene = null,
-                sourceBaseHealth = brick.sourceBaseHealth!! * .5f)
+                sourceBaseHealth = brick.sourceBaseHealth!! * .5f,
+                sourceBaseHealthExact = (brick.sourceBaseHealthExact ?: brick.sourceBaseHealth!!.toDouble()) * .5)
         }
     }
     private fun asset(name: String): FileHandle = if (Gdx.files != null) Gdx.files.internal(name) else {
@@ -203,6 +204,8 @@ internal object VolleySourceStageData {
                 slideStartsMoved = overrides?.getBoolean("moved", node.getBoolean("moved", true))
                     ?: node.getBoolean("moved", true),
                 sourceBaseHealth = if (playableGate || node.has("sourceHits")) null else sourceBaseHealth,
+                sourceBaseHealthExact = if (playableGate || node.has("sourceHits") || !node.has("sourceHealth")) null
+                    else node.getDouble("sourceHealth"),
                 sourceBurnCharges = (overrides?.getInt("burns_until_depleted", 1)
                     ?: node.getInt("burns_until_depleted", 1)).coerceAtLeast(0),
                 sourceProtectionPerRound = (overrides?.getInt("protection_per_round", 2)
