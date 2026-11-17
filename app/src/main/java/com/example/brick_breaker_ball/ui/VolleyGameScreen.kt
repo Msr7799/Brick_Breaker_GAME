@@ -249,6 +249,7 @@ class VolleyGameScreen(
     private var itemsOpen = false
     private var selectedItemIndex = 0
     private var feedbackText = ""
+    private var mechanicHintActive = false
     private var feedbackTime = 0f
     private var hitFlash = 0f
     private var hitX = DESIGN_WIDTH / 2f
@@ -781,6 +782,7 @@ class VolleyGameScreen(
         session.drainEvents().forEach { event ->
             when (event) {
                 is VolleyEvent.Feedback -> {
+                    mechanicHintActive = false
                     feedbackText = event.text
                     feedbackTime = event.duration
                 }
@@ -791,14 +793,29 @@ class VolleyGameScreen(
                     hitFlash = 1f
                 }
 
-                is VolleyEvent.BrickHit -> if (stage.sourceScene == null && gameplayEffectsEnabled &&
-                    (soundCooldowns["impact_pop"] ?: 0f) <= 0f) {
-                    game.assets.play(
-                        "volley_ball",
-                        game.progress.settings.masterVolume * game.progress.settings.sfxVolume * .50f,
-                        impactPitch.nextPitch()
-                    )
-                    soundCooldowns["impact_pop"] = .028f
+                is VolleyEvent.BrickHit -> {
+                    if (!editorTest && event.damage > 0 && feedbackTime <= 0f) {
+                        val seed = stage.authoredBricks.getOrNull(event.brickId - 1)
+                        val kind = seed?.sourceKind
+                        val applicable = kind != "BLOCKER" || seed?.sourceScene?.contains("/Alt_Blocker/") == true
+                        if (kind != null && applicable && !game.heroGuideProgress.mechanicLearned(kind)) {
+                            VolleyMechanicHints.all[kind]?.let { hint ->
+                                feedbackText = hint
+                                mechanicHintActive = true
+                                feedbackTime = 3f
+                                game.heroGuideProgress.completeMechanic(kind)
+                            }
+                        }
+                    }
+                    if (stage.sourceScene == null && gameplayEffectsEnabled &&
+                        (soundCooldowns["impact_pop"] ?: 0f) <= 0f) {
+                        game.assets.play(
+                            "volley_ball",
+                            game.progress.settings.masterVolume * game.progress.settings.sfxVolume * .50f,
+                            impactPitch.nextPitch()
+                        )
+                        soundCooldowns["impact_pop"] = .028f
+                    }
                 }
 
                 is VolleyEvent.CombatExperience -> if (!editorTest) {
@@ -1201,6 +1218,10 @@ class VolleyGameScreen(
         batch.color = Color.WHITE
         batch.draw(frame, x, y, frame.regionWidth * scale, frame.regionHeight * scale)
         val guards = session.bricks.count { it.volleyShieldLock && it.health > 0 }
+        session.bossWarning?.let { warning ->
+            fittedText(game.assets.smallFont, warning, x + frame.regionWidth * scale + 12f,
+                y + 35f * scale, 410f, .36f)
+        }
         if (guards > 0 && core.health > 0) {
             fittedText(game.assets.smallFont, "LOCKS $guards", x - 8f, y + 16f * scale, frame.regionWidth * scale + 16f, .35f)
         }
@@ -1299,6 +1320,10 @@ class VolleyGameScreen(
                 fittedText(game.assets.hudValueFont, hp, brick.bounds.x,
                     brick.bounds.y + brick.bounds.height * (importedArt?.healthLabelYFraction ?: .67f),
                     brick.bounds.width, (if (hp.length > 3) .39f else .50f) * textScale)
+            }
+            if (session.bossMarked(brick.id)) {
+                fittedText(game.assets.smallFont, "!", brick.bounds.x,
+                    brick.bounds.y + brick.bounds.height - 4f, brick.bounds.width, .45f)
             }
             if (game.progress.settings.colorBlind) {
                 fittedText(game.assets.smallFont, assetCatalog.accessibilityMarker(brick), brick.bounds.x + 3f, brick.bounds.y + brick.bounds.height - 5f, 30f, .28f)
@@ -1431,7 +1456,8 @@ class VolleyGameScreen(
         var y = aimGuideOrigin.y
         var dx = aimDirection.x * 43f
         var dy = aimDirection.y * 43f
-        val guideDots = if (VolleyModifier.SHRINK_GUIDE in session.queuedModifiers || VolleyModifier.SHRINK_GUIDE in session.activeModifiers) 18 else 32
+        val guideDots = if (VolleyModifier.SHRINK_GUIDE in session.queuedModifiers || VolleyModifier.SHRINK_GUIDE in session.activeModifiers) 18
+            else if (session.experimentalLaunchStyle == com.example.brick_breaker_ball.gameplay.VolleyLaunchStyle.RICOCHET_GUIDE) 48 else 32
         repeat(guideDots) { index ->
             x += dx
             y += dy
@@ -1491,7 +1517,12 @@ class VolleyGameScreen(
         if (VolleyModifier.LASER in session.activeModifiers || VolleyModifier.LASER in session.queuedModifiers) {
             fittedText(game.assets.smallFont, "LASER ${session.laserGauge}/${VolleySession.LASER_CHARGE_HITS}", 590f, 1390f, 250f, .44f)
         }
-        if (feedbackTime > 0f) fittedText(game.assets.hudLabelFont, feedbackText, 260f, 485f, 380f, .56f)
+        if (feedbackTime > 0f) {
+            if (mechanicHintActive) HeroGuideRenderer.drawCompanion(batch, game.assets,
+                Rectangle(18f, 440f, 70f, 70f), opacity = 1f)
+            fittedText(game.assets.hudLabelFont, feedbackText,
+                if (mechanicHintActive) 100f else 260f, 485f, if (mechanicHintActive) 720f else 380f, .56f)
+        }
     }
 
     private fun displayedCharm(): VolleyModifier? = session.queuedModifiers.firstOrNull { it == VolleyModifier.FIRE }

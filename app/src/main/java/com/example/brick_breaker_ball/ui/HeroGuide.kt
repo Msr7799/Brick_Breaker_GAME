@@ -25,6 +25,9 @@ class HeroGuideProgress(private val prefs: Preferences) {
     fun completeStory() = prefs.putBoolean("story_complete", true).flush()
     fun completeFirstShot() = prefs.putBoolean("first_shot_complete", true).flush()
     fun completeShopOrbs() = prefs.putBoolean("shop_orbs_complete", true).flush()
+
+    fun mechanicLearned(kind: String): Boolean = prefs.getBoolean("mechanic_seen_v1:$kind", false)
+    fun completeMechanic(kind: String) = prefs.putBoolean("mechanic_seen_v1:$kind", true).flush()
 }
 
 enum class GuideSpeaker { DRAGON, ORB_SAGE }

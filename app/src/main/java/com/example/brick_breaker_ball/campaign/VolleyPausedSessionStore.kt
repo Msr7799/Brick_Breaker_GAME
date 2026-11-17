@@ -46,6 +46,8 @@ class VolleyPausedSessionStore(
 
     fun save(levelId: Int, snapshot: VolleySessionSnapshot, rewardedRevivesUsed: Int = 0) {
         require(levelId > 0 && snapshot.version == VERSION)
+        snapshot.evolution?.requireValid()
+        require(snapshot.randomState == null || snapshot.randomState in 0..281474976710655L)
         val bytes = ByteArrayOutputStream().use { output ->
             ObjectOutputStream(output).use { it.writeObject(snapshot) }
             output.toByteArray()
@@ -108,6 +110,8 @@ class VolleyPausedSessionStore(
             it.readObject() as VolleySessionSnapshot
         }
         require(snapshot.version == VERSION)
+        snapshot.evolution?.requireValid()
+        require(snapshot.randomState == null || snapshot.randomState in 0..281474976710655L)
         val levelId = prefs.getInteger(levelKey, 0)
         require(levelId > 0)
         VolleyStageRepository.levelDefinition(levelId) to snapshot

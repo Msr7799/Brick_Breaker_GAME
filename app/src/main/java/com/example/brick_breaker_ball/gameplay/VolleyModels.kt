@@ -236,7 +236,10 @@ data class VolleySessionSnapshot(
     val sourceCombatRulesVersion: Int? = null,
     val sourceCombatPlayerLevel: Int? = null,
     val sourceRemainingHealth: Map<Int, Double>? = null,
-    val combatKillSequence: Int? = null
+    val combatKillSequence: Int? = null,
+    /** Null in old v2 saves; absence never opts an existing run into new rules. */
+    val evolution: VolleyEvolutionSnapshot? = null,
+    val randomState: Long? = null
 ) : Serializable {
     companion object {
         // Preserve paused runs serialized by version 2 before queuedItemSources was added.

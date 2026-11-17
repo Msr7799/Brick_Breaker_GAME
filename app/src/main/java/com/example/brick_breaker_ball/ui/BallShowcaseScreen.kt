@@ -382,7 +382,10 @@ open class BallShowcaseScreen(
                 "The starting total comes from player level and equipped ORBs. Pickups can change it during a run. This appearance contributes no extra balls."
             InfoTopic.ABILITY -> "Player level ${preview.playerLevel}.\n\n" +
                 "Defeat campaign enemies to earn XP. Player level is independent of stage number and ball rarity. Equipped ORBs provide combat abilities.\n\n" +
-                "The damage and total-ball statistics show your current campaign baseline."
+                "The damage and total-ball statistics show your current campaign baseline.\n\n" +
+                (if (game.progress.equippedOrbs.isEmpty()) "No ORBs equipped. Equip ORBs to add combat effects to any ball appearance."
+                else "Equipped ORBs: " + game.progress.equippedOrbs.map { it.family }.distinct().joinToString(", ") +
+                    ". Their effects apply with every ball appearance; changing rarity does not multiply them.")
             InfoTopic.POWER -> "${rarity.name} appearance.\n\n" +
                 "Rarity describes the collectible appearance, not an attack multiplier or an upgrade level. All ball appearances use the same player and ORB combat rules.\n\n" + unlock
             InfoTopic.CAMPAIGN -> "Account level ${preview.accountPlayerLevel}: ${preview.playerExperience} / ${preview.nextLevelExperience} XP toward the next player level.\n\n" +

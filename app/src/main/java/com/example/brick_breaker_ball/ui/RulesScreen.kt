@@ -1014,8 +1014,9 @@ class RulesScreen(
             )
         }
 
-        val result =
-            mutableListOf<RuleBlock>()
+        val result = mutableListOf<RuleBlock>(RuleBlock.Heading("SPECIAL BRICKS — QUICK HELP", 2))
+        VolleyMechanicHints.all.values.forEach { result += RuleBlock.Paragraph(it) }
+        result += RuleBlock.Spacer
 
         val paragraph =
             StringBuilder()

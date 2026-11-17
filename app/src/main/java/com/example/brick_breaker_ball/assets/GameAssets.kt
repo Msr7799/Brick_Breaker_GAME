@@ -441,7 +441,9 @@ class GameAssets {
         val sound = sounds["volley_ball"] ?: return
         // AudioStreamPlayer2D's default max_polyphony is 1: a new shot replaces the old one.
         sound.stop()
-        val outputVolume = soundEffectVolume(volume) * .31622776f
+        // The source already sets -10 dB. The generic .55 SFX gain added another -5.19 dB.
+        // Apply the player's master/SFX sliders once, retaining the authored launch level.
+        val outputVolume = volume.coerceIn(0f, 1f) * .31622776f
         if (outputVolume <= 0f) return
         // Godot random_pitch uses the reciprocal as its lower bound, not 0.9.
         sound.play(outputVolume, MathUtils.random(1f / 1.1f, 1.1f), 0f)

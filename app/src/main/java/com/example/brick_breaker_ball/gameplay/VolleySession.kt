@@ -103,12 +103,23 @@ class VolleySession(
     shotgunEnabled: Boolean = false,
     playerLevel: Int = 1,
     referenceRules: Boolean = stage.sourceScene != null,
-    combatRunId: String = java.util.UUID.randomUUID().toString()
+    combatRunId: String = java.util.UUID.randomUUID().toString(),
+    experiments: VolleyFeatureFlags = VolleyProductionFeatures.defaults
 ) {
     private var referenceRulesEnabled = referenceRules && stage.sourceScene != null
     private var sourceCombatPlayerLevel = playerLevel.coerceAtLeast(1)
     private var sourceCombatRunId = combatRunId
     private var combatKillSequence = 0
+    private val allowedExperiments = experiments
+    private var evolution = VolleyEvolutionSnapshot(features = experiments)
+    val experimentalLaunchStyle: VolleyLaunchStyle get() = evolution.launchStyle
+    val referenceRoleBridgeEnabled: Boolean get() = referenceRulesEnabled && evolution.features.referenceBallRoles
+    val bossWarning: String? get() = if (evolution.features.bossAbilities &&
+        evolution.boss.forecastTurn > turn && evolution.boss.forecastTargets.isNotEmpty())
+        "${VolleyBossAbilities.name(world)} / NEXT TURN" else null
+    fun bossMarked(brickId: Int): Boolean = evolution.features.bossAbilities &&
+        (brickId in evolution.boss.forecastTargets || (evolution.boss.activeTurn == turn &&
+            brickId in evolution.boss.activeTargets && brickId !in evolution.boss.consumedTargets))
     private val sourceRemainingHealth = mutableMapOf<Int, Double>()
     val usesReferenceCombat: Boolean get() = referenceRulesEnabled
     private val maxBallCount: Int get() = if (referenceRulesEnabled) Int.MAX_VALUE else 160
@@ -245,7 +256,7 @@ class VolleySession(
         get() = (MAX_REWARDED_REVIVES - rewardedRevivesUsed).coerceAtLeast(0)
 
     private val loop = FixedStepLoop(hz = 120, maxSteps = 18)
-    private val random = Random(seed)
+    private val random = VolleyRandom(seed)
     private val activeOrbs = equippedOrbs.distinctBy { it.uid ?: "legacy:${it.family}" }.take(8)
     private fun orbFor(family: String): VolleyOrbDefinition? = activeOrbs.firstOrNull { it.family == family }
     private fun createOrbEffects() = VolleyOrbEffects(activeOrbs, random, stage.levelId,
@@ -363,11 +374,24 @@ class VolleySession(
         sourceCombatPlayerLevel = if (referenceRulesEnabled) sourceCombatPlayerLevel else null,
         sourceRemainingHealth = if (referenceRulesEnabled) sourceRemainingHealth.toMap() else null,
         combatKillSequence = if (referenceRulesEnabled) combatKillSequence else null,
-        orbRunId = sourceCombatRunId
+        orbRunId = sourceCombatRunId,
+        evolution = evolution.takeIf { it.features.anyEnabled },
+        randomState = random.savedState
     )
 
     fun restore(snapshot: VolleySessionSnapshot) {
         require(snapshot.version == 2) { "Unsupported Volley snapshot version ${snapshot.version}" }
+        require(snapshot.evolution == null || snapshot.evolution.version == VolleyProductionFeatures.RULES_VERSION) {
+            "Unsupported experimental Volley rules"
+        }
+        snapshot.evolution?.requireValid()
+        evolution = snapshot.evolution?.let { saved -> saved.copy(features = VolleyFeatureFlags(
+            bossAbilities = saved.features.bossAbilities && allowedExperiments.bossAbilities,
+            referenceBallRoles = saved.features.referenceBallRoles && allowedExperiments.referenceBallRoles,
+            launchStyles = saved.features.launchStyles && allowedExperiments.launchStyles
+        ), launchStyle = if (allowedExperiments.launchStyles) saved.launchStyle else VolleyLaunchStyle.STRAIGHT)
+        } ?: VolleyEvolutionSnapshot()
+        snapshot.randomState?.let(random::restoreState)
         require(snapshot.sourceCombatRulesVersion == null || snapshot.sourceCombatRulesVersion == 1) {
             "Unsupported source combat rules"
         }
@@ -666,6 +690,7 @@ class VolleySession(
 
     fun startVolley(direction: Vector2): Boolean {
         if (phase !in setOf(VolleyPhase.READY_TO_AIM, VolleyPhase.AIMING) || ballCount <= 0) return false
+        beginEvolutionVolley()
         applyInitialImportedFreeze()
         launchDirection.set(direction)
         if (launchDirection.len2() < .0001f) launchDirection.set(0f, 1f)
@@ -1253,7 +1278,8 @@ class VolleySession(
             launchBall()
             pendingLaunches--
             launchedThisVolley++
-            launchCooldown += LAUNCH_INTERVAL
+            launchCooldown += if (evolution.features.launchStyles &&
+                evolution.launchStyle == VolleyLaunchStyle.FOCUSED_VOLLEY) LAUNCH_INTERVAL * .75f else LAUNCH_INTERVAL
         }
         if (pendingLaunches == 0 && phase == VolleyPhase.FIRING_SEQUENCE) phase = VolleyPhase.BALLS_IN_FLIGHT
 
@@ -1468,7 +1494,7 @@ class VolleySession(
                             if (sourceKind(brick) == "BURN") {
                                 val charges = burnChargesLeft[brick.id] ?:
                                     (stage.authoredBricks.getOrNull(brick.id - 1)?.sourceBurnCharges ?: 1)
-                                if (charges > 0) {
+                                if (charges > 0 && !bossBurnSafe(brick.id)) {
                                     burnChargesLeft[brick.id] = charges - 1
                                     ball.alive = false
                                     emit(VolleyEvent.Vfx(VolleyVfxKind.FIRE, ball.position.x, ball.position.y))
@@ -1600,6 +1626,7 @@ class VolleySession(
         damageBrick(brick, if (openingBreakerHit) brick.health else ballDamage,
             if (openingBreakerHit) VolleyDamageSource.OPENING_BREAKER else VolleyDamageSource.BALL,
             visited, sourceBallId = ball.id)
+        applyReferenceRole(brick, (healthBeforeHit - brick.health).coerceIn(0, ballDamage))
         if (openingBreakerHit) {
             emit(VolleyEvent.Feedback("BREAKER SHOT", .85f))
             emit(VolleyEvent.Vfx(VolleyVfxKind.FIRE, centerX(brick), centerY(brick)))
@@ -1856,6 +1883,7 @@ class VolleySession(
         }
         val openingBreaker = source == VolleyDamageSource.OPENING_BREAKER && brick.type != BrickType.BOSS_CORE
         if (brick.type == BrickType.LOCKED && brick.locked && !openingBreaker) return
+        if (evolutionBlocksHit(brick, source)) return
         if (brick.id in frozenBricks && !openingBreaker) {
             if (source == VolleyDamageSource.FIRE_SPLASH || source == VolleyDamageSource.EXPLOSION) {
                 frozenBricks.remove(brick.id)
@@ -1923,6 +1951,7 @@ class VolleySession(
             .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         emit(VolleyEvent.Impact(centerX(brick), centerY(brick), brick.health == 0))
         emit(VolleyEvent.BrickHit(brick.id, actual))
+        onEvolutionDamage(brick, source, actual)
         if (brick.health == 0 && before > 0) onBrickDestroyed(brick, source, visited)
     }
 
@@ -2238,6 +2267,144 @@ class VolleySession(
         emit(VolleyEvent.Sound("powerup"))
     }
 
+    /** Internal prototypes never change an existing or restored production run implicitly. */
+    fun setExperimentalLaunchStyle(style: VolleyLaunchStyle): Boolean {
+        if (!evolution.features.launchStyles || firing || descending) return false
+        evolution = evolution.copy(launchStyle = style)
+        return true
+    }
+
+    private fun bossCandidates(): List<VolleyBossCandidate> = bricks.filter { brick ->
+        !brick.volleyShieldLock && brick.type != BrickType.BOSS_CORE &&
+            brick.health > 0 && brick.bounds.y < boardTop && brick.bounds.y > RETURN_Y &&
+            sourceKind(brick) in setOf("GRASS", "SAND", "ICE", "BLACK", "VORTEX", "ROTATING", "BURN", "PROTECTOR")
+    }.map { VolleyBossCandidate(it.id, sourceKind(it).orEmpty(), it.health < it.initialHealth) }
+
+    private fun forecastBossAbility() {
+        if (!stage.bossStage || !evolution.features.bossAbilities ||
+            bricks.none { it.type == BrickType.BOSS_CORE && it.health > 0 }) return
+        evolution = evolution.copy(boss = VolleyBossAbilities.forecast(world, turn, bossCandidates(), evolution.boss))
+        bossWarning?.let { emit(VolleyEvent.Feedback(it, 1.5f)) }
+    }
+
+    private fun beginEvolutionVolley() {
+        evolution = evolution.copy(role = VolleyRoleBudget())
+        if (!evolution.features.bossAbilities || !stage.bossStage) return
+        val previous = evolution.boss
+        val due = previous.forecastTurn == turn
+        val targets = if (due) previous.forecastTargets.filter { id -> bricks.any { it.id == id && it.health > 0 } } else emptyList()
+        evolution = evolution.copy(boss = previous.copy(activeTurn = turn, activeTargets = emptySet(),
+            consumedTargets = emptySet(), forecastTurn = if (due) 0 else previous.forecastTurn,
+            forecastTargets = if (due) emptyList() else previous.forecastTargets))
+        if (!due || targets.isEmpty() || bricks.none { it.type == BrickType.BOSS_CORE && it.health > 0 }) return
+        // Shield phase may advertise an upcoming action, but cannot obstruct clearing its guards.
+        if (bricks.any { it.volleyShieldLock && it.health > 0 } && world !in setOf(6, 8)) return
+        evolution = evolution.copy(boss = evolution.boss.copy(activeTargets = targets.toSet()))
+        when (world) {
+            1 -> {
+                targets.forEach { id -> bricks.firstOrNull { it.id == id }?.let { brick ->
+                    val initial = stage.authoredBricks.getOrNull(id - 1)?.let(::referenceInitialHealth)
+                        ?: brick.initialHealth.toDouble()
+                    val health = (numericRemainingHealth(brick) + initial * .08).coerceAtMost(initial)
+                    if (referenceRulesEnabled && id in sourceRemainingHealth) sourceRemainingHealth[id] = health
+                    brick.health = ceil(health).toInt().coerceAtMost(brick.initialHealth)
+                } }
+                evolution = evolution.copy(boss = evolution.boss.copy(rootRenewals = previous.rootRenewals + 1))
+            }
+            7 -> targets.forEach { id ->
+                rotatingAngles[id] = ((rotatingAngles[id] ?: 0f) + 90f) % 360f
+                rotatingStartAngles[id] = rotatingAngles.getValue(id)
+                rotatingTargetAngles[id] = rotatingAngles.getValue(id)
+            }
+            9 -> if ((turn / VolleyBossAbilities.interval(world)) % 2 == 0 ||
+                previous.vulnerabilityThroughTurn >= turn) {
+                targets.forEach { id -> bricks.firstOrNull { it.id == id }?.let { protector ->
+                    bricks.filter { it.id != id && !it.volleyShieldLock && it.type != BrickType.BOSS_CORE &&
+                        sourceKind(it) in setOf("GRASS", "SAND", "ICE", "BLACK") &&
+                        distanceSquared(protector, it) <= 160f * 160f }.take(2)
+                        .forEach { protectedBricks.remove(it.id) }
+                } }
+                evolution = evolution.copy(boss = evolution.boss.copy(consumedTargets = targets.toSet()))
+            }
+        }
+        emit(VolleyEvent.Feedback(VolleyBossAbilities.name(world), 1f))
+    }
+
+    private fun bossBurnSafe(id: Int): Boolean = evolution.features.bossAbilities && world == 8 &&
+        evolution.boss.activeTurn == turn && evolution.boss.activeTargets.isNotEmpty() &&
+        id !in evolution.boss.activeTargets
+
+    private fun evolutionBlocksHit(brick: Brick, source: VolleyDamageSource): Boolean {
+        if (!evolution.features.bossAbilities || brick.type == BrickType.BOSS_CORE || brick.volleyShieldLock) return false
+        val boss = evolution.boss
+        if (boss.activeTurn != turn || brick.id !in boss.activeTargets || brick.id in boss.consumedTargets) return false
+        val fire = source == VolleyDamageSource.FIRE_SPLASH || source == VolleyDamageSource.EXPLOSION
+        if (fire || (world == 4 && source == VolleyDamageSource.CHAIN)) {
+            evolution = evolution.copy(boss = boss.copy(consumedTargets = boss.consumedTargets + brick.id))
+            return false
+        }
+        if (world !in setOf(2, 4, 5, 9)) return false
+        if (world != 5) evolution = evolution.copy(boss = boss.copy(consumedTargets = boss.consumedTargets + brick.id))
+        emit(VolleyEvent.Impact(centerX(brick), centerY(brick), false))
+        return true
+    }
+
+    private fun onEvolutionDamage(brick: Brick, source: VolleyDamageSource, actual: Int) {
+        if (!evolution.features.bossAbilities || actual <= 0) return
+        var boss = evolution.boss
+        if (source in setOf(VolleyDamageSource.FIRE_SPLASH, VolleyDamageSource.EXPLOSION))
+            boss = boss.copy(forecastTargets = boss.forecastTargets - brick.id)
+        if (world == 3 && source == VolleyDamageSource.BALL) {
+            val cancelled = (boss.forecastTargets + boss.activeTargets).filter { id ->
+                bricks.firstOrNull { it.id == id }?.let { distanceSquared(brick, it) <= 160f * 160f } == true
+            }.toSet()
+            boss = boss.copy(forecastTargets = boss.forecastTargets - cancelled,
+                consumedTargets = boss.consumedTargets + cancelled)
+        }
+        if (world == 6 && boss.activeTurn == turn && brick.id in boss.activeTargets && brick.id !in boss.consumedTargets) {
+            score = (score.toLong() + actual.coerceAtMost(20)).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+            boss = boss.copy(consumedTargets = boss.consumedTargets + brick.id)
+            emit(VolleyEvent.Feedback("ECHO +${actual.coerceAtMost(20)}", .6f))
+        }
+        if (world == 9 && sourceKind(brick) == "PROTECTOR" && brick.health == 0 &&
+            (brick.id in boss.activeTargets || brick.id in boss.forecastTargets))
+            boss = boss.copy(vulnerabilityThroughTurn = turn + 2, consumedTargets = boss.activeTargets)
+        evolution = evolution.copy(boss = boss)
+    }
+
+    private fun applyReferenceRole(brick: Brick, applied: Int) {
+        if (!referenceRoleBridgeEnabled || applied <= 0 || brick.volleyShieldLock ||
+            sourceKind(brick) !in setOf("GRASS", "SAND", "ICE", "BLACK")) return
+        val budget = evolution.role.record(applied)
+        evolution = evolution.copy(role = budget)
+        val cadence = when (ballAbility.kind) {
+            BallAbilityKind.MOMENTUM_CORE -> ballAbility.ballsPerDamage
+            BallAbilityKind.IMPACT_CORE -> 20
+            BallAbilityKind.FORTUNE_CORE -> ballAbility.fortuneEveryBreaks.coerceAtLeast(20)
+            else -> ballAbility.triggerEveryHits.coerceAtLeast(1)
+        }
+        if (budget.hits % cadence != 0 || budget.available() <= 0) return
+        val amount = budget.available().coerceAtMost(ballAbility.bonusDamage.coerceAtLeast(1))
+        if (ballAbility.kind in setOf(BallAbilityKind.IMPACT_CORE, BallAbilityKind.FORTUNE_CORE)) {
+            score = (score.toLong() + amount).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        } else {
+            val target = if (ballAbility.kind in setOf(BallAbilityKind.ARC_CHAIN, BallAbilityKind.INFERNO_BURST))
+                bricks.filter { it.id != brick.id && it.health > 0 && !it.volleyShieldLock &&
+                    volleyOrbTargetVisible(it, boardTop, RETURN_Y) &&
+                    sourceKind(it) in setOf("GRASS", "SAND", "ICE", "BLACK") }
+                    .minByOrNull { distanceSquared(brick, it) }
+            else brick.takeIf { it.health > 0 }
+            if (target == null) return
+            val source = if (ballAbility.kind == BallAbilityKind.INFERNO_BURST)
+                VolleyDamageSource.FIRE_SPLASH else VolleyDamageSource.CHAIN
+            damageBrick(target, amount, source, mutableSetOf())
+            emit(VolleyEvent.Vfx(if (source == VolleyDamageSource.FIRE_SPLASH) VolleyVfxKind.FIRE else VolleyVfxKind.SPARK,
+                centerX(target), centerY(target)))
+        }
+        evolution = evolution.copy(role = evolution.role.spend(amount))
+        emit(VolleyEvent.Feedback("${ballAbility.title} +$amount", .6f))
+    }
+
     private fun finishVolley() {
         if (!firing) return
         resetFastForward()
@@ -2336,7 +2503,10 @@ class VolleySession(
         val brick = bricks.firstOrNull { it.id == brickId && sourceKind(it) == "VORTEX" }
             ?: return false
         val scene = stage.authoredBricks.getOrNull(brick.id - 1)?.sourceScene
-        return RpgSourceHazardRules.vortexActive(scene, vortexClock)
+        val boss = evolution.boss
+        val offset = if (evolution.features.bossAbilities && world == 3 && boss.activeTurn == turn &&
+            brickId in boss.activeTargets && brickId !in boss.consumedTargets) .5f else 0f
+        return RpgSourceHazardRules.vortexActive(scene, vortexClock + offset)
     }
 
     private fun isSourceAlternatingBlocker(brick: Brick): Boolean =
@@ -2525,6 +2695,7 @@ class VolleySession(
         }
         activeModifiers.clear()
         turn++
+        forecastBossAbility()
         phase = VolleyPhase.READY_TO_AIM
     }
 
@@ -2572,6 +2743,9 @@ class VolleySession(
     private fun abilityTriggered(every: Int): Boolean = every > 0 && abilityHitCounter % every == 0
     private fun centerX(brick: Brick): Float = brick.bounds.x + brick.bounds.width * .5f
     private fun centerY(brick: Brick): Float = brick.bounds.y + brick.bounds.height * .5f
+    private fun distanceSquared(a: Brick, b: Brick): Float =
+        distanceSquared(centerX(a), centerY(a), centerX(b), centerY(b))
+
     private fun distanceSquared(x1: Float, y1: Float, x2: Float, y2: Float): Float = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)
     private fun lerp(from: Float, to: Float, progress: Float): Float = from + (to - from) * progress
     private fun emit(event: VolleyEvent) {

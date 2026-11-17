@@ -22,6 +22,8 @@ class VolleyOrbsScreen(
     private val returnToShop: Boolean,
     guideFromShop: Boolean = false
 ) : ForgeScreen(game) {
+    private val legacyPausedRun = returnDestination == ShopReturnDestination.PAUSED_GAME &&
+        game.volleyPausedSession.restore()?.second?.let { it.sourceCombatRulesVersion != 1 } == true
     private companion object {
         var rememberedUid: String? = null
         var rememberedSlot = 0
@@ -738,7 +740,9 @@ class VolleyOrbsScreen(
         val flatDamage = orb.stat("damage").toInt() + orb.stat("additional_damage").toInt()
         // Reference combat adds every equipped ORB's raw count, then floors the combined total.
         // The old 1.5x display overstated READY and other ORBs without changing combat.
-        val bonusBalls = orb.referenceStat("increased_ball_count").coerceAtLeast(0.0)
+        val bonusBalls = if (legacyPausedRun)
+            orb.stat("increased_ball_count").coerceAtLeast(0f).toDouble() * 1.5
+        else orb.referenceStat("increased_ball_count").coerceAtLeast(0.0)
         val bonusBallsLabel = bonusBalls.toString().removeSuffix(".0")
         val main = when (orb.family) {
             "READY" -> "+$bonusBallsLabel START BALLS"
