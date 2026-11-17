@@ -89,8 +89,33 @@ internal object CloudSaveCodec {
     }
     fun apply(snapshot: String, account: String) {
         require(account.isNotBlank())
-        val decoded = decode(snapshot) // Validate everything before clearing a single key.
-        meta().putString("apply_snapshot", snapshot).putString("apply_account", account).flush()
+        val incoming = decode(snapshot) // Validate everything before clearing a single key.
+        val metadata = meta()
+        val localProgress = Gdx.app.getPreferences(stores.getValue("progress"))
+        val preserveCombat = metadata.getString("bound_account", "") == account &&
+            incoming.getValue("progress").none { it.key == VolleyPlayerProgress.SCHEMA_KEY }
+        val decoded = if (preserveCombat) {
+            val combat = localProgress.get().filterKeys { it.startsWith(VolleyPlayerProgress.PREFERENCE_PREFIX) }
+                .map { (key, value) ->
+                    val type = when (value) {
+                        is String -> "s"; is Boolean -> "b"; is Int -> "i"; is Long -> "l"; is Float -> "f"
+                        else -> error("Unsupported preference type")
+                    }
+                    Entry(key, type, value.toString())
+                }.toMutableList()
+            if (combat.isNotEmpty() && combat.none { it.key == VolleyPlayerProgress.SCHEMA_KEY }) {
+                combat += Entry(VolleyPlayerProgress.SCHEMA_KEY, "i", "1")
+            }
+            if (combat.isEmpty()) incoming else incoming + ("progress" to
+                (incoming.getValue("progress").filterNot {
+                    it.key.startsWith(VolleyPlayerProgress.PREFERENCE_PREFIX)
+                } + combat))
+        } else incoming
+        // Journal the effective snapshot, including same-account compatibility preservation.
+        // Recovery must replay that exact state even if a process dies after prefs.clear().
+        val effectiveSnapshot = encode(decoded)
+        decode(effectiveSnapshot)
+        metadata.putString("apply_snapshot", effectiveSnapshot).putString("apply_account", account).flush()
         for ((name, entries) in decoded) {
             val prefs = Gdx.app.getPreferences(stores.getValue(name))
             prefs.clear()
@@ -103,7 +128,6 @@ internal object CloudSaveCodec {
             }
             prefs.flush()
         }
-        val metadata = meta()
         metadata.putString("bound_account", account)
         metadata.remove("apply_snapshot")
         metadata.remove("apply_account")
@@ -114,7 +138,9 @@ internal object CloudSaveCodec {
         return sections.getValue("progress").any {
             (it.key.contains("stars_") && (it.value.toIntOrNull() ?: 0) > 0) ||
                 (it.key.endsWith("has_started_game") && it.value == "true") ||
-                (it.key == "volley_orb_copy_uids_v1" && it.value.isNotBlank())
+                (it.key == "volley_orb_copy_uids_v1" && it.value.isNotBlank()) ||
+                (it.key == "volley_combat_player_level_v1" && (it.value.toIntOrNull() ?: 1) > 1) ||
+                (it.key == "volley_combat_player_experience_v1" && (it.value.toLongOrNull() ?: 0L) > 0L)
         } || sections.getValue("wallet").any { (it.key == "coins" && it.value != "600") || (it.key == "gems" && it.value != "25") || (it.type == "b" && it.value == "true") } ||
             sections.getValue("items").any { (it.value.toIntOrNull() ?: 0) > 0 } ||
             sections.getValue("transactions").any { it.type == "b" && it.value == "true" } ||

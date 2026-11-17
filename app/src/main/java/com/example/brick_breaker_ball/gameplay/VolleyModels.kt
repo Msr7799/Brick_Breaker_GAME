@@ -8,6 +8,7 @@ package com.example.brick_breaker_ball.gameplay
 
 import com.badlogic.gdx.math.Vector2
 import java.io.Serializable
+import com.example.brick_breaker_ball.campaign.VolleyDifficulty
 
 enum class VolleyPhase {
     READY_TO_AIM,
@@ -119,6 +120,9 @@ data class VolleyBonusNodeState(
 typealias VolleyPickupState = VolleyBonusNodeState
 
 sealed interface VolleyEvent {
+    data class CombatExperience(val runId: String, val killSequence: Int,
+                                val enemyLevel: Int, val difficulty: VolleyDifficulty,
+                                val playerLevel: Int) : VolleyEvent
     data class Feedback(val text: String, val duration: Float = .8f) : VolleyEvent
     data class Impact(val x: Float, val y: Float, val destroyed: Boolean) : VolleyEvent
     data class BrickHit(val brickId: Int, val damage: Int) : VolleyEvent
@@ -227,7 +231,12 @@ data class VolleySessionSnapshot(
     val rotatingAngles: Map<Int, Float>? = null,
     val rotatingStartAngles: Map<Int, Float>? = null,
     val rotatingTargetAngles: Map<Int, Float>? = null,
-    val torchMotion: Map<Int, VolleyTorchMotionSnapshot>? = null
+    val torchMotion: Map<Int, VolleyTorchMotionSnapshot>? = null,
+    /** Null keeps previously serialized rounds on their original combat rules. */
+    val sourceCombatRulesVersion: Int? = null,
+    val sourceCombatPlayerLevel: Int? = null,
+    val sourceRemainingHealth: Map<Int, Double>? = null,
+    val combatKillSequence: Int? = null
 ) : Serializable {
     companion object {
         // Preserve paused runs serialized by version 2 before queuedItemSources was added.

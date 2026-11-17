@@ -32,6 +32,11 @@ data class VolleyOrbDefinition(
     val stageRequirement: Int = 1
 ) {
     fun stat(name: String): Float = (stats[name] ?: 0f) + (bonusStats[name] ?: 0f)
+
+    /** Recover each stored decimal before summing: Float widening can change ceil/floor hits. */
+    fun referenceStat(name: String): Double =
+        (stats[name]?.toString()?.toDouble() ?: 0.0) +
+            (bonusStats[name]?.toString()?.toDouble() ?: 0.0)
 }
 
 data class VolleyOrbRollRange(val min: Float, val max: Float, val type: String = "flat") {

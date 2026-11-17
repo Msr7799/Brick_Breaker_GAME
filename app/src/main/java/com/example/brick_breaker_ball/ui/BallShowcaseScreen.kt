@@ -45,6 +45,7 @@ open class BallShowcaseScreen(
     private var index = groups[rarity.ordinal].indexOf(initial).coerceAtLeast(0)
     private val current: Entry get() = groups[rarity.ordinal][index]
     private val preview = BallPowerPreview(game, returnToPausedGame)
+    private val showShotPatterns: Boolean get() = !preview.usesReferenceCombat && current.profile.shotgunAvailable
     private val layout = BallShowcaseLayout()
     private val art = BallShowcaseArt(game.assets)
     private val measure = GlyphLayout()
@@ -60,7 +61,7 @@ open class BallShowcaseScreen(
     private val abilityLights = arrayOf(Color.valueOf("9DC9FFFF"), Color.valueOf("FFAC59FF"),
         Color.valueOf("83CFFFFF"), Color.valueOf("B8D9F0FF"), Color.valueOf("B594FFFF"),
         Color.valueOf("FFD589FF"), Color.valueOf("83E7DFFF"))
-    private val ambient: Color get() = abilityLights[current.profile.kind.ordinal]
+    private val ambient: Color get() = if (preview.usesReferenceCombat) accent else abilityLights[current.profile.kind.ordinal]
     private val arrowRegion = game.assets.boards2.requireRegion("orange_back_arrow_button")
     private val icons = mapOf(
         "balls" to game.assets.visualUiArt.region("balls"),
@@ -143,7 +144,12 @@ open class BallShowcaseScreen(
         statValues[1] = preview.balls(p).toString()
         abilityText = p.description
         abilityCadence = ""
-        when (p.kind) {
+        if (preview.usesReferenceCombat) {
+            statValues[2] = preview.playerLevel.toString()
+            statUnits[2] = if (returnToPausedGame) "RUN LEVEL" else "LEVEL"
+            specialIcon = "star"
+            abilityText = "Ball appearances do not change campaign damage or volley size. Your player level and equipped ORBs determine those values."
+        } else when (p.kind) {
             BallAbilityKind.IMPACT_CORE -> {
                 statValues[2] = "+${p.scoreBonusPercent}%"; statUnits[2] = "SCORE"; specialIcon = "star"
             }
@@ -165,8 +171,9 @@ open class BallShowcaseScreen(
                 abilityCadence = "${p.ballsPerDamage} BALLS"; specialIcon = "balls"
             }
         }
-        campaignText = preview.nextAttackStage?.let { "${preview.stageNumber} / $it" } ?: "MAX"
-        campaignMultiplierText = "${preview.campaignAttack}x"
+        campaignText = if (preview.usesReferenceCombat) "${preview.playerExperience} / ${preview.nextLevelExperience} XP"
+            else preview.nextAttackStage?.let { "${preview.stageNumber} / $it" } ?: "MAX"
+        campaignMultiplierText = if (preview.usesReferenceCombat) "XP" else "${preview.campaignAttack}x"
     }
 
     private fun canShop(): Boolean = current.offer.coins != null || current.offer.gems != null || current.offer.playProductId != null
@@ -193,7 +200,7 @@ open class BallShowcaseScreen(
         val insets = safeInsets
         layout.update(visibleLeft + insets.left + 16f, visibleBottom + insets.bottom + 12f,
             (visibleWidth - insets.left - insets.right - 32f).coerceAtLeast(1f),
-            (visibleHeight - insets.top - insets.bottom - 24f).coerceAtLeast(1f), current.profile.shotgunAvailable)
+            (visibleHeight - insets.top - insets.bottom - 24f).coerceAtLeast(1f), showShotPatterns)
         beginStaticBackground(game.assets.worldMapImage(1, mode), .64f)
         drawHeader()
         drawHero(reduced)
@@ -257,7 +264,9 @@ open class BallShowcaseScreen(
         arrow(layout.next, true, index < groups[rarity.ordinal].lastIndex)
         text(game.assets.titleFont, ballName, layout.name, 47f, cream)
         icon("star", part(layout.identity, 0f, .02f, .10f, .96f))
-        powerMeter(part(layout.identity, .15f, .28f, .85f, .44f))
+        if (preview.usesReferenceCombat)
+            text(game.assets.hudLabelFont, rarity.name, part(layout.identity, .15f, .02f, .85f, .96f), 21f, accent)
+        else powerMeter(part(layout.identity, .15f, .28f, .85f, .44f))
         text(game.assets.hudLabelFont, positionText, layout.position, 20f, muted)
     }
 
@@ -295,12 +304,14 @@ open class BallShowcaseScreen(
 
     private fun drawProgression() {
         val rect = layout.progression
-        icon("damage", part(rect, 0f, .23f, .09f, .70f))
+        icon(if (preview.usesReferenceCombat) "star" else "damage", part(rect, 0f, .23f, .09f, .70f))
         text(game.assets.hudValueFont, campaignMultiplierText, part(rect, .10f, .22f, .18f, .70f), 31f, positive)
         text(game.assets.hudLabelFont, campaignText, part(rect, .36f, .29f, .52f, .54f), 22f, muted)
         icon("help", part(rect, .92f, .32f, .07f, .51f))
         val target = preview.nextAttackStage
-        val fraction = if (target == null) 1f else ((preview.stageNumber - (target - 12)).toFloat() / 12f).coerceIn(0f, 1f)
+        val fraction = if (preview.usesReferenceCombat)
+            (preview.playerExperience.toDouble() / preview.nextLevelExperience.toDouble()).coerceIn(0.0, 1.0).toFloat()
+        else if (target == null) 1f else ((preview.stageNumber - (target - 12)).toFloat() / 12f).coerceIn(0f, 1f)
         val bar = part(rect, .35f, .10f, .54f, .07f)
         batch.color = track; batch.draw(game.assets.solidUiRegion, bar.x, bar.y, bar.width, bar.height)
         batch.color = gold; batch.draw(game.assets.solidUiRegion, bar.x, bar.y, bar.width * fraction, bar.height)
@@ -318,7 +329,7 @@ open class BallShowcaseScreen(
             icon(if (current.offer.gems != null) "gem" else "coin", part(layout.primary, .59f, .25f, .10f, .50f))
             text(game.assets.hudValueFont, priceText, part(layout.primary, .71f, .20f, .22f, .60f), 30f, cream)
         }
-        if (current.profile.shotgunAvailable) {
+        if (showShotPatterns) {
             val spread = game.progress.isShotgunEnabled(current.ball.spriteName)
             modeButton(layout.straight, "straight", owned && !spread)
             modeButton(layout.spread, "spread", owned && spread)
@@ -345,10 +356,34 @@ open class BallShowcaseScreen(
                 .joinToString(" OR ") + ". UNLOCK opens the focused Shop; it does not spend currency here."
         informationTitle = when (topic) {
             InfoTopic.OVERVIEW -> "BALL GUIDE"; InfoTopic.DAMAGE -> "HIT DAMAGE"; InfoTopic.BALLS -> "VOLLEY SIZE"
-            InfoTopic.ABILITY -> p.title; InfoTopic.POWER -> "BALL STRENGTH"; InfoTopic.CAMPAIGN -> "CAMPAIGN ATTACK"
+            InfoTopic.ABILITY -> if (preview.usesReferenceCombat) "PLAYER LEVEL" else p.title
+            InfoTopic.POWER -> if (preview.usesReferenceCombat) "BALL APPEARANCE" else "BALL STRENGTH"
+            InfoTopic.CAMPAIGN -> if (preview.usesReferenceCombat) "PLAYER EXPERIENCE" else "CAMPAIGN ATTACK"
             InfoTopic.SHOT -> "SHOT PATTERN"
         }
-        informationBody = when (topic) {
+        informationBody = if (preview.usesReferenceCombat) when (topic) {
+            InfoTopic.OVERVIEW -> "${current.ball.name} / ${rarity.name}\n\n" +
+                "Choose your ball's appearance here. Player level and equipped ORBs determine campaign strength; rarity does not add damage or balls.\n\n" +
+                "Tap a statistic for details. Swipe the ball or use the arrows to browse. " +
+                "\n\n" + unlock
+            InfoTopic.DAMAGE -> "${statValues[0]} standard damage per hit.\n\n" +
+                "Calculated from player level ${preview.playerLevel} and equipped ORBs, including saved run damage bonuses when viewing a paused game.\n\n" +
+                "Critical hits, temporary effects, enemy armor and boss protection are resolved during play. Changing the ball's appearance does not increase damage."
+            InfoTopic.BALLS -> "${statValues[1]} TOTAL balls ${if (returnToPausedGame) "in the paused volley" else "at the start of a new run"}.\n\n" +
+                "The starting total comes from player level and equipped ORBs. Pickups can change it during a run. This appearance contributes no extra balls."
+            InfoTopic.ABILITY -> "Player level ${preview.playerLevel}.\n\n" +
+                "Defeat campaign enemies to earn XP. Player level is independent of stage number and ball rarity. Equipped ORBs provide combat abilities.\n\n" +
+                "The damage and total-ball statistics show your current campaign baseline."
+            InfoTopic.POWER -> "${rarity.name} appearance.\n\n" +
+                "Rarity describes the collectible appearance, not an attack multiplier or an upgrade level. All ball appearances use the same player and ORB combat rules.\n\n" + unlock
+            InfoTopic.CAMPAIGN -> "Account level ${preview.accountPlayerLevel}: ${preview.playerExperience} / ${preview.nextLevelExperience} XP toward the next player level.\n\n" +
+                (if (returnToPausedGame) "This paused round retains its starting player level ${preview.playerLevel}.\n\n" else "") +
+                "XP comes from defeated campaign enemies. Player XP is separate from stage progress and collectible rarity.\n\n" +
+                (if (returnToPausedGame) "A resumed run keeps the player level recorded when it began; new level bonuses apply to your next run." else
+                    "Damage and starting balls are recalculated from player level and equipped ORBs when a new run begins.")
+            InfoTopic.SHOT -> "Campaign volleys follow your aim.\n\n" +
+                "Ball appearances do not change the firing pattern. Equipped ORBs provide supported combat effects."
+        } else when (topic) {
             InfoTopic.OVERVIEW -> "${current.ball.name} / ${rarity.name}\n\n" +
                 "Tap the hammer, balls, special ability or strength pips for their meaning. The small attack bar tracks campaign milestones.\n\n" +
                 "Swipe the ball or use the arrows to browse. ${if (p.shotgunAvailable) "The two small buttons choose Straight or Spread; hold either for help.\n\n" else ""}" + unlock
@@ -407,7 +442,7 @@ open class BallShowcaseScreen(
         } else if (touchActive && Gdx.input.isTouched(0)) {
             if (abs(touch.x - touchStartX) >= 24f * layout.scale || abs(touch.y - touchStartY) >= 24f * layout.scale) touchDragged = true
             touchHeld += Gdx.graphics.deltaTime.coerceIn(0f, .05f)
-            if (!touchDragged && touchHeld >= .60f && current.profile.shotgunAvailable &&
+            if (!touchDragged && touchHeld >= .60f && showShotPatterns &&
                 (layout.contains(layout.straight, touchStartX, touchStartY) || layout.contains(layout.spread, touchStartX, touchStartY)))
                 openInformation(InfoTopic.SHOT)
         } else if (touchActive && !Gdx.input.isTouched(0)) {
@@ -429,10 +464,10 @@ open class BallShowcaseScreen(
                 0 -> InfoTopic.DAMAGE; 1 -> InfoTopic.BALLS; else -> InfoTopic.ABILITY })
             layout.contains(layout.identity, x, y) -> openInformation(InfoTopic.POWER)
             layout.contains(layout.progression, x, y) -> openInformation(InfoTopic.CAMPAIGN)
-            current.profile.shotgunAvailable && layout.contains(layout.straight, x, y) -> {
+            showShotPatterns && layout.contains(layout.straight, x, y) -> {
                 if (owned) game.progress.setShotgunEnabled(current.ball.spriteName, false) else openInformation(InfoTopic.SHOT)
             }
-            current.profile.shotgunAvailable && layout.contains(layout.spread, x, y) -> {
+            showShotPatterns && layout.contains(layout.spread, x, y) -> {
                 if (owned) game.progress.setShotgunEnabled(current.ball.spriteName, true) else openInformation(InfoTopic.SHOT)
             }
             layout.contains(layout.primary, x, y) -> {

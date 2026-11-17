@@ -76,6 +76,40 @@ class ProgressStore(private val prefs: Preferences = Gdx.app.getPreferences("bri
     val settings = GameSettings()
     private val orbInventory = VolleyOrbInventory(prefs)
 
+    // New and installed players both start this separate stat at level 1 / XP 0. Never
+    // manufacture historical XP from stage stars, world unlocks, purchases or ball ownership.
+    val combatPlayerLevel: Int get() = prefs.getInteger("volley_combat_player_level_v1", 1).coerceAtLeast(1)
+    val combatPlayerExperience: Long get() = prefs.getLong("volley_combat_player_experience_v1", 0L).coerceAtLeast(0L)
+
+    /**
+     * Call once per killed objective, in order, using the same run/sequence after pause restore.
+     * Even zero-XP kills must be delivered: source level-up checks occur per kill, not per batch.
+     * Retain recent run high-watermarks rather than one receipt per enemy in cloud preferences.
+     */
+    @Synchronized
+    fun recordCombatExperience(runId: String, killSequence: Int, amount: Int) {
+        require(amount >= 0 && killSequence > 0)
+        require(runId.length in 1..128 && runId.all { it.isLetterOrDigit() || it == '-' || it == '_' })
+        val receipts = linkedMapOf<String, Int>()
+        for (entry in prefs.getString("volley_combat_run_receipts_v1", "").lineSequence()) {
+            val separator = entry.lastIndexOf(':')
+            if (separator <= 0) continue
+            val sequence = entry.substring(separator + 1).toIntOrNull() ?: continue
+            if (sequence > 0) receipts[entry.substring(0, separator)] = sequence
+        }
+        if (killSequence <= (receipts[runId] ?: 0)) return
+        val next = VolleyPlayerProgress.award(
+            VolleyPlayerProgress.State(combatPlayerLevel, combatPlayerExperience), amount)
+        receipts.remove(runId)
+        receipts[runId] = killSequence
+        while (receipts.size > 32) receipts.remove(receipts.keys.first())
+        prefs.putInteger(VolleyPlayerProgress.SCHEMA_KEY, 1)
+            .putInteger("volley_combat_player_level_v1", next.level)
+            .putLong("volley_combat_player_experience_v1", next.experience)
+            .putString("volley_combat_run_receipts_v1", receipts.entries.joinToString("\n") { "${it.key}:${it.value}" })
+            .flush()
+    }
+
     /** A firing pattern is a choice for the owned ball, not a global difficulty setting. */
     fun isShotgunEnabled(spriteName: String): Boolean =
         prefs.getBoolean("volley_ball_shotgun_$spriteName", false)
@@ -452,6 +486,10 @@ class ProgressStore(private val prefs: Preferences = Gdx.app.getPreferences("bri
     init {
         loadSettings()
         VolleyProgressMigration.migrate(prefs)
+        // Mark snapshots made by the new app even before the first kill. This adds no XP.
+        if (!prefs.contains(VolleyPlayerProgress.SCHEMA_KEY)) {
+            prefs.putInteger(VolleyPlayerProgress.SCHEMA_KEY, 1).flush()
+        }
         syncUnlockProgress()
     }
 

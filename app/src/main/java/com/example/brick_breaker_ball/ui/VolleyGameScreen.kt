@@ -42,6 +42,7 @@ import com.example.brick_breaker_ball.gameplay.VolleyAimGesture
 import com.example.brick_breaker_ball.gameplay.VolleyAimRelease
 import com.example.brick_breaker_ball.gameplay.VolleyBonusNodeType
 import com.example.brick_breaker_ball.gameplay.VolleyEditorDraft
+import com.example.brick_breaker_ball.campaign.VolleyPlayerProgress
 import com.example.brick_breaker_ball.gameplay.VolleyEvent
 import com.example.brick_breaker_ball.gameplay.VolleyGeneratorFeature
 import com.example.brick_breaker_ball.gameplay.VolleyImpactPitch
@@ -221,7 +222,8 @@ class VolleyGameScreen(
         reduceMotion = game.progress.settings.reduceMotion,
         difficulty = game.progress.selectedDifficulty,
         shotgunEnabled = game.progress.isShotgunEnabled(game.progress.settings.selectedVolleyBallSpriteName),
-        equippedOrbs = game.progress.equippedOrbs).also {
+        equippedOrbs = game.progress.equippedOrbs,
+        playerLevel = game.progress.combatPlayerLevel, combatRunId = orbRunId).also {
         restoredSnapshot?.let(it::restore)
         it.restoreRewardedRevivesUsed(restoredRewardedRevivesUsed)
     }
@@ -428,7 +430,7 @@ class VolleyGameScreen(
             game.progress.settings.reduceMotion,
             game.progress.equippedOrbs.firstOrNull()?.takeIf { game.assets.orbIconsLoaded() }?.let { game.assets.orbIcon(it.id) },
             VisualGameUi.orbEffect(game.progress.equippedOrbs.firstOrNull()?.family ?: ""),
-            balls = session.ballCount, damage = selectedBallAbility.hitDamageForVolley(session.ballCount))
+            balls = session.ballCount, damage = session.currentHitDamage)
         end()
         if (camera.position.x != DESIGN_WIDTH / 2f || camera.position.y != DESIGN_HEIGHT / 2f) {
             camera.position.set(DESIGN_WIDTH / 2f, DESIGN_HEIGHT / 2f, 0f)
@@ -764,6 +766,12 @@ class VolleyGameScreen(
                         impactPitch.nextPitch()
                     )
                     soundCooldowns["impact_pop"] = .028f
+                }
+
+                is VolleyEvent.CombatExperience -> if (!editorTest) {
+                    game.progress.recordCombatExperience(event.runId, event.killSequence,
+                        VolleyPlayerProgress.enemyExperience(event.enemyLevel, event.difficulty,
+                            event.playerLevel))
                 }
 
                 is VolleyEvent.BrickBroken -> Unit
@@ -1398,7 +1406,7 @@ class VolleyGameScreen(
         powerHelpFocus.set(statsRect.x + 8f, statsRect.y + statsRect.height * .49f,
             powerWidth - 10f, statsRect.height * .43f)
         VisualGameUi.stats(batch, game.assets, powerHelpFocus,
-            session.ballCount, selectedBallAbility.hitDamageForVolley(session.ballCount))
+            session.ballCount, session.currentHitDamage)
         VisualGameUi.icon(batch, game.assets, VisualGameUi.Icon.STAR,
             Rectangle(statsRect.x + 8f, statsRect.y + 6f, statsRect.height * .30f, statsRect.height * .30f))
         VisualGameUi.number(batch, game.assets, "${session.score}",
@@ -1938,7 +1946,8 @@ class VolleyGameScreen(
         earnedOrbs.clear()
         orbRunId = UUID.randomUUID().toString()
         session = VolleySession(stage, level.world, selectedBallAbility, reduceMotion = game.progress.settings.reduceMotion, difficulty = game.progress.selectedDifficulty, equippedOrbs = game.progress.equippedOrbs,
-            shotgunEnabled = game.progress.isShotgunEnabled(game.progress.settings.selectedVolleyBallSpriteName))
+            shotgunEnabled = game.progress.isShotgunEnabled(game.progress.settings.selectedVolleyBallSpriteName),
+            playerLevel = game.progress.combatPlayerLevel, combatRunId = orbRunId)
         displayedBossHealthRatio = session.bricks.firstOrNull { it.type == BrickType.BOSS_CORE }
             ?.let { it.health.toFloat() / it.initialHealth.coerceAtLeast(1) } ?: 0f
         lastBossHealthRatio = displayedBossHealthRatio

@@ -474,13 +474,13 @@ class ShopScreen(
                 } else {
                     when {
                         offer.coins != null -> BoardShopAction("${offer.coins} COINS") {
-                            askPurchaseConfirmation(ball.name, "${offer.coins} COINS", "Permanently unlock this ball.") {
+                            askPurchaseConfirmation(ball.name, "${offer.coins} COINS", "Permanently unlock this ball appearance. Player level and ORBs determine campaign power.") {
                                 unlockBallWithCoins(ball, offer.coins)
                             }
                         }
 
                         offer.gems != null -> BoardShopAction("${offer.gems} GEMS") {
-                            askPurchaseConfirmation(ball.name, "${offer.gems} GEMS", "Permanently unlock this ball.") {
+                            askPurchaseConfirmation(ball.name, "${offer.gems} GEMS", "Permanently unlock this ball appearance. Player level and ORBs determine campaign power.") {
                                 unlockBallWithGems(ball, offer.gems)
                             }
                         }
@@ -496,7 +496,7 @@ class ShopScreen(
                             askPurchaseConfirmation(
                                 ball.name,
                                 epicPrice,
-                                "Permanent Epic ball. Google Play confirms the price."
+                                "Permanent Epic appearance; no extra campaign damage or balls. Google Play confirms the price."
                             ) {
                                 purchase(epicProduct)
                             }
@@ -1386,7 +1386,7 @@ class ShopScreen(
             .mapNotNull { ball -> game.cosmeticProgression.ballUnlockStage(ball)?.let { ball to it } }
             .minByOrNull { it.second }
         val nextText = nextUnlock?.let { "Next unlock: Stage ${it.second}" } ?: "All balls unlocked"
-        drawSectionTitle("BALL COLLECTION", "$ownedCount/${balls.size} balls unlocked. $nextText.")
+        drawSectionTitle("BALL COLLECTION", "$ownedCount/${balls.size} appearances unlocked. $nextText. Power comes from player level and ORBs.")
 
         val panelBounds = shopPanel(325f)
         val columns = if (isLandscape) 4 else 2
@@ -1464,7 +1464,7 @@ class ShopScreen(
                         val price = offer.coins
                         drawCurrencyPriceButton(firstRect, price, ShopCurrency.COINS, game.economy.coins >= price)
                         actions += firstRect to {
-                            askPurchaseConfirmation(definition.name, "$price COINS", "Permanently unlock this ball.") {
+                            askPurchaseConfirmation(definition.name, "$price COINS", "Permanently unlock this ball appearance. Player level and ORBs determine campaign power.") {
                                 unlockBallWithCoins(definition, price)
                             }
                         }
@@ -1474,7 +1474,7 @@ class ShopScreen(
                         val price = offer.gems
                         drawCurrencyPriceButton(firstRect, price, ShopCurrency.GEMS, game.economy.gems >= price)
                         actions += firstRect to {
-                            askPurchaseConfirmation(definition.name, "$price GEMS", "Permanently unlock this ball.") {
+                            askPurchaseConfirmation(definition.name, "$price GEMS", "Permanently unlock this ball appearance. Player level and ORBs determine campaign power.") {
                                 unlockBallWithGems(definition, price)
                             }
                         }
@@ -1497,7 +1497,7 @@ class ShopScreen(
                             askPurchaseConfirmation(
                                 definition.name,
                                 price,
-                                "Permanent Epic ball. Google Play confirms payment."
+                                "Permanent Epic appearance; no extra campaign damage or balls. Google Play confirms payment."
                             ) { purchase(epicProduct) }
                         }
                     }
