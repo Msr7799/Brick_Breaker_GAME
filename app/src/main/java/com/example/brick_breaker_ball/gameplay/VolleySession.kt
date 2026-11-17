@@ -1540,6 +1540,13 @@ class VolleySession(
 
     private fun directBrickHit(ball: VolleyBallState, brick: Brick, piercing: Boolean) {
         if (!brick.type.breakable || brick.health <= 0) return
+        // Godot Alt_Blocker starts open and switches vulnerability every board descent.
+        // The existing ARMOR_BLOCKER HP and original authored locations are preserved.
+        if (isSourceAlternatingBlocker(brick) && !isSourceAlternatingBlockerOpen()) {
+            emit(VolleyEvent.Sound("wall_hit"))
+            emit(VolleyEvent.Impact(centerX(brick), centerY(brick), false))
+            return
+        }
         if (stage.sourceScene != null) emit(VolleyEvent.Sound("source_ball_hit"))
         if (referenceRulesEnabled && brick.id in frozenBricks && !isBallIgnited(ball.id) &&
             VolleyModifier.FIRE !in activeModifiers) {
@@ -1838,6 +1845,12 @@ class VolleySession(
         val source = event.source
         val visited = event.visitedBrickIds
         if (amount <= 0 || brick.health <= 0 || !brick.type.breakable || !visited.add(brick.id)) return
+        // Applies to ORB chains/explosions as well, not only direct ball hits.
+        // No damage is permitted when Godot's wooden/rust door is closed.
+        if (isSourceAlternatingBlocker(brick) && !isSourceAlternatingBlockerOpen()) {
+            emit(VolleyEvent.Impact(centerX(brick), centerY(brick), false))
+            return
+        }
         val openingBreaker = source == VolleyDamageSource.OPENING_BREAKER && brick.type != BrickType.BOSS_CORE
         if (brick.type == BrickType.LOCKED && brick.locked && !openingBreaker) return
         if (brick.id in frozenBricks && !openingBreaker) {
@@ -2307,6 +2320,23 @@ class VolleySession(
     }
 
     private fun sourceKind(brick: Brick): String? = stage.authoredBricks.getOrNull(brick.id - 1)?.sourceKind
+
+    private fun isSourceAlternatingBlocker(brick: Brick): Boolean =
+        stage.sourceScene != null && stage.authoredBricks.getOrNull(brick.id - 1)
+            ?.sourceScene?.contains("/Blocker/Alt_Blocker/") == true
+
+    /**
+     * Recovered RPG: Alt_Blocker.is_closed initially true, _ready() opens it;
+     * Enemies.gd toggles it once per row descent. This run starts at turn 1
+     * and increments turn after descent, including across v2 snapshot restore.
+     * Derive this state from persisted turn; no new save field or ID migration.
+     */
+    private fun isSourceAlternatingBlockerOpen(): Boolean = turn % 2 == 1
+
+    /** Source gate state for a visible mobile hint or regression test. */
+    fun sourceAlternatingBlockerOpen(brickId: Int): Boolean? =
+        bricks.firstOrNull { it.id == brickId }?.takeIf(::isSourceAlternatingBlocker)
+            ?.let { isSourceAlternatingBlockerOpen() }
 
     private fun applyInitialImportedFreeze() {
         if (initialImportedFreezeApplied) return
