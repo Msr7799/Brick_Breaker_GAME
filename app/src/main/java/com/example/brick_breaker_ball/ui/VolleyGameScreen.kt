@@ -1139,7 +1139,7 @@ class VolleyGameScreen(
                     BrickType.EXPLOSIVE -> VolleyVfx.SPARK_ORANGE
                     BrickType.BLACK_HOLE_TELEPORTER -> VolleyVfx.PORTAL_RING_PURPLE
                     BrickType.SWITCH, BrickType.GHOST -> VolleyVfx.MAGIC_SHARDS
-                    BrickType.SPIKED_HAZARD -> VolleyVfx.GROUND_SPIKES_RED
+                    BrickType.SPIKED_HAZARD -> null // all traps render their own timed effect
                     BrickType.BOSS_CORE -> VolleyVfx.BEAM_RED
                     BrickType.POWERUP_CARRIER, BrickType.RANDOM_INVENTORY_POWERUP -> VolleyVfx.GROUND_RING_BLUE
                     else -> null
@@ -1217,6 +1217,10 @@ class VolleyGameScreen(
             if (sourceSeed?.sourceKind == "BURN" && session.isBurnDepleted(brick.id)) {
                 batch.color = Color(.52f, .52f, .58f, 1f)
             }
+            if (sourceSeed?.sourceScene?.contains("/Blocker/Alt_Blocker/") == true &&
+                session.sourceAlternatingBlockerOpen(brick.id) == false) {
+                batch.color = Color(.58f, .64f, .70f, 1f)
+            }
             if (brick.type == BrickType.BOSS_CORE && stage.bossStage) {
                 // One boss is both the visible world character and the physical target.
                 // Its portrait follows the core through every descent and saved run.
@@ -1257,6 +1261,32 @@ class VolleyGameScreen(
                 batch.draw(visual.region, brick.bounds.x - overhang, brick.bounds.y - overhang,
                     artWidth / 2f, artHeight / 2f, artWidth, artHeight, 1f, 1f,
                     visual.rotationDegrees)
+            }
+            // Stage sprites are unchanged; draw the existing original-game VFX at
+            // EVERY authored hazard, not the global 4/8-ambient-effect cap.
+            if (sourceSeed?.sourceKind == "SPIKE_TRAP") {
+                val strength = session.sourceSpikeVisualStrength(brick.id)
+                if (strength > .001f) {
+                    batch.color = Color(1f, .78f, .76f, strength)
+                    drawRegionFitCentered(
+                        assetCatalog.vfx(VolleyVfx.GROUND_SPIKES_RED),
+                        brick.bounds.x + brick.bounds.width / 2f,
+                        brick.bounds.y + brick.bounds.height / 2f,
+                        brick.bounds.width * 1.13f, brick.bounds.height * strength
+                    )
+                }
+            }
+            if (sourceSeed?.sourceKind == "VORTEX") {
+                val active = session.sourceVortexActive(brick.id)
+                val pulse = if (game.progress.settings.reduceMotion) .75f
+                    else .75f + .12f * MathUtils.sin(stageAnimationTime * 5f)
+                batch.color = Color(1f, 1f, 1f, if (active) pulse else .12f)
+                drawRegionFitCentered(
+                    assetCatalog.vfx(VolleyVfx.PORTAL_RING_PURPLE),
+                    brick.bounds.x + brick.bounds.width / 2f,
+                    brick.bounds.y + brick.bounds.height / 2f,
+                    brick.bounds.width * .93f, brick.bounds.height * .93f
+                )
             }
             batch.color = Color.WHITE
             if (brick.type.breakable) {

@@ -710,7 +710,10 @@ class VolleySession(
     fun advance(frameSeconds: Float) {
         if (phase == VolleyPhase.PAUSED || gameOver || levelComplete) return
         val frame = frameSeconds.coerceIn(0f, .05f)
-        // Foreground seconds keep feedback readable even while 3X simulation is held.
+        // Godot hazard timers run during aiming AND firing at foreground speed.
+        // Advance once per frame, not again for 3X fast-forward collision passes.
+        vortexClock += frame
+        spikeCooldowns.replaceAll { _, seconds -> (seconds - frame).coerceAtLeast(0f) }
         orbFeedbackCooldown = (orbFeedbackCooldown - frame).coerceAtLeast(0f)
         advanceSimulationPass(frame)
         repeat(FAST_FORWARD_MULTIPLIER - 1) {
@@ -937,6 +940,7 @@ class VolleySession(
         orbMultishotUsed = false
         bonusDamageFlat = 0
         resetBoardContent()
+        vortexClock = 0f // new run: source traps reveal after 0.1s; vortex cycles restart active
         phase = VolleyPhase.READY_TO_AIM
         launcherX = 450f
         ballCount = initialBallCount()
@@ -1241,8 +1245,6 @@ class VolleySession(
     }
 
     private fun updateVolley(dt: Float) {
-        vortexClock += dt
-        spikeCooldowns.replaceAll { _, seconds -> (seconds - dt).coerceAtLeast(0f) }
         updateOrbPoison(dt)
         updateOrbWrath(dt)
         if (levelComplete) return
@@ -1416,10 +1418,10 @@ class VolleySession(
                         return@repeat
                     }
                     if (sourceKind(brick) == "VORTEX") {
-                        if (vortexClock % 6f < 2f) {
+                        if (sourceVortexActive(brick.id)) {
                             ball.position.set(centerX(brick), centerY(brick))
                             ball.velocity.setZero()
-                            vortexBalls[ball.id] = .4f
+                            vortexBalls[ball.id] = RpgSourceHazardRules.VORTEX_ABSORB_SECONDS
                             emit(VolleyEvent.Vfx(VolleyVfxKind.PORTAL, ball.position.x, ball.position.y))
                             return
                         }
@@ -1428,10 +1430,11 @@ class VolleySession(
                         return@repeat
                     }
                     if (sourceKind(brick) == "SPIKE_TRAP") {
-                        if ((spikeCooldowns[brick.id] ?: 0f) <= 0f) {
+                        if (RpgSourceHazardRules.spikeArmed(spikeCooldowns[brick.id] ?: 0f, vortexClock)) {
                             ball.alive = false
-                            spikeCooldowns[brick.id] = 10f
+                            spikeCooldowns[brick.id] = RpgSourceHazardRules.SPIKE_REARM_SECONDS
                             emit(VolleyEvent.Vfx(VolleyVfxKind.HAZARD, ball.position.x, ball.position.y))
+                            emit(VolleyEvent.Sound("source_ball_hit"))
                             return
                         }
                         reflect(ball, target.collision)
@@ -1540,6 +1543,13 @@ class VolleySession(
 
     private fun directBrickHit(ball: VolleyBallState, brick: Brick, piercing: Boolean) {
         if (!brick.type.breakable || brick.health <= 0) return
+        // Godot Alt_Blocker starts open and switches vulnerability every board descent.
+        // The existing ARMOR_BLOCKER HP and original authored locations are preserved.
+        if (isSourceAlternatingBlocker(brick) && !isSourceAlternatingBlockerOpen()) {
+            emit(VolleyEvent.Sound("wall_hit"))
+            emit(VolleyEvent.Impact(centerX(brick), centerY(brick), false))
+            return
+        }
         if (stage.sourceScene != null) emit(VolleyEvent.Sound("source_ball_hit"))
         if (referenceRulesEnabled && brick.id in frozenBricks && !isBallIgnited(ball.id) &&
             VolleyModifier.FIRE !in activeModifiers) {
@@ -1838,6 +1848,12 @@ class VolleySession(
         val source = event.source
         val visited = event.visitedBrickIds
         if (amount <= 0 || brick.health <= 0 || !brick.type.breakable || !visited.add(brick.id)) return
+        // Applies to ORB chains/explosions as well, not only direct ball hits.
+        // No damage is permitted when Godot's wooden/rust door is closed.
+        if (isSourceAlternatingBlocker(brick) && !isSourceAlternatingBlockerOpen()) {
+            emit(VolleyEvent.Impact(centerX(brick), centerY(brick), false))
+            return
+        }
         val openingBreaker = source == VolleyDamageSource.OPENING_BREAKER && brick.type != BrickType.BOSS_CORE
         if (brick.type == BrickType.LOCKED && brick.locked && !openingBreaker) return
         if (brick.id in frozenBricks && !openingBreaker) {
@@ -2307,6 +2323,38 @@ class VolleySession(
     }
 
     private fun sourceKind(brick: Brick): String? = stage.authoredBricks.getOrNull(brick.id - 1)?.sourceKind
+
+    /** Public read-only rendering projections; no migration of source ID or snapshot schema. */
+    fun sourceSpikeCooldown(brickId: Int): Float =
+        if (bricks.any { it.id == brickId && sourceKind(it) == "SPIKE_TRAP" })
+            spikeCooldowns[brickId] ?: 0f else 0f
+
+    fun sourceSpikeVisualStrength(brickId: Int): Float =
+        RpgSourceHazardRules.spikeVisualStrength(sourceSpikeCooldown(brickId), vortexClock)
+
+    fun sourceVortexActive(brickId: Int): Boolean {
+        val brick = bricks.firstOrNull { it.id == brickId && sourceKind(it) == "VORTEX" }
+            ?: return false
+        val scene = stage.authoredBricks.getOrNull(brick.id - 1)?.sourceScene
+        return RpgSourceHazardRules.vortexActive(scene, vortexClock)
+    }
+
+    private fun isSourceAlternatingBlocker(brick: Brick): Boolean =
+        stage.sourceScene != null && stage.authoredBricks.getOrNull(brick.id - 1)
+            ?.sourceScene?.let(RpgAlternatingBlockerRules::isSourceGate) == true
+
+    /**
+     * Recovered RPG: Alt_Blocker.is_closed initially true, _ready() opens it;
+     * Enemies.gd toggles it once per row descent. This run starts at turn 1
+     * and increments turn after descent, including across v2 snapshot restore.
+     * Derive this state from persisted turn; no new save field or ID migration.
+     */
+    private fun isSourceAlternatingBlockerOpen(): Boolean = RpgAlternatingBlockerRules.openAtTurn(turn)
+
+    /** Source gate state for a visible mobile hint or regression test. */
+    fun sourceAlternatingBlockerOpen(brickId: Int): Boolean? =
+        bricks.firstOrNull { it.id == brickId }?.takeIf(::isSourceAlternatingBlocker)
+            ?.let { isSourceAlternatingBlockerOpen() }
 
     private fun applyInitialImportedFreeze() {
         if (initialImportedFreezeApplied) return
