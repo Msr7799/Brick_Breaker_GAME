@@ -3,7 +3,7 @@ package com.example.brick_breaker_ball.gameplay
 /**
  * Exact timed source mechanics from recovered RPG Godot scripts:
  * - Enemies/Spike_Traps/enemy_spike_trap_2x_2.gd
- * - Enemies/Vortex/{Rock1_Vortex,Ice1_Vortex,Black1_vortex}/*.gd
+ * - Enemies/Vortex Rock1, Ice1 and Black1 GDScript variants
  *
  * Timers advance in real foreground seconds, including while aiming, and do
  * not speed up during the optional fast-forward collision simulation.
