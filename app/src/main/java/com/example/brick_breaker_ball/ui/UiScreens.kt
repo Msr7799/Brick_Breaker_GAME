@@ -114,6 +114,23 @@ abstract class ForgeScreen(protected val game: BrickBreakerGame) : ScreenAdapter
         batch.color = Color.WHITE
     }
 
+    /** Called inside a screen's batch; the screen also consumes input while waiting. */
+    protected fun drawRewardedAdWaitingOverlay(preparing: Boolean) {
+        batch.setColor(0f, 0f, 0f, .78f)
+        batch.draw(game.assets.solidUiRegion, visibleLeft, visibleBottom, visibleWidth, visibleHeight)
+        batch.color = Color.WHITE
+        val panel = Rectangle(visibleLeft + visibleWidth * .12f,
+            visibleBottom + visibleHeight * .5f - 90f, visibleWidth * .76f, 180f)
+        game.assets.uiRenderer.drawGradientPanel(batch, panel, ForgeUiRenderer.GradientStyle.NEUTRAL)
+        val oldColor = Color(game.assets.smallFont.color)
+        game.assets.smallFont.color = Color.WHITE
+        fittedText(game.assets.smallFont, if (preparing) "OPENING VIDEO…" else "RETURNING TO GAME…",
+            panel.x + 24f, panel.y + 120f, panel.width - 48f, .72f)
+        fittedText(game.assets.smallFont, "PLEASE WAIT", panel.x + 24f,
+            panel.y + 62f, panel.width - 48f, .48f)
+        game.assets.smallFont.color = oldColor
+    }
+
     init {
         camera.position.set(DESIGN_WIDTH / 2f, DESIGN_HEIGHT / 2f, 0f)
         camera.update()
@@ -1277,7 +1294,7 @@ class ResultsScreen(
         val titleReveal = reveal(0f, .30f)
         drawAnimatedText(
             game.assets.titleFont,
-            "LEVEL COMPLETE",
+            "STAGE ${level.id} COMPLETE",
             titleArea.x + 8f,
             titleArea.y + titleArea.height * .72f - 12f * (1f - titleReveal),
             titleArea.width - 16f,
@@ -1378,11 +1395,19 @@ class ResultsScreen(
             }
         }
 
+        drawAnimatedText(game.assets.smallFont, when {
+            economyReward.firstClear -> "FIRST CLEAR REWARD"
+            economyReward.starUpgrade -> "NEW STAR REWARD"
+            else -> "STAGE REWARD"
+        }, content.x + content.width * .13f, content.y + content.height * .621f,
+            content.width * .74f, walletReveal, .43f, Color(1f, .81f, .53f, 1f))
+
         if (unlocks.isNotEmpty()) {
             val rewardTitleReveal = reveal(.52f, .30f)
             drawAnimatedText(
                 game.assets.hudLabelFont,
-                if (unlocks.size == 1) "NEW COLLECTION ITEM" else "NEW COLLECTION ITEMS",
+                if (orbLoot.isNotEmpty()) "${unlocks.size} BALL UNLOCKS + ${orbLoot.size} ORBS"
+                else if (unlocks.size == 1) "NEW COLLECTION ITEM" else "NEW COLLECTION ITEMS",
                 content.x + content.width * .08f,
                 content.y + content.height * .47f - 12f * (1f - rewardTitleReveal),
                 content.width * .84f,
@@ -1446,7 +1471,7 @@ class ResultsScreen(
                 buttonsReveal
             )
             if (orbLoot.isNotEmpty()) bag = victoryButton(
-                "OPEN ORB BAG",
+                "EQUIP ORBS (${orbLoot.size})",
                 Rectangle(content.x + content.width * .22f,
                     content.y + content.height * .13f - slide,
                     content.width * .56f, content.height * .075f),
@@ -1571,7 +1596,7 @@ class ResultsScreen(
     private fun drawRewardCards(content: Rectangle) {
         val visibleRewards = unlocks.take(3)
         val cardWidth = minOf(content.width * .28f, 250f)
-        val cardHeight = minOf(content.height * .29f, 240f)
+        val cardHeight = minOf(content.height * if (orbLoot.isNotEmpty()) .22f else .29f, 240f)
         val gap = content.width * .025f
         val totalWidth = visibleRewards.size * cardWidth + (visibleRewards.size - 1) * gap
         val startX = content.x + (content.width - totalWidth) * .5f
@@ -1580,7 +1605,7 @@ class ResultsScreen(
             if (alpha <= 0f) return@forEachIndexed
             val rect = Rectangle(
                 startX + index * (cardWidth + gap),
-                content.y + content.height * .16f - 18f * (1f - alpha),
+                content.y + content.height * (if (orbLoot.isNotEmpty()) .23f else .16f) - 18f * (1f - alpha),
                 cardWidth,
                 cardHeight
             )

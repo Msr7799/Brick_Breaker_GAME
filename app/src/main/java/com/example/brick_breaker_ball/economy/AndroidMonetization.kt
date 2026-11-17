@@ -34,6 +34,7 @@ import com.google.android.gms.ads.OnUserEarnedRewardListener
 import com.google.android.gms.ads.RequestConfiguration
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
+import com.google.android.gms.ads.rewarded.ServerSideVerificationOptions
 import com.google.android.ump.ConsentInformation
 import com.google.android.ump.ConsentRequestParameters
 import com.google.android.ump.UserMessagingPlatform
@@ -79,7 +80,7 @@ private object MobileAdsStartup {
 private object AdPrivacySession {
     val placements = mutableSetOf<AdMobRewardedAdGateway>()
     var privacyFormOpen = false
-    var fullscreenOwner: AdMobRewardedAdGateway? = null
+    @Volatile var fullscreenOwner: AdMobRewardedAdGateway? = null
 
     fun invalidateAll() { placements.toList().forEach { it.invalidatePrivacyCache() } }
 
@@ -101,6 +102,7 @@ class AdMobRewardedAdGateway(
     private val consentInformation = UserMessagingPlatform.getConsentInformation(activity)
     private var rewardedAd: RewardedAd? = null
     private var loading = false
+    private val ssv = RewardedSsvClient(activity, if (placement == "talisman") "orb" else placement)
 
     @Volatile private var disposed = false
     private var mobileAdsInitialized = false
@@ -109,6 +111,18 @@ class AdMobRewardedAdGateway(
     private var consentUpdateFailed = false
     private var loadedAtElapsedMs = 0L
     private var loadGeneration = 0
+    private val retryPolicy = RewardedRetryPolicy()
+    @Volatile private var loadMessage = "No video available. Please try again shortly."
+    @Volatile private var preparing = false
+    private var hostResumed = true
+    private var presentationStartedAt = 0L
+    private var activeFinish: ((String?) -> Unit)? = null
+    private var dismissRunnable: Runnable? = null
+
+    override val presentationInProgress: Boolean get() = AdPrivacySession.fullscreenOwner != null
+    override val preparingPresentation: Boolean get() = preparing
+    override val retryInSeconds: Int get() = retryPolicy.remainingSeconds(SystemClock.elapsedRealtime())
+    override val availabilityMessage: String get() = loadMessage
 
     @Volatile
     override var state: AdState = if (adUnitId.isBlank()) AdState.DISABLED else AdState.LOADING
@@ -126,6 +140,24 @@ class AdMobRewardedAdGateway(
     }
     private val expireAdRunnable = Runnable {
         if (!disposed && discardExpiredAd()) preload()
+    }
+    private val loadTimeoutRunnable = Runnable {
+        if (!disposed && loading) {
+            loadGeneration++ // Late SDK callbacks cannot replace a newer request.
+            loading = false
+            scheduleLoadRetry("Video loading took too long. Please try again.")
+        }
+    }
+    private val presentationTimeoutRunnable: Runnable = object : Runnable {
+        override fun run() {
+            if (disposed || !hostResumed || AdPrivacySession.fullscreenOwner !== this@AdMobRewardedAdGateway) return
+            // Wait for the host window too: a mediation overlay may keep the Activity resumed.
+            if (!activity.hasWindowFocus()) {
+                handler.postDelayed(this, 1_000L)
+                return
+            }
+            activeFinish?.invoke("Video interrupted. Any earned reward is saved.")
+        }
     }
 
     init {
@@ -186,6 +218,7 @@ class AdMobRewardedAdGateway(
 
     private fun scheduleConsentRetry(reason: String) {
         consentUpdateFailed = true
+        loadMessage = "Unable to check ad privacy choices. Please check your connection."
         state = AdState.UNAVAILABLE
         handler.removeCallbacks(retryRunnable)
         handler.removeCallbacks(consentRetryRunnable)
@@ -216,17 +249,25 @@ class AdMobRewardedAdGateway(
             }
             discardExpiredAd()
             if (disposed || loading || rewardedAd != null || state == AdState.SHOWING) return@runOnUiThread
+            val remaining = retryPolicy.remainingMs(SystemClock.elapsedRealtime())
+            if (remaining > 0L) {
+                handler.removeCallbacks(retryRunnable)
+                handler.postDelayed(retryRunnable, remaining)
+                return@runOnUiThread
+            }
             handler.removeCallbacks(retryRunnable)
             loading = true
             state = AdState.LOADING
-            val generation = loadGeneration
+            val generation = ++loadGeneration
+            handler.postDelayed(loadTimeoutRunnable, LOAD_TIMEOUT_MS)
             RewardedAd.load(
                 activity,
                 adUnitId,
                 AdRequest.Builder().build(),
                 object : RewardedAdLoadCallback() {
                     override fun onAdLoaded(ad: RewardedAd) {
-                        if (disposed || generation != loadGeneration) return
+                        if (disposed || generation != loadGeneration || !loading) return
+                        handler.removeCallbacks(loadTimeoutRunnable)
                         loading = false
                         if (!consentInformation.canRequestAds()) {
                             clearCachedAd()
@@ -234,6 +275,7 @@ class AdMobRewardedAdGateway(
                             return
                         }
                         rewardedAd = ad
+                        retryPolicy.reset()
                         loadedAtElapsedMs = SystemClock.elapsedRealtime()
                         state = AdState.READY
                         if (BuildConfig.QA_DIAGNOSTICS) Log.i(TAG, "Rewarded ad ready for $placement")
@@ -242,20 +284,31 @@ class AdMobRewardedAdGateway(
                     }
 
                     override fun onAdFailedToLoad(error: LoadAdError) {
-                        if (disposed || generation != loadGeneration) return
+                        if (disposed || generation != loadGeneration || !loading) return
+                        handler.removeCallbacks(loadTimeoutRunnable)
                         loading = false
-                        clearCachedAd()
-                        state = AdState.UNAVAILABLE
                         Log.w(TAG, "Rewarded ad load failed for $placement: ${error.domain}/${error.code}")
-                        handler.removeCallbacks(retryRunnable)
-                        handler.postDelayed(retryRunnable, RETRY_DELAY_MS)
+                        val noFill = error.domain == "com.google.android.gms.ads" && error.code == AdRequest.ERROR_CODE_NO_FILL
+                        val message = when {
+                            noFill -> "No video available right now. Please try again shortly."
+                            error.domain == "com.google.android.gms.ads" && error.code == AdRequest.ERROR_CODE_NETWORK_ERROR ->
+                                "Cannot load a video. Please check your connection."
+                            else -> "Video unavailable right now. Please try again shortly."
+                        }
+                        scheduleLoadRetry(message, noFill)
                     }
                 }
             )
         }
     }
 
-    override fun show(callback: (RewardedAdResult) -> Unit) {
+    override fun show(callback: (RewardedAdResult) -> Unit) = showForContext("orb", callback)
+
+    override fun pendingRewards(context: String): List<String> =
+        if (presentationInProgress) emptyList() else ssv.pending(context)
+    override fun acknowledgeReward(token: String, outcome: String) = ssv.acknowledge(token, outcome)
+
+    override fun showForContext(context: String, callback: (RewardedAdResult) -> Unit) {
         activity.runOnUiThread {
             if (activity.isFinishing || activity.isDestroyed || AdPrivacySession.privacyFormOpen ||
                 AdPrivacySession.fullscreenOwner != null) {
@@ -282,10 +335,37 @@ class AdMobRewardedAdGateway(
             clearCachedAd()
             state = AdState.SHOWING
             AdPrivacySession.fullscreenOwner = this
-            val opportunity = RewardOpportunity("ad-${UUID.randomUUID()}")
+            preparing = true
+            presentationStartedAt = SystemClock.elapsedRealtime()
+            val rewardToken = "ad-${UUID.randomUUID()}"
+            val rewardOwnerUid = ssv.playerId()
+            val opportunity = RewardOpportunity(rewardToken)
+            var finished = false
+            fun finish(failure: String? = null) {
+                if (finished) return
+                finished = true
+                activeFinish = null
+                preparing = false
+                dismissRunnable?.let(handler::removeCallbacks)
+                dismissRunnable = null
+                handler.removeCallbacks(presentationTimeoutRunnable)
+                releaseFullscreen()
+                val result = opportunity.close(failure)
+                state = if (disposed) AdState.DISABLED else AdState.LOADING
+                if (result != null && !disposed) dispatch {
+                    if (result is RewardedAdResult.Earned && ssv.playerId() != rewardOwnerUid)
+                        callback(RewardedAdResult.Failed("Reward saved for the account that watched the video."))
+                    else callback(result)
+                }
+                if (!disposed) preload()
+            }
+            activeFinish = { failure -> finish(failure) }
+            handler.postDelayed(presentationTimeoutRunnable, PRESENTATION_TIMEOUT_MS)
 
             ad.fullScreenContentCallback = object : FullScreenContentCallback() {
                 override fun onAdShowedFullScreenContent() {
+                    if (finished) return
+                    preparing = false
                     if (BuildConfig.QA_DIAGNOSTICS) Log.i(TAG, "Rewarded ad opened for $placement")
                 }
 
@@ -294,35 +374,49 @@ class AdMobRewardedAdGateway(
                 }
 
                 override fun onAdDismissedFullScreenContent() {
-                    releaseFullscreen()
-                    opportunity.close()?.let { result -> dispatch { callback(result) } }
-                    state = AdState.LOADING
-                    preload()
+                    if (finished || dismissRunnable != null) return
+                    preparing = false
+                    // Mediation sources may report earned after dismissed, as in the RPG flow.
+                    if (opportunity.hasEarned) finish() else {
+                        dismissRunnable = Runnable { finish() }.also {
+                            handler.postDelayed(it, LATE_REWARD_GRACE_MS)
+                        }
+                    }
                 }
 
                 override fun onAdFailedToShowFullScreenContent(error: AdError) {
-                    releaseFullscreen()
+                    if (finished) return
                     Log.w(TAG, "Rewarded ad show failed for $placement: ${error.domain}/${error.code}")
-                    if (opportunity.close() != null) {
-                        dispatch { callback(RewardedAdResult.Failed("Ad could not be shown. Please try again.")) }
-                    }
-                    state = AdState.LOADING
-                    preload()
+                    finish("Ad could not be shown. Please try again.")
                 }
             }
 
-            try {
-                ad.show(activity, OnUserEarnedRewardListener {
-                    opportunity.earn()?.let { result -> dispatch { callback(result) } }
-                })
-            } catch (error: RuntimeException) {
-                releaseFullscreen()
-                Log.w(TAG, "Rewarded presentation failed for $placement", error)
-                if (opportunity.close() != null) dispatch {
-                    callback(RewardedAdResult.Failed("Ad could not be shown. Please try again."))
+            ssv.prepare(rewardToken, context) { options ->
+                if (finished) return@prepare
+                if (disposed || activity.isFinishing || activity.isDestroyed || ssv.playerId() != rewardOwnerUid) {
+                    finish("Ad could not be shown. Please try again.")
+                    return@prepare
                 }
-                state = AdState.UNAVAILABLE
-                preload()
+                if (!hostResumed) {
+                    finish("Video cancelled while the game was in the background. Please try again.")
+                    return@prepare
+                }
+                try {
+                    if (options != null) ad.setServerSideVerificationOptions(
+                        ServerSideVerificationOptions.Builder().setUserId(options.userId)
+                            .setCustomData(options.customData).build()
+                    )
+                    ad.show(activity, OnUserEarnedRewardListener {
+                        opportunity.earn()?.let {
+                            ssv.earned(rewardToken) // Save before dispatch, so process death can recover it.
+                            // Deliver after close; very late earnings remain recoverable in the journal.
+                            if (!finished && dismissRunnable != null) finish()
+                        }
+                    })
+                } catch (error: RuntimeException) {
+                    Log.w(TAG, "Rewarded presentation failed for $placement", error)
+                    finish("Ad could not be shown. Please try again.")
+                }
             }
         }
     }
@@ -398,6 +492,8 @@ class AdMobRewardedAdGateway(
     internal fun invalidatePrivacyCache() {
         loadGeneration++
         loading = false
+        handler.removeCallbacks(loadTimeoutRunnable)
+        retryPolicy.reset()
         clearCachedAd()
         handler.removeCallbacks(retryRunnable)
         if (!disposed && state != AdState.SHOWING) state =
@@ -408,15 +504,43 @@ class AdMobRewardedAdGateway(
         if (AdPrivacySession.fullscreenOwner === this) AdPrivacySession.fullscreenOwner = null
     }
 
+    private fun scheduleLoadRetry(message: String, noFill: Boolean = false) {
+        clearCachedAd()
+        loadMessage = message
+        state = AdState.UNAVAILABLE
+        val delay = retryPolicy.failed(SystemClock.elapsedRealtime(), noFill)
+        handler.removeCallbacks(retryRunnable)
+        handler.postDelayed(retryRunnable, delay)
+    }
+
+    override fun onHostPaused() {
+        hostResumed = false
+        handler.removeCallbacks(presentationTimeoutRunnable)
+    }
+
+    override fun onHostResumed() {
+        hostResumed = true
+        if (AdPrivacySession.fullscreenOwner === this) {
+            handler.removeCallbacks(presentationTimeoutRunnable)
+            val remaining = (PRESENTATION_TIMEOUT_MS -
+                (SystemClock.elapsedRealtime() - presentationStartedAt)).coerceAtLeast(LATE_REWARD_GRACE_MS)
+            handler.postDelayed(presentationTimeoutRunnable, remaining)
+        }
+    }
+
     override fun dispose() {
         disposed = true
         state = AdState.DISABLED
         activity.runOnUiThread {
             AdPrivacySession.placements -= this
+            activeFinish?.invoke("Ad interrupted.")
             releaseFullscreen()
             loadGeneration++
             handler.removeCallbacks(retryRunnable)
             handler.removeCallbacks(consentRetryRunnable)
+            handler.removeCallbacks(loadTimeoutRunnable)
+            handler.removeCallbacks(presentationTimeoutRunnable)
+            dismissRunnable?.let(handler::removeCallbacks)
             clearCachedAd()
             loading = false
         }
@@ -429,7 +553,9 @@ class AdMobRewardedAdGateway(
 
     private companion object {
         const val TAG = "RewardedAds"
-        const val RETRY_DELAY_MS = 15_000L
+        const val LOAD_TIMEOUT_MS = 45_000L
+        const val PRESENTATION_TIMEOUT_MS = 300_000L
+        const val LATE_REWARD_GRACE_MS = 1_500L
         const val CONSENT_RETRY_DELAY_MS = 5_000L
         const val CONSENT_REQUEST_RETRY_MS = 30_000L
         const val MAX_AD_AGE_MS = 55 * 60 * 1000L

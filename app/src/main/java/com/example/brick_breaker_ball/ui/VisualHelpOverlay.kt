@@ -66,7 +66,8 @@ internal class VisualHelpOverlay {
                        effect: VisualGameUi.Icon = VisualGameUi.Icon.HIT,
                        balls: Int = 0, damage: Int = 0, spreadAvailable: Boolean = true,
                        emptyCollection: Boolean = false, lessonKey: String? = null,
-                       orbFamily: String? = null) {
+                       orbFamily: String? = null, actionRequired: Boolean = false,
+                       statusText: String? = null) {
             val alpha = animation.presence
             val target = focus?.let(animation::focusBounds)
             HeroGuideRenderer.drawSpotlight(batch, assets, screen, target, .75f * alpha)
@@ -153,14 +154,18 @@ internal class VisualHelpOverlay {
                     if (page == 2) icon(VisualGameUi.Icon.PLUS, 2)
                 }
             }
-            assets.guideHelpText.draw(batch, if (animation.textComplete(lines)) "next_0" else "reveal_0",
-                Rectangle(bubble.x + width * .25f, bubble.y + height * .035f,
-                    width * .50f, height * .09f), alpha = alpha)
+            val prompt = Rectangle(bubble.x + width * .25f, bubble.y + height * .035f,
+                width * .61f, height * .09f)
+            if (statusText != null) VisualGameUi.number(batch, assets, statusText, prompt, .46f,
+                Color(1f, .78f, .43f, alpha))
+            else assets.guideHelpText.draw(batch,
+                if (actionRequired) "action_0" else if (animation.textComplete(lines)) "next_0" else "reveal_0",
+                prompt, alpha = alpha)
             VisualGameUi.number(batch, assets, "${page + 1}/$pages",
                 Rectangle(bubble.x + width * .06f, bubble.y + height * .035f,
                     width * .13f, height * .09f), .46f, Color(1f, .94f, .77f, alpha))
             batch.color = Color.WHITE
-            VisualGameUi.icon(batch, assets, VisualGameUi.Icon.NEXT,
+            if (!actionRequired) VisualGameUi.icon(batch, assets, VisualGameUi.Icon.NEXT,
                 Rectangle(bubble.x + bubble.width - 63f, bubble.y + 12f, 46f, 46f))
             val close = closeBounds(screen)
             VisualGameUi.panel(batch, assets, close)

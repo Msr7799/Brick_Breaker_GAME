@@ -89,8 +89,8 @@ android {
         applicationId = productionApplicationId
         minSdk = 24
         targetSdk = 36
-        versionCode = 29
-        versionName = "3.0.2"
+        versionCode = 32
+        versionName = "3.0.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         val privacyPolicyUrl = providers.gradleProperty("privacyPolicyUrl").orElse("").get()

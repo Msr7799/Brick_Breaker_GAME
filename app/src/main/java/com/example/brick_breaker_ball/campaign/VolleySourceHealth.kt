@@ -8,6 +8,16 @@ internal object VolleySourceHealth {
     const val BOSS_EXTRA_HIT_BUDGET_PER_WORLD = 30
     const val BOSS_MINIMUM_DAMAGE_HITS = 12
 
+    /** Preserve the recovered campaign's operation order and fractional health. */
+    fun referenceRawHealth(base: Double, enemyLevel: Int, difficulty: VolleyDifficulty): Double {
+        require(base.isFinite() && base > 0.0 && enemyLevel in 1..160)
+        return when (difficulty) {
+            VolleyDifficulty.NORMAL -> base * (10.0 + ((enemyLevel - 1) * 1.75) * 1.2 - 2.0)
+            VolleyDifficulty.HARD -> (base * (20.0 + ((enemyLevel - 1) * 1.75) * 1.2)) * 5.0
+            VolleyDifficulty.EXTREME -> (base * (150.0 + (((enemyLevel + 500) - 1) * 7.0) * 1.25)) * 10.0
+        }
+    }
+
     fun rawHealth(base: Float, enemyLevel: Int, difficulty: VolleyDifficulty): Double {
         require(enemyLevel in 1..160)
         val multiplier = when (difficulty) {

@@ -76,6 +76,40 @@ class ProgressStore(private val prefs: Preferences = Gdx.app.getPreferences("bri
     val settings = GameSettings()
     private val orbInventory = VolleyOrbInventory(prefs)
 
+    // New and installed players both start this separate stat at level 1 / XP 0. Never
+    // manufacture historical XP from stage stars, world unlocks, purchases or ball ownership.
+    val combatPlayerLevel: Int get() = prefs.getInteger("volley_combat_player_level_v1", 1).coerceAtLeast(1)
+    val combatPlayerExperience: Long get() = prefs.getLong("volley_combat_player_experience_v1", 0L).coerceAtLeast(0L)
+
+    /**
+     * Call once per killed objective, in order, using the same run/sequence after pause restore.
+     * Even zero-XP kills must be delivered: source level-up checks occur per kill, not per batch.
+     * Retain recent run high-watermarks rather than one receipt per enemy in cloud preferences.
+     */
+    @Synchronized
+    fun recordCombatExperience(runId: String, killSequence: Int, amount: Int) {
+        require(amount >= 0 && killSequence > 0)
+        require(runId.length in 1..128 && runId.all { it.isLetterOrDigit() || it == '-' || it == '_' })
+        val receipts = linkedMapOf<String, Int>()
+        for (entry in prefs.getString("volley_combat_run_receipts_v1", "").lineSequence()) {
+            val separator = entry.lastIndexOf(':')
+            if (separator <= 0) continue
+            val sequence = entry.substring(separator + 1).toIntOrNull() ?: continue
+            if (sequence > 0) receipts[entry.substring(0, separator)] = sequence
+        }
+        if (killSequence <= (receipts[runId] ?: 0)) return
+        val next = VolleyPlayerProgress.award(
+            VolleyPlayerProgress.State(combatPlayerLevel, combatPlayerExperience), amount)
+        receipts.remove(runId)
+        receipts[runId] = killSequence
+        while (receipts.size > 32) receipts.remove(receipts.keys.first())
+        prefs.putInteger(VolleyPlayerProgress.SCHEMA_KEY, 1)
+            .putInteger("volley_combat_player_level_v1", next.level)
+            .putLong("volley_combat_player_experience_v1", next.experience)
+            .putString("volley_combat_run_receipts_v1", receipts.entries.joinToString("\n") { "${it.key}:${it.value}" })
+            .flush()
+    }
+
     /** A firing pattern is a choice for the owned ball, not a global difficulty setting. */
     fun isShotgunEnabled(spriteName: String): Boolean =
         prefs.getBoolean("volley_ball_shotgun_$spriteName", false)
@@ -103,17 +137,33 @@ class ProgressStore(private val prefs: Preferences = Gdx.app.getPreferences("bri
         }
 
     val orbUpgradePoints: Int get() = prefs.getInteger("volley_orb_upgrade_points", 0)
-    /** Only the AdMob earned callback may request this receipt-based credit. */
+    /** SDK earn or recovery of the same verified opportunity; one durable receipt per credit. */
     fun creditEarnedOrbPoint(receipt: String): Boolean {
         if (receipt.isBlank() || prefs.getBoolean("volley-orb-ad:$receipt", false)) return false
         // The earned callback grants a real Standard Orb copy alongside the old point.
         VolleySourceOrbDrops.pick(1, receipt.hashCode(), 0, 0)?.let { picked ->
-            orbInventory.add(picked.id, Random(receipt.hashCode().toLong()), flush = false)
+            if (orbInventory.add(picked.id, Random(receipt.hashCode().toLong()), flush = false) == null)
+                prefs.putString("volley-orb-ad-pending:$receipt", picked.id)
         }
         prefs.putInteger("volley_orb_upgrade_points", (orbUpgradePoints.toLong() + 1L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
             .putBoolean("volley-orb-ad:$receipt", true).flush()
         return true
     }
+    /** Bag-full rewards remain in the existing cloud-synced progress checkpoint until space opens. */
+    fun deliverPendingRewardedOrbs(): Int {
+        var delivered = 0
+        prefs.get().toMap().forEach { (key, value) ->
+            if (!key.startsWith("volley-orb-ad-pending:") || value !is String || !orbInventory.hasSpace) return@forEach
+            val receipt = key.removePrefix("volley-orb-ad-pending:")
+            if (orbInventory.add(value, Random(receipt.hashCode().toLong()), flush = false) != null) {
+                prefs.remove(key)
+                delivered++
+            }
+        }
+        if (delivered > 0) prefs.flush()
+        return delivered
+    }
+    val pendingRewardedOrbCount: Int get() = prefs.get().keys.count { it.startsWith("volley-orb-ad-pending:") }
     /** مكافأة واحدة لكل عقدة أورب داخل محاولة المرحلة، بدون إصدار Boosts قديمة. */
     fun creditStageOrbPoint(levelId: Int, sourceId: Int, turn: Int, naturalDrop: Boolean = false): Boolean {
         if (levelId !in 1..160 || sourceId < 0 || turn < 0) return false
@@ -452,6 +502,10 @@ class ProgressStore(private val prefs: Preferences = Gdx.app.getPreferences("bri
     init {
         loadSettings()
         VolleyProgressMigration.migrate(prefs)
+        // Mark snapshots made by the new app even before the first kill. This adds no XP.
+        if (!prefs.contains(VolleyPlayerProgress.SCHEMA_KEY)) {
+            prefs.putInteger(VolleyPlayerProgress.SCHEMA_KEY, 1).flush()
+        }
         syncUnlockProgress()
     }
 

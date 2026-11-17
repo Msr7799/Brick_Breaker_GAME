@@ -23,7 +23,8 @@ data class VolleyOrbHit(
     val empowerBonus: Int = 0,
     val reaperWrathChance: Float = 0f,
     val reaperWrathDuration: Float = 0f,
-    val reaperWrathInterval: Float = .5f
+    val reaperWrathInterval: Float = .5f,
+    val critical: Boolean = false
 )
 
 /** Distinct equipped copies stack; secondary hits never roll another Orb effect. */
@@ -32,7 +33,9 @@ class VolleyOrbEffects(
     private val random: Random,
     private val stageLevel: Int = 1,
     private val extremeMode: Boolean = false,
-    private val combatBoost: Float = 1f
+    private val combatBoost: Float = 1f,
+    private val referenceRules: Boolean = false,
+    private val playerLevel: Int = 1
 ) {
     val orbs: List<VolleyOrbDefinition> = run {
         val uniqueFamilies = mutableSetOf<String>()
@@ -41,12 +44,14 @@ class VolleyOrbEffects(
             .take(8)
     }
     private fun total(name: String): Float = orbs.sumOf { it.stat(name).toDouble() }.toFloat()
+    private fun referenceTotal(name: String): Double = orbs.sumOf { it.referenceStat(name) }
     constructor(orb: VolleyOrbDefinition?, random: Random, stageLevel: Int = 1) :
         this(listOfNotNull(orb), random, stageLevel)
 
-    fun startingBalls(): Int = orbs.sumOf {
-        ceil(it.stat("increased_ball_count").coerceAtLeast(0f) * combatBoost).toInt()
-    }
+    fun startingBalls(): Int = if (referenceRules)
+        VolleyReferenceCombat.startingBalls(playerLevel, orbs) -
+            VolleyReferenceCombat.startingBalls(playerLevel, emptyList())
+    else orbs.sumOf { ceil(it.stat("increased_ball_count").coerceAtLeast(0f) * combatBoost).toInt() }
 
     fun rewardMultiplier(): Float = 1f + total("goldfind") / 100f
 
@@ -73,7 +78,8 @@ class VolleyOrbEffects(
 
     /** Each ball touching a triggered explosion gets its own documented ignition roll. */
     fun rollsIgnition(): Boolean = roll(
-        combatChance(orbs.sumOf { it.stat("explosive_chance_to_ignite").toDouble() }.toFloat(), 10f * combatBoost), 100f
+        if (referenceRules) referenceTotal("explosive_chance_to_ignite").coerceIn(0.0, 10.0).toFloat()
+        else combatChance(orbs.sumOf { it.stat("explosive_chance_to_ignite").toDouble() }.toFloat(), 10f * combatBoost), 100f
     )
 
     private fun combatChance(chance: Float, cap: Float): Float =
@@ -81,6 +87,7 @@ class VolleyOrbEffects(
 
     fun hit(base: Int, @Suppress("UNUSED_PARAMETER") boss: Boolean, totalBalls: Int = 0,
             activeBalls: Int = 0, currentBonusDamage: Int = 0, fireball: Boolean = false): VolleyOrbHit {
+        if (referenceRules) return referenceHit(base, totalBalls, activeBalls, currentBonusDamage, fireball)
         if (orbs.isEmpty()) return VolleyOrbHit(base)
         // Percentage on legendary ranks is a percentage of the current level in the item script.
         val rawFlat = orbs.sumOf { item ->
@@ -95,7 +102,9 @@ class VolleyOrbEffects(
             activeBalls * ceil(baseDamage * warriorPercent / 100f).toInt() else 0
         var damage = baseDamage + warriorBonus
         val empowerCritMultiple = orbs.maxOf { it.stat("empower_multi_to_crit").toInt().coerceAtLeast(1) }
+        var critical = false
         orbs.forEach { item -> if (roll(combatChance(item.stat("increased_crit_chance"), 100f), 100f)) {
+            critical = true
             val critPercent = item.stat("increased_crit_damage") + totalBalls * item.stat("ancient_crit_damage")
             damage = max(damage + 1, ceil(damage * (1f + critPercent / 100f)).toInt())
             damage += currentBonusDamage.coerceAtLeast(0) * (empowerCritMultiple - 1)
@@ -155,7 +164,89 @@ class VolleyOrbEffects(
                 total("reapers_wrath_on_hit_chance") +
                     total("ancient_reapers_wrath_on_hit_chance").coerceAtMost(5f), 100f) else 0f,
             reaperWrathDuration = orbs.maxOf { it.stat("reapers_wrath_duration") }.coerceAtLeast(0f),
-            reaperWrathInterval = .5f / (1f + total("reapers_wrath_spin_speed").coerceIn(0f, 25f) / 100f)
+            reaperWrathInterval = .5f / (1f + total("reapers_wrath_spin_speed").coerceIn(0f, 25f) / 100f),
+            critical = critical
+        )
+    }
+
+    /** base is the already assembled reference attack; never add equipped flat stats twice. */
+    private fun referenceHit(base: Int, totalBalls: Int, activeBalls: Int,
+                             currentBonusDamage: Int, fireball: Boolean): VolleyOrbHit {
+        val attack = base.coerceAtLeast(1).toDouble()
+        fun amount(percent: String, multiplier: String): Double =
+            attack * referenceTotal(percent).coerceAtLeast(0.0) / 100.0 *
+                (1.0 + referenceTotal(multiplier).coerceAtLeast(0.0) / 100.0)
+        fun chance(name: String, maximum: Float = 10f, capIncrease: String? = null): Float =
+            referenceTotal(name).coerceIn(0.0, (maximum.toDouble() +
+                (capIncrease?.let { referenceTotal(it).coerceIn(0.0, 100.0) } ?: 0.0))
+                .coerceAtMost(100.0)).toFloat()
+        fun proc(chanceName: String, percent: String, multiplier: String,
+                 maximum: Float = 10f, capIncrease: String? = null): Int =
+            if (roll(chance(chanceName, maximum, capIncrease), 100f))
+                ceil(amount(percent, multiplier)).toInt().coerceAtLeast(0) else 0
+
+        // Empower is aggregated and rolled before this collision's normal damage.
+        val empower = if (roll(chance("empower_chance", 3f), 100f))
+            ceil(attack * referenceTotal("empower_amount").coerceAtLeast(0.0) / 100.0).toInt() else 0
+        val warriorPercent = referenceTotal("ancient_ball_to_bonus_damage").coerceIn(0.0, 10.0)
+        val warrior = activeBalls.coerceAtLeast(0).toDouble() * ceil(attack * warriorPercent / 100.0)
+        val bonus = currentBonusDamage.coerceAtLeast(0).toDouble() + empower + warrior
+        val critical = roll(chance("increased_crit_chance", 100f), 100f)
+        val damage = if (critical) {
+            val percent = referenceTotal("increased_crit_damage").toDouble() +
+                totalBalls.coerceAtLeast(0).toDouble() * referenceTotal("ancient_crit_damage")
+            // Source crits include round bonus only when the Empower crit multiplier exists.
+            ceil(attack * (1.0 + percent / 100.0) +
+                bonus * referenceTotal("empower_multi_to_crit").coerceAtLeast(0.0)).toInt()
+        } else (attack + bonus).toInt()
+
+        // Preserve source proc order: poison, explosive, lightning, hammer, split, reaper.
+        val poison = proc("poison_chance", "poison_damage_percent_of_total_damage",
+            "poison_damage_multiplier", 5f, "increased_max_poison_chance")
+        val splash = if (roll(chance("explosive_chance", 10f, "increased_max_explosive_chance"), 100f)) {
+            val raw = amount("explosive_damage", "explosive_damage_multiplier")
+            if (fireball) (raw * (1.0 + referenceTotal("fireball_damage_bonus").coerceIn(0.0, 50.0) / 100.0))
+                .toInt().coerceAtLeast(0) else ceil(raw).toInt().coerceAtLeast(0)
+        } else 0
+        var staticField = 0f
+        val lightning = if (roll(chance("lightning_bolt_chance", 10f,
+                "increased_max_lightning_bolt_chance"), 100f)) {
+            if (roll(chance("ancient_lightning_static_field_chance", 15f), 100f)) {
+                staticField = referenceTotal("ancient_lightning_static_field_damage").coerceIn(0.0, 5.0).toFloat()
+                0
+            } else ceil(amount("lightning_bolt_damage", "lightning_bolt_damage_multiplier")).toInt()
+        } else 0
+        val hammer = proc("hammer_chance", "hammer_damage", "hammer_damage_multiplier",
+            10f, "increased_max_hammer_chance")
+        val split = proc("split_chance", "split_damage", "split_damage_multiplier",
+            10f, "increased_max_split_chance")
+        val reaper = proc("reaper_chance", "reaper_damage", "reaper_damage_multiplier",
+            10f, "increased_max_reaper_chance")
+        return VolleyOrbHit(
+            damage = damage.coerceAtLeast(0),
+            splashDamage = splash,
+            splashRadiusBonus = referenceTotal("explosive_radius_increase").toInt().coerceIn(0, 1),
+            lightningDamage = lightning,
+            staticFieldPercent = staticField,
+            hammerDamage = hammer,
+            hammerPierceChance = when {
+                orbs.any { it.family == "HAMMER" && it.rank >= 5 } -> 100f
+                orbs.any { it.family == "HAMMER" && it.rank >= 4 } -> 50f
+                else -> 0f
+            },
+            reaperDamage = reaper,
+            poisonDamage = poison,
+            poisonInterval = (orbs.map { it.referenceStat("poison_tick_interval") }.filter { it > 0.0 }
+                .minOrNull() ?: 1.0).toFloat(),
+            splitDamage = split,
+            splitPathPercent = referenceTotal("ancient_split_damage").coerceIn(0.0, 100.0).toFloat(),
+            empowerBonus = empower,
+            reaperWrathChance = if (reaper > 0) (referenceTotal("reapers_wrath_on_hit_chance") +
+                referenceTotal("ancient_reapers_wrath_on_hit_chance").coerceIn(0.0, 5.0)).coerceIn(0.0, 100.0).toFloat() else 0f,
+            reaperWrathDuration = orbs.maxOfOrNull { it.referenceStat("reapers_wrath_duration") }
+                ?.coerceAtLeast(0.0)?.toFloat() ?: 0f,
+            reaperWrathInterval = (.5 / (1.0 + referenceTotal("reapers_wrath_spin_speed").coerceIn(0.0, 25.0) / 100.0)).toFloat(),
+            critical = critical
         )
     }
 

@@ -397,6 +397,7 @@ class MainActivity : AndroidApplication() {
 
     /** ملاحظة صيانة: الدالة `onPause` تنفّذ العقد الموروث وتربط دورة حياة المكوّن بسلوك هذا الملف؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     override fun onPause() {
+        if (::brickBreakerGame.isInitialized) brickBreakerGame.monetization.onHostPaused()
         worldVideoPlayer.pause()
         super.onPause()
     }
@@ -404,7 +405,8 @@ class MainActivity : AndroidApplication() {
     /** ملاحظة صيانة: الدالة `onResume` تنفّذ العقد الموروث وتربط دورة حياة المكوّن بسلوك هذا الملف؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     override fun onResume() {
         super.onResume()
-        if (::brickBreakerGame.isInitialized) checkForAppUpdate()
+        if (::brickBreakerGame.isInitialized) brickBreakerGame.monetization.onHostResumed()
+        if (::brickBreakerGame.isInitialized && !brickBreakerGame.monetization.rewardedAdInProgress) checkForAppUpdate()
         if (WorldVideoBackgrounds.isVideoVisible()) worldVideoPlayer.playWhenReady = true
     }
 

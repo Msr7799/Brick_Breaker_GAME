@@ -42,6 +42,7 @@ import com.example.brick_breaker_ball.gameplay.VolleyAimGesture
 import com.example.brick_breaker_ball.gameplay.VolleyAimRelease
 import com.example.brick_breaker_ball.gameplay.VolleyBonusNodeType
 import com.example.brick_breaker_ball.gameplay.VolleyEditorDraft
+import com.example.brick_breaker_ball.campaign.VolleyPlayerProgress
 import com.example.brick_breaker_ball.gameplay.VolleyEvent
 import com.example.brick_breaker_ball.gameplay.VolleyGeneratorFeature
 import com.example.brick_breaker_ball.gameplay.VolleyImpactPitch
@@ -147,6 +148,7 @@ class VolleyGameScreen(
 
     private val aimInputProcessor = object : InputAdapter() {
         override fun touchDown(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean {
+            if (rewardedContinueInFlight || game.monetization.rewardedAdInProgress) return true
             if (visualHelp.active || helpInputBlocked || heroLessonModal() || charmTutorial.active || controlTutorial.active || game.uiMotion.active) return true
             worldPoint(screenX, screenY, touch)
             if (editorTest && testExitButton.contains(touch.x, touch.y)) return true
@@ -175,6 +177,7 @@ class VolleyGameScreen(
         }
 
         override fun touchDragged(screenX: Int, screenY: Int, pointer: Int): Boolean {
+            if (rewardedContinueInFlight || game.monetization.rewardedAdInProgress) return true
             if (pointer != capturedAimPointer || !aiming) return false
             worldPoint(screenX, screenY, touch)
             aimInputConsumed = true
@@ -184,6 +187,7 @@ class VolleyGameScreen(
         }
 
         override fun touchUp(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean {
+            if (rewardedContinueInFlight || game.monetization.rewardedAdInProgress) return true
             if (pointer == speedHeldPointer) {
                 speedHeldPointer = -1
                 session.setFastForwardHeld(false)
@@ -221,7 +225,8 @@ class VolleyGameScreen(
         reduceMotion = game.progress.settings.reduceMotion,
         difficulty = game.progress.selectedDifficulty,
         shotgunEnabled = game.progress.isShotgunEnabled(game.progress.settings.selectedVolleyBallSpriteName),
-        equippedOrbs = game.progress.equippedOrbs).also {
+        equippedOrbs = game.progress.equippedOrbs,
+        playerLevel = game.progress.combatPlayerLevel, combatRunId = orbRunId).also {
         restoredSnapshot?.let(it::restore)
         it.restoreRewardedRevivesUsed(restoredRewardedRevivesUsed)
     }
@@ -265,9 +270,12 @@ class VolleyGameScreen(
     private var lastBossHealthRatio = displayedBossHealthRatio
     private var bossHealthDamageFlash = 0f
     private var rewardedContinueInFlight = false
+    private var screenVisible = false
     private var rewardedContinueMessage = ""
+    private var rewardRecoveryCountdown = 0f
 
     override fun show() {
+        screenVisible = true
         WorldVideoBackgrounds.hide()
         installAimInputProcessor()
         if (!editorTest) game.monetization.rewardedReviveAdGateway.preload()
@@ -280,9 +288,15 @@ class VolleyGameScreen(
 
     override fun render(delta: Float) {
         val frameDelta = delta.coerceAtMost(.05f)
+        rewardRecoveryCountdown -= frameDelta
+        if (!editorTest && !rewardedContinueInFlight && session.gameOver && rewardRecoveryCountdown <= 0f) {
+            rewardRecoveryCountdown = 1f
+            val context = reviveRewardContext()
+            game.monetization.rewardedReviveAdGateway.pendingRewards(context).firstOrNull()?.let(::applyEarnedContinue)
+        }
         helpInputBlocked = visualHelp.active
         visualHelp.update(frameDelta, game.progress.settings.reduceMotion)
-        val dt = if (helpInputBlocked) 0f else frameDelta
+        val dt = if (helpInputBlocked || rewardedContinueInFlight || game.monetization.rewardedAdInProgress) 0f else frameDelta
         if (heroLesson != HeroLesson.NONE) {
             if (!game.uiMotion.active && !charmTutorial.active)
                 heroGuideAnimation.update(dt, game.progress.settings.reduceMotion)
@@ -428,7 +442,9 @@ class VolleyGameScreen(
             game.progress.settings.reduceMotion,
             game.progress.equippedOrbs.firstOrNull()?.takeIf { game.assets.orbIconsLoaded() }?.let { game.assets.orbIcon(it.id) },
             VisualGameUi.orbEffect(game.progress.equippedOrbs.firstOrNull()?.family ?: ""),
-            balls = session.ballCount, damage = selectedBallAbility.hitDamageForVolley(session.ballCount))
+            balls = session.ballCount, damage = session.currentHitDamage)
+        if (rewardedContinueInFlight || game.monetization.rewardedAdInProgress)
+            drawRewardedAdWaitingOverlay(game.monetization.rewardedReviveAdGateway.preparingPresentation)
         end()
         if (camera.position.x != DESIGN_WIDTH / 2f || camera.position.y != DESIGN_HEIGHT / 2f) {
             camera.position.set(DESIGN_WIDTH / 2f, DESIGN_HEIGHT / 2f, 0f)
@@ -488,6 +504,11 @@ class VolleyGameScreen(
     }
 
     private fun handleInput() {
+        if (rewardedContinueInFlight || game.monetization.rewardedAdInProgress) {
+            cancelAim()
+            releaseHeldSpeed()
+            return
+        }
         if (visualHelp.active || helpInputBlocked) {
             if (Gdx.input.isKeyJustPressed(Input.Keys.BACK) || Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) visualHelp.tap(true)
             else if (Gdx.input.justTouched()) visualHelp.tap(VisualHelpOverlay.closeBounds(
@@ -515,6 +536,18 @@ class VolleyGameScreen(
                     onExitEditorTest?.invoke()
                     return
                 }
+            }
+        }
+        if (heroLesson != HeroLesson.NONE && !heroLessonModal() && !charmTutorial.active &&
+            !itemsOpen && session.phase != VolleyPhase.PAUSED && !game.uiMotion.active) {
+            val screen = Rectangle(visibleLeft, visibleBottom, visibleWidth, visibleHeight)
+            val point = touchPoint()
+            if (Gdx.input.isKeyJustPressed(Input.Keys.BACK) || Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) ||
+                (Gdx.input.justTouched() && HeroGuideRenderer.skipBounds(screen).contains(point.x, point.y))) {
+                cancelAim()
+                heroSkipAfterExit = true
+                completeHeroLesson()
+                return
             }
         }
         if (heroLessonModal() && !charmTutorial.active) {
@@ -695,6 +728,8 @@ class VolleyGameScreen(
 
     private fun isActionControl(x: Float, y: Float): Boolean = helpButton.contains(x, y) || bagButton.contains(x, y) || itemsButton.contains(x, y) ||
         fastForwardButton.contains(x, y) || recallButton.contains(x, y) || pauseButton.contains(x, y) ||
+        (heroLesson != HeroLesson.NONE && HeroGuideRenderer.skipBounds(
+            Rectangle(visibleLeft, visibleBottom, visibleWidth, visibleHeight)).contains(x, y)) ||
         (displayedCharm()?.let { it in session.cancellableModifiers } == true && disarmCharmButton.contains(x, y))
 
     private fun worldPoint(screenX: Int, screenY: Int, out: Vector2) {
@@ -766,6 +801,12 @@ class VolleyGameScreen(
                     soundCooldowns["impact_pop"] = .028f
                 }
 
+                is VolleyEvent.CombatExperience -> if (!editorTest) {
+                    game.progress.recordCombatExperience(event.runId, event.killSequence,
+                        VolleyPlayerProgress.enemyExperience(event.enemyLevel, event.difficulty,
+                            event.playerLevel))
+                }
+
                 is VolleyEvent.BrickBroken -> Unit
 
                 is VolleyEvent.PickupCollected -> Unit
@@ -778,19 +819,17 @@ class VolleyGameScreen(
 
                 VolleyEvent.VolleyComplete -> Unit
 
-                is VolleyEvent.Sound -> if ((gameplayEffectsEnabled || event.name in setOf("volley_ball", "source_ball_hit")) &&
+                is VolleyEvent.Sound -> if (event.name == "volley_ball") {
+                    // Do not throttle launches: RPG calls shoot_sound.play() for every ball.
+                    game.assets.playVolleyLaunch(game.progress.settings.masterVolume * game.progress.settings.sfxVolume)
+                    muzzleFlash = .09f
+                } else if ((gameplayEffectsEnabled || event.name == "source_ball_hit") &&
                     !(stage.sourceScene != null && event.name in setOf("wall_hit", "metal_hit")) &&
                     (soundCooldowns[event.name] ?: 0f) <= 0f) {
-                    // RPG's 2D cannon player is -10 dB against the 0 dB hit player.
-                    val volumeScale = if (stage.sourceScene != null && event.name == "volley_ball")
-                        .31622776f else if (event.name == "volley_ball") .52f else 1f
-                    val pitch = if (stage.sourceScene != null && event.name == "volley_ball")
-                        MathUtils.random(.9f, 1.1f) else event.pitch
-                    game.assets.play(event.name, game.progress.settings.masterVolume * game.progress.settings.sfxVolume * volumeScale, pitch)
-                    if (event.name == "volley_ball") muzzleFlash = .09f
+                    game.assets.play(event.name, game.progress.settings.masterVolume * game.progress.settings.sfxVolume, event.pitch)
                     soundCooldowns[event.name] = when (event.name) {
                         "source_ball_hit" -> .08f // RPG does not restart its 80 ms hit player.
-                        "brick_hit", "wall_hit", "metal_hit", "volley_ball" -> .045f
+                        "brick_hit", "wall_hit", "metal_hit" -> .045f
                         else -> .10f
                     }
                 }
@@ -1398,7 +1437,7 @@ class VolleyGameScreen(
         powerHelpFocus.set(statsRect.x + 8f, statsRect.y + statsRect.height * .49f,
             powerWidth - 10f, statsRect.height * .43f)
         VisualGameUi.stats(batch, game.assets, powerHelpFocus,
-            session.ballCount, selectedBallAbility.hitDamageForVolley(session.ballCount))
+            session.ballCount, session.currentHitDamage)
         VisualGameUi.icon(batch, game.assets, VisualGameUi.Icon.STAR,
             Rectangle(statsRect.x + 8f, statsRect.y + 6f, statsRect.height * .30f, statsRect.height * .30f))
         VisualGameUi.number(batch, game.assets, "${session.score}",
@@ -1609,10 +1648,12 @@ class VolleyGameScreen(
     private fun drawGameOverOverlay() {
         drawModalBase("WALL BREACHED")
         val remaining = session.rewardedRevivesRemaining
-        val state = game.monetization.rewardedReviveAdGateway.state
+        val gateway = game.monetization.rewardedReviveAdGateway
+        val state = gateway.state
         fittedText(
             game.assets.smallFont,
-            "WATCH A VIDEO TO PUSH THE WALL BACK ${VolleySession.REWARDED_REVIVE_ROWS} ROWS",
+            if (remaining > 0) "CONTINUE: PUSH BACK ${VolleySession.REWARDED_REVIVE_ROWS} ROWS"
+            else "RETRY WITH A NEW AIM OR ORB LOADOUT",
             155f,
             930f,
             590f,
@@ -1620,7 +1661,7 @@ class VolleyGameScreen(
         )
         fittedText(
             game.assets.smallFont,
-            "CONTINUES ${session.rewardedRevivesUsed}/${VolleySession.MAX_REWARDED_REVIVES}  •  $remaining LEFT",
+            "TURN ${session.turn}  |  SCORE ${session.score}  |  $remaining CONTINUES LEFT",
             190f,
             885f,
             520f,
@@ -1628,10 +1669,12 @@ class VolleyGameScreen(
         )
         val label = when {
             remaining <= 0 -> "NO CONTINUES LEFT"
-            rewardedContinueInFlight || state == AdState.SHOWING -> "PLAYING VIDEO…"
+            gateway.preparingPresentation -> "OPENING VIDEO…"
+            rewardedContinueInFlight || state == AdState.SHOWING -> "RETURNING TO GAME…"
             state == AdState.READY -> "WATCH • PUSH BACK"
             state == AdState.LOADING -> "LOADING VIDEO…"
-            state == AdState.UNAVAILABLE -> "RELOAD VIDEO"
+            state == AdState.UNAVAILABLE && gateway.retryInSeconds > 0 -> "RETRY IN ${gateway.retryInSeconds}s"
+            state == AdState.UNAVAILABLE -> "RETRY VIDEO"
             else -> "VIDEO UNAVAILABLE"
         }
         drawPauseActionButton(
@@ -1640,10 +1683,13 @@ class VolleyGameScreen(
             label,
             emphasized = remaining > 0 && state == AdState.READY
         )
-        drawPauseActionButton(restartButton, "restart", "RETRY")
+        drawPauseActionButton(restartButton, "restart", "RETRY", emphasized = remaining <= 0 || state != AdState.READY)
         drawPauseActionButton(homeButton, "home", "HOME")
-        if (rewardedContinueMessage.isNotBlank()) {
-            fittedText(game.assets.smallFont, rewardedContinueMessage, 155f, 345f, 590f, .42f)
+        val adMessage = rewardedContinueMessage.ifBlank {
+            if (state == AdState.UNAVAILABLE) gateway.availabilityMessage else ""
+        }
+        if (adMessage.isNotBlank()) {
+            fittedText(game.assets.smallFont, adMessage, 155f, 345f, 590f, .42f)
         }
     }
 
@@ -1713,8 +1759,8 @@ class VolleyGameScreen(
     }
 
     private fun heroLessonLines(): List<String> = when (heroLesson) {
-        HeroLesson.INTRO -> listOf("THIS CANNON LAUNCHES YOUR VOLLEY.", "DRAG BACK TO AIM; RELEASE TO FIRE.")
-        HeroLesson.SPEED_HINT -> listOf("WHILE BALLS FLY, HOLD 3X.", "RELEASE FOR NORMAL SPEED.")
+        HeroLesson.INTRO -> listOf("HIT BRICKS DIRECTLY OR BOUNCE OFF WALLS.", "DRAG BACK TO AIM; RELEASE TO FIRE.")
+        HeroLesson.SPEED_HINT -> listOf("HOLD 3X; RELEASE FOR NORMAL SPEED.", "YOUR BALL DAMAGE STAYS THE SAME.")
         HeroLesson.RECALL_HINT -> listOf("RECALL ENDS THE SHOT EARLY.", "IT ALSO ADVANCES THE BRICKS.")
         HeroLesson.RETURN_HINT -> listOf("THE BALLS HAVE RETURNED.", "SURVIVING BRICKS DROP ONE ROW.")
         HeroLesson.DANGER_HINT -> listOf("KEEP BRICKS ABOVE THIS LINE.", "CROSSING IT CAN END YOUR RUN.")
@@ -1763,9 +1809,15 @@ class VolleyGameScreen(
                     batch.color = Color.WHITE
                 }
             }
+            HeroGuideRenderer.drawSkip(batch, game.assets,
+                Rectangle(visibleLeft, visibleBottom, visibleWidth, visibleHeight))
             return
         }
-        if (!heroLessonModal()) return
+        if (!heroLessonModal()) {
+            if (heroLesson != HeroLesson.NONE) HeroGuideRenderer.drawSkip(batch, game.assets,
+                Rectangle(visibleLeft, visibleBottom, visibleWidth, visibleHeight))
+            return
+        }
         val focus = when (heroLesson) {
             HeroLesson.INTRO -> Rectangle(session.launcherX - 80f, VolleySession.CANNON_PIVOT_Y - 25f,
                 160f, VolleySession.CANNON_BARREL_LENGTH + 50f)
@@ -1938,7 +1990,8 @@ class VolleyGameScreen(
         earnedOrbs.clear()
         orbRunId = UUID.randomUUID().toString()
         session = VolleySession(stage, level.world, selectedBallAbility, reduceMotion = game.progress.settings.reduceMotion, difficulty = game.progress.selectedDifficulty, equippedOrbs = game.progress.equippedOrbs,
-            shotgunEnabled = game.progress.isShotgunEnabled(game.progress.settings.selectedVolleyBallSpriteName))
+            shotgunEnabled = game.progress.isShotgunEnabled(game.progress.settings.selectedVolleyBallSpriteName),
+            playerLevel = game.progress.combatPlayerLevel, combatRunId = orbRunId)
         displayedBossHealthRatio = session.bricks.firstOrNull { it.type == BrickType.BOSS_CORE }
             ?.let { it.health.toFloat() / it.initialHealth.coerceAtLeast(1) } ?: 0f
         lastBossHealthRatio = displayedBossHealthRatio
@@ -1952,24 +2005,23 @@ class VolleyGameScreen(
     private fun requestRewardedContinue() {
         if (rewardedContinueInFlight || session.rewardedRevivesRemaining <= 0) return
         val gateway = game.monetization.rewardedReviveAdGateway
+        gateway.pendingRewards(reviveRewardContext()).firstOrNull()?.let {
+            applyEarnedContinue(it)
+            return
+        }
         when (gateway.state) {
             AdState.READY -> {
                 rewardedContinueInFlight = true
                 rewardedContinueMessage = "Opening rewarded video…"
-                gateway.show { result ->
+                // Preserve the defeated run before leaving for an ad; it can receive a delayed reward.
+                saveRewardedContinueCheckpoint()
+                val context = reviveRewardContext()
+                gateway.showForContext(context) { result ->
                     rewardedContinueInFlight = false
+                    if (!screenVisible) return@showForContext
                     when (result) {
                         is RewardedAdResult.Earned -> {
-                            if (session.reviveFromRewardedAd()) {
-                                game.volleyPausedSession.clear()
-                                rewardedContinueMessage = ""
-                                feedbackText = "WALL PUSHED BACK • ${session.rewardedRevivesRemaining} CONTINUES LEFT"
-                                feedbackTime = 2.2f
-                                if (game.progress.settings.haptics) Gdx.input.vibrate(35)
-                                if (gameplayEffectsEnabled) game.assets.play("powerup", game.progress.settings.masterVolume * game.progress.settings.sfxVolume)
-                            } else {
-                                rewardedContinueMessage = "Continue could not be applied."
-                            }
+                            if (context == reviveRewardContext()) applyEarnedContinue(result.rewardToken)
                         }
 
                         RewardedAdResult.ClosedWithoutReward -> rewardedContinueMessage = "Finish the video to continue."
@@ -1980,7 +2032,7 @@ class VolleyGameScreen(
             }
 
             AdState.UNAVAILABLE -> {
-                rewardedContinueMessage = "Reloading rewarded video…"
+                rewardedContinueMessage = gateway.availabilityMessage
                 gateway.preload()
             }
 
@@ -1990,6 +2042,27 @@ class VolleyGameScreen(
 
             AdState.DISABLED -> rewardedContinueMessage = "Rewarded videos are unavailable in this build."
         }
+    }
+
+    private fun reviveRewardContext() = "$orbRunId:revive:${session.rewardedRevivesUsed}"
+
+    private fun saveRewardedContinueCheckpoint() {
+        if (!editorTest) game.volleyPausedSession.save(level.id,
+            session.snapshot().copy(earnedOrbUids = earnedOrbs.mapNotNull { it.uid }, orbRunId = orbRunId),
+            session.rewardedRevivesUsed)
+    }
+
+    private fun applyEarnedContinue(token: String) {
+        if (!session.reviveFromRewardedAd()) return
+        // Persist the incremented continue index BEFORE acknowledging delivery. Recovery can never
+        // apply this token to the next continue or another run, even if the process dies here.
+        saveRewardedContinueCheckpoint()
+        game.monetization.rewardedReviveAdGateway.acknowledgeReward(token, "revive")
+        rewardedContinueMessage = ""
+        feedbackText = "WALL PUSHED BACK • ${session.rewardedRevivesRemaining} CONTINUES LEFT"
+        feedbackTime = 2.2f
+        if (game.progress.settings.haptics) Gdx.input.vibrate(35)
+        if (gameplayEffectsEnabled) game.assets.play("powerup", game.progress.settings.masterVolume * game.progress.settings.sfxVolume)
     }
 
     private fun commitCompletion() {
@@ -2032,11 +2105,13 @@ class VolleyGameScreen(
         pauseAndSave()
     }
     override fun hide() {
+        screenVisible = false
         releaseHeldSpeed()
         removeAimInputProcessor()
         WorldVideoBackgrounds.hide()
     }
     override fun dispose() {
+        screenVisible = false
         removeAimInputProcessor()
         sourceBrickArt?.dispose()
         super.dispose()

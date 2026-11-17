@@ -71,6 +71,7 @@ class VolleyOrbsScreen(
     private val guideAnimation = GuideAnimation()
     private var skipGuideAfterExit = false
     private var guideIsReplay = false
+    private var guideFeedback = ""
     private val guideFocus = Rectangle()
     private var selectionPulseTime = 0f
     private val selectionPulseRect = Rectangle()
@@ -120,6 +121,7 @@ class VolleyOrbsScreen(
                     guidePage = -1
                     if (!guideIsReplay) game.heroGuideProgress.completeShopOrbs()
                 } else guidePage++
+                guideFeedback = ""
                 guideAnimation.reset()
             }
         }
@@ -151,8 +153,10 @@ class VolleyOrbsScreen(
         VisualGameUi.helpButton(batch, game.assets, helpButton)
         actions += helpButton to {
             guidePage = 0; guideIsReplay = true; skipGuideAfterExit = false; guideAnimation.reset()
+            guideFeedback = ""
             detailOpen = false; forgeOpen = false; confirmSale = false; confirmBulkSale = false
             optionsOpen = false
+            multiSelect = false; selectedUids.clear()
             filter = 0; scroll = 0f
             selectedSlot = (0 until ProgressStore.ORB_SLOTS_PER_LOADOUT)
                 .firstOrNull(game.progress::isOrbSlotUnlocked) ?: 0
@@ -176,7 +180,7 @@ class VolleyOrbsScreen(
         val equippedCount = (0 until ProgressStore.ORB_SLOTS_PER_LOADOUT).count {
             game.progress.orbInSlot(it) != null
         }
-        sectionTitle("EQUIPPED $equippedCount/8", x, board.y + h * .684f, w * .72f)
+        sectionTitle("EQUIPPED $equippedCount/${ProgressStore.ORB_SLOTS_PER_LOADOUT}", x, board.y + h * .684f, w * .72f)
         label("SET ${game.progress.selectedOrbLoadout}", x + w * .73f,
             board.y + h * .684f, w * .27f, .43f, Color.LIGHT_GRAY)
         repeat(ProgressStore.ORB_SLOTS_PER_LOADOUT) { index ->
@@ -239,8 +243,13 @@ class VolleyOrbsScreen(
             }
             else if (game.progress.orbInSlot(selectedSlot)?.uid == selected.uid) {
                 showFeedback(if (game.progress.unequipOrb(selectedSlot)) "REMOVED" else "SLOT EMPTY")
-            } else showFeedback(if (game.progress.equipOrbCopy(selected.uid, selectedSlot))
-                "EQUIPPED IN SLOT ${selectedSlot + 1}" else "CANNOT EQUIP")
+            } else if (game.progress.equipOrbCopy(selected.uid, selectedSlot)) {
+                showFeedback("EQUIPPED IN SLOT ${selectedSlot + 1}")
+                game.uiFeedback.emit(UiFeedbackKind.CONFIRM)
+            } else {
+                showFeedback("CANNOT EQUIP")
+                game.uiFeedback.emit(UiFeedbackKind.ERROR)
+            }
         }
         button(Rectangle(x + w * .51f, board.y + h * .105f, w * .49f, h * .060f),
             if (multiSelect) "CANCEL" else "DETAILS", false) { if (multiSelect) {
@@ -268,7 +277,10 @@ class VolleyOrbsScreen(
                         board.y + h * (.600f - (selectedSlot / 4) * .082f), w / 4f - 4f, h * .075f)
                 1 -> if (game.progress.orbStashCount == 0)
                     Rectangle(x + w * .68f, tabY, w * .32f, h * .051f) else collectionArea
-                2 -> Rectangle(x, board.y + h * .105f, w * .49f, h * .060f)
+                2 -> if (game.progress.orbInSlot(selectedSlot)?.uid == selectedUid)
+                    Rectangle(x + (selectedSlot % 4) * w / 4f + 2f,
+                        board.y + h * (.600f - (selectedSlot / 4) * .082f), w / 4f - 4f, h * .075f)
+                else Rectangle(x, board.y + h * .105f, w * .49f, h * .060f)
                 else -> Rectangle(x + w * .51f, board.y + h * .105f, w * .49f, h * .060f)
             })
             val screen = Rectangle(visibleLeft, visibleBottom, visibleWidth, visibleHeight)
@@ -278,7 +290,8 @@ class VolleyOrbsScreen(
                 selected?.takeIf { game.assets.orbIconsLoaded() }?.let { game.assets.orbIcon(it.id) },
                 VisualGameUi.orbEffect(selected?.family ?: ""),
                 emptyCollection = game.progress.orbStashCount == 0, lessonKey = guideCaptionKey(),
-                orbFamily = selected?.family)
+                orbFamily = selected?.family, actionRequired = guideRequiresAction(),
+                statusText = guideFeedback.takeIf { it.isNotEmpty() })
         }
         end()
         handleInput()
@@ -294,7 +307,7 @@ class VolleyOrbsScreen(
     private fun guideCaptionKey(): String = if (game.progress.orbStashCount == 0) {
         "empty_$guidePage"
     } else when (guidePage) {
-        2 -> if (game.progress.orbInSlot(selectedSlot)?.uid == selectedUid) "orbs_remove" else "orbs_2"
+        2 -> if (game.progress.orbInSlot(selectedSlot)?.uid == selectedUid) "orbs_equipped" else "orbs_2"
         else -> "orbs_$guidePage"
     }
 
@@ -437,15 +450,20 @@ class VolleyOrbsScreen(
         batch.draw(game.assets.solidUiRegion, x, y, w, h)
         batch.color = Color.WHITE
         label(orb.name, x + 10f, y + h * .94f, w - 20f, .65f, Color.GOLD)
-        label("${orb.rarity}  |  R${orb.rank}  |  ${orb.uid?.let(::activeSlot)?.let { "ACTIVE SLOT ${it + 1}" } ?: "NOT EQUIPPED"}",
+        label("${orb.rarity}  |  ${orb.uid?.let(::activeSlot)?.let { "EQUIPPED: SLOT ${it + 1}" } ?: "NOT EQUIPPED"}",
             x + 10f, y + h * .89f, w - 20f, .43f, Color.WHITE)
         val equipped = game.progress.orbInSlot(selectedSlot)
         label("SLOT ${selectedSlot + 1}: ${equipped?.name ?: "EMPTY"}",
             x + 10f, y + h * .856f, w - 20f, .42f, Color.LIGHT_GRAY)
         val active = orb.uid?.let(::activeSlot) != null
-        label("${if (active) "ACTIVE" else "EQUIP TO ACTIVATE"}: ${orbActivationSummary(orb)}",
-            x + 10f, y + h * .816f, w - 20f, .38f, Color.GOLD)
-        detailArea.set(x + 10f, y + h * .28f, w - 20f, h * .52f)
+        val effectSide = h * .055f
+        VisualGameUi.icon(batch, game.assets, VisualGameUi.orbEffect(orb.family),
+            Rectangle(x + 12f, y + h * .77f, effectSide, effectSide))
+        label(orbActivationSummary(orb), x + effectSide + 18f, y + h * .811f,
+            w - effectSide - 30f, .44f, Color.GOLD)
+        label(if (active) "EQUIPPED - APPLIES IN GAMEPLAY" else "EQUIP IN A SLOT TO USE THIS EFFECT",
+            x + effectSide + 18f, y + h * .778f, w - effectSide - 30f, .36f, Color.LIGHT_GRAY)
+        detailArea.set(x + 10f, y + h * .28f, w - 20f, h * .475f)
         batch.setColor(.15f, .10f, .07f, .9f)
         batch.draw(game.assets.solidUiRegion, detailArea.x, detailArea.y, detailArea.width, detailArea.height)
         batch.color = Color.WHITE
@@ -599,8 +617,9 @@ class VolleyOrbsScreen(
 
     private fun tile(rect: Rectangle, orb: VolleyOrbDefinition?, selected: Boolean,
                      unlocked: Boolean, caption: String, activeSlot: Int? = null) {
-        // Gold is the current selection; a green check means actually equipped. Never conflate them.
+        // Gold is the current selection; a green check/ring means actually equipped. Never conflate them.
         VisualGameUi.panel(batch, game.assets, rect, selected)
+        if (activeSlot != null) VisualGameUi.equippedRing(batch, game.assets, rect)
         val isSlot = caption.firstOrNull()?.isDigit() == true
         val size = minOf(rect.height * .62f, rect.width * if (isSlot) .60f else .34f)
         val iconBox = Rectangle(if (isSlot) rect.x + (rect.width - size) / 2f else rect.x + rect.width * .06f,
@@ -610,17 +629,19 @@ class VolleyOrbsScreen(
             batch.draw(game.assets.orbIcon(orb.id), iconBox.x, iconBox.y, iconBox.width, iconBox.height)
             batch.color = Color.WHITE
             if (!isSlot) {
-                label(orb.family, rect.x + rect.width * .42f, rect.y + rect.height * .62f,
+                label(orb.family, rect.x + rect.width * .42f, rect.y + rect.height * .76f,
                     rect.width * .54f, .48f, Color.WHITE)
+                label(orb.rarity, rect.x + rect.width * .42f, rect.y + rect.height * .52f,
+                    rect.width * .54f, .33f, Color.GOLD)
                 val state = when {
                     multiSelect && orb.uid in selectedUids -> "SELECTED"
-                    activeSlot != null -> "IN USE"
+                    activeSlot != null -> "SLOT ${activeSlot + 1}"
                     orb.locked -> "LOCKED"
                     orb.isNew -> "NEW"
                     orb.rank > 0 -> "+${orb.rank}"
                     else -> ""
                 }
-                label(state, rect.x + rect.width * .42f, rect.y + rect.height * .35f,
+                label(state, rect.x + rect.width * .42f, rect.y + rect.height * .27f,
                     rect.width * .54f, .36f, if (activeSlot != null) Color.LIME else Color.GOLD)
             }
         } else VisualGameUi.icon(batch, game.assets,
@@ -631,6 +652,12 @@ class VolleyOrbsScreen(
             label(if (orb != null) orb.family else if (unlocked) "EMPTY" else "LOCKED",
                 rect.x + 4f, rect.y + rect.height * .20f, rect.width - 8f,
                 .32f, if (orb != null) Color.WHITE else Color.LIGHT_GRAY)
+            if (orb != null) {
+                // A filled slot IS an equipped orb: mark it without relying on color alone.
+                VisualGameUi.icon(batch, game.assets, VisualGameUi.Icon.CHECK,
+                    Rectangle(rect.x + rect.width * .76f, rect.y + rect.height * .68f,
+                        rect.width * .20f, rect.height * .28f))
+            }
         }
         if (activeSlot != null || (multiSelect && orb?.uid in selectedUids)) {
             VisualGameUi.icon(batch, game.assets, VisualGameUi.Icon.CHECK,
@@ -713,14 +740,14 @@ class VolleyOrbsScreen(
         val bonusBalls = ceil(extraBalls.coerceAtLeast(0f) * 1.5f).toInt()
         val main = when (orb.family) {
             "READY" -> "+$bonusBalls START BALLS"
-            "CRIT" -> "CRITICAL HITS, PROC x1.5"
-            "EMPOWER" -> "EMPOWERED HITS, PROC x1.5"
-            "EXPLOSIVE" -> "SPLASH HITS, PROC x1.5"
-            "FETID" -> "POISON HITS, PROC x1.5"
-            "HAMMER" -> "HAMMER HITS, PROC x1.5"
-            "LIGHTNING" -> "LIGHTNING HITS, PROC x1.5"
-            "REAPER" -> "REAPER HITS, PROC x1.5"
-            "SPLIT" -> "SPLIT HITS, PROC x1.5"
+            "CRIT" -> "HIT CHANCE: CRITICAL DAMAGE"
+            "EMPOWER" -> "HIT CHANCE: BOOST LATER HITS"
+            "EXPLOSIVE" -> "HIT CHANCE: NEARBY BLAST"
+            "FETID" -> "HIT CHANCE: POISON OVER TIME"
+            "HAMMER" -> "HIT CHANCE: CHAIN HAMMER"
+            "LIGHTNING" -> "HIT CHANCE: LIGHTNING STRIKE"
+            "REAPER" -> "HIT CHANCE: REAPER STRIKES"
+            "SPLIT" -> "HIT CHANCE: THREE EXTRA TARGETS"
             "LUCK" -> "DROPS +${orb.stat("increased_drop_rate").toInt()}%, COINS +${orb.stat("goldfind").toInt()}%"
             "SECONDW" -> "ONE WALL RESCUE PER RUN"
             "SHARP" -> "DIRECT HIT DAMAGE BOOST"
@@ -746,11 +773,7 @@ class VolleyOrbsScreen(
                 (Gdx.input.justTouched() && VisualHelpOverlay.closeBounds(screen).contains(point.x, point.y))) {
                 skipGuideAfterExit = true
                 guideAnimation.beginExit()
-            } else if (Gdx.input.justTouched() &&
-                guideAnimation.revealOrContinue(game.assets.guideHelpText.lines(guideCaptionKey(),
-                    selectedUid?.let(game.progress::orbCopy)?.family))) {
-                guideAnimation.beginExit()
-            }
+            } else if (Gdx.input.justTouched()) handleGuideTap(point.x, point.y)
             return
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.BACK) || Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
@@ -823,6 +846,48 @@ class VolleyOrbsScreen(
             touchInCollection = false
         }
         if (!game.assets.orbIconsLoaded()) game.assets.orbIcon("CRIT0")
+    }
+
+    private fun guideRequiresAction(): Boolean = game.progress.orbStashCount > 0 &&
+        !(guidePage == 2 && game.progress.orbInSlot(selectedSlot)?.uid == selectedUid)
+
+    /** Only the highlighted, reversible action can pass through the Old Man's overlay. */
+    private fun handleGuideTap(x: Float, y: Float) {
+        if (guideAnimation.elapsed < .15f) return
+        val lines = game.assets.guideHelpText.lines(guideCaptionKey(),
+            selectedUid?.let(game.progress::orbCopy)?.family)
+        if (!guideRequiresAction()) {
+            if (guideAnimation.revealOrContinue(lines)) guideAnimation.beginExit()
+            return
+        }
+        if (!guideFocus.contains(x, y)) {
+            guideAnimation.revealOrContinue(lines)
+            return
+        }
+        if (guidePage == 1) {
+            val hit = copyHits.firstOrNull { it.first.contains(x, y) } ?: return
+            selectedUid = hit.second
+            animateSelection(hit.first)
+            guideAnimation.beginExit()
+            return
+        }
+        val action = actions.firstOrNull { it.first.contains(x, y) } ?: return
+        action.second.invoke()
+        val completed = when (guidePage) {
+            0 -> game.progress.isOrbSlotUnlocked(selectedSlot)
+            2 -> selectedUid != null && game.progress.orbInSlot(selectedSlot)?.uid == selectedUid
+            3 -> detailOpen
+            else -> false
+        }
+        if (completed) guideAnimation.beginExit()
+        else {
+            guideFeedback = feedback
+            // A conflicting loadout must leave a way to choose another Orb without skipping.
+            if (guidePage == 2) {
+                guidePage = 1
+                guideAnimation.reset()
+            }
+        }
     }
 
     private fun goBack() {

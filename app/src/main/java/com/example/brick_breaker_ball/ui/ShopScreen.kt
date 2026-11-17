@@ -164,6 +164,7 @@ class ShopScreen(
     private var adDialogOpen = false
     private var adPoolOpen = false
     private var adRequestPending = false
+    private var screenVisible = false
     private var confirmationPressedButton = 0
     private var adPressedButton = 0
     private var pointerArmed = false
@@ -210,7 +211,9 @@ class ShopScreen(
      * تُعرض بعد (مثلاً بعد رجوع اللاعب من الخلفية أثناء عرض إعلان) قبل تحميل إعلان المكافأة التالي.
      */
     override fun show() {
+        screenVisible = true
         installMouseWheelHandler(::handleMouseWheel)
+        game.progress.deliverPendingRewardedOrbs()
         game.pendingRewards.load()?.let {
             game.navigate(RewardRevealScreen(game, it, returnDestination))
             return
@@ -220,7 +223,13 @@ class ShopScreen(
     }
 
     override fun hide() {
+        screenVisible = false
         removeMouseWheelHandler()
+    }
+
+    override fun dispose() {
+        screenVisible = false
+        super.dispose()
     }
 
     /**
@@ -229,6 +238,12 @@ class ShopScreen(
      * فقط في نهاية الإطار. لا تُضِف أي رسم بعد استدعاء `end()` في آخر الدالة.
      */
     override fun render(delta: Float) {
+        rewardRecoveryCountdown -= delta.coerceIn(0f, .05f)
+        if (!adRequestPending && rewardRecoveryCountdown <= 0f) {
+            rewardRecoveryCountdown = 1f
+            game.monetization.rewardedTalismanAdGateway.pendingRewards("orb").forEach(::applyEarnedOrbReward)
+            if (game.progress.deliverPendingRewardedOrbs() > 0) message = "PENDING ORB DELIVERED TO YOUR BAG"
+        }
         shopGuideClock += delta.coerceIn(0f, .05f)
         walletPeek.update(delta)
         boardTabSelectionTime = (boardTabSelectionTime - delta.coerceIn(0f, .05f)).coerceAtLeast(0f)
@@ -277,7 +292,15 @@ class ShopScreen(
         }
         val confirmationButtons = drawPurchaseConfirmation()
         val adButtons = if (adDialogOpen) drawRewardedAdDialog() else null
+        val waitingForAd = adRequestPending || game.monetization.rewardedAdInProgress
+        if (waitingForAd) drawRewardedAdWaitingOverlay(
+            game.monetization.rewardedTalismanAdGateway.preparingPresentation)
         end()
+        if (waitingForAd) {
+            pointerArmed = false
+            adPressedButton = 0
+            return
+        }
         // Upload the Orb icons only after the shop has drawn a complete first frame.
         if (activeTab == ShopTab.ORBS && !game.assets.orbIconsLoaded()) game.assets.orbIcon(0)
 
@@ -474,13 +497,13 @@ class ShopScreen(
                 } else {
                     when {
                         offer.coins != null -> BoardShopAction("${offer.coins} COINS") {
-                            askPurchaseConfirmation(ball.name, "${offer.coins} COINS", "Permanently unlock this ball.") {
+                            askPurchaseConfirmation(ball.name, "${offer.coins} COINS", "Permanently unlock this ball appearance. Player level and ORBs determine campaign power.") {
                                 unlockBallWithCoins(ball, offer.coins)
                             }
                         }
 
                         offer.gems != null -> BoardShopAction("${offer.gems} GEMS") {
-                            askPurchaseConfirmation(ball.name, "${offer.gems} GEMS", "Permanently unlock this ball.") {
+                            askPurchaseConfirmation(ball.name, "${offer.gems} GEMS", "Permanently unlock this ball appearance. Player level and ORBs determine campaign power.") {
                                 unlockBallWithGems(ball, offer.gems)
                             }
                         }
@@ -496,7 +519,7 @@ class ShopScreen(
                             askPurchaseConfirmation(
                                 ball.name,
                                 epicPrice,
-                                "Permanent Epic ball. Google Play confirms the price."
+                                "Permanent Epic appearance; no extra campaign damage or balls. Google Play confirms the price."
                             ) {
                                 purchase(epicProduct)
                             }
@@ -515,16 +538,20 @@ class ShopScreen(
             val gemPrice = next?.let { OrbShopPricing.gems(it.rank) }
             BoardShopOffer(
                 family.replace('_', ' ').uppercase(),
-                if (next == null) "MAX RANK" else "RANK $currentRank  ->  ${next.rank}  |  ORB COPY",
+                when {
+                    next == null -> "MAX RANK"
+                    game.progress.unlockedLevel < next.stageRequirement -> "STAGE ${next.stageRequirement}"
+                    else -> "${next.rarity} COPY"
+                },
                 { if (game.assets.orbIconsLoaded()) game.assets.orbIcon(
                     (next ?: VolleyOrbCatalog.atRank(family, currentRank))?.id ?: "CRIT0") else null },
                 coinPrice?.let { price -> BoardShopAction("$price COINS") {
-                    askPurchaseConfirmation(family, "$price COINS", "Upgrade this Orb to rank ${next!!.rank}.") {
+                    askPurchaseConfirmation(family, "$price COINS", "Add a ${next!!.rarity} Orb copy. Equip it in the Bag.") {
                         purchaseOrbRank(family, false, price)
                     }
                 } } ?: BoardShopAction("MAX", false) {},
                 gemPrice?.let { price -> BoardShopAction("$price GEMS") {
-                    askPurchaseConfirmation(family, "$price GEMS", "Upgrade this Orb to rank ${next!!.rank}.") {
+                    askPurchaseConfirmation(family, "$price GEMS", "Add a ${next!!.rarity} Orb copy. Equip it in the Bag.") {
                         purchaseOrbRank(family, true, price)
                     }
                 } }
@@ -533,7 +560,7 @@ class ShopScreen(
 
         ShopTab.FREE -> listOf(
             BoardShopOffer(
-                if (game.progress.orbStashCount < 150) "ORB + UPGRADE POINT" else "UPGRADE POINT (BAG FULL)",
+                "ORB + UPGRADE POINT",
                 "${shopDailyRewards.currentState(System.currentTimeMillis()).claimedToday}/" +
                     "${shopDailyRewards.currentState(System.currentTimeMillis()).dailyLimit} TODAY",
                 { if (game.assets.orbIconsLoaded()) game.assets.orbIcon("CRIT0") else game.assets.atlasUiIcon("orb") },
@@ -934,13 +961,13 @@ class ShopScreen(
         }
         game.assets.shopFont.color = Color.WHITE
         val bagFull = game.progress.orbStashCount >= 150
-        fittedText(game.assets.shopFont, if (bagFull) "1 UPGRADE POINT" else "1 RANDOM STANDARD ORB",
+        fittedText(game.assets.shopFont, "1 RANDOM STANDARD ORB",
             rewardPanel.x + rewardPanel.width * .23f, rewardPanel.y + rewardPanel.height * .77f,
             rewardPanel.width * .73f, .68f)
-        fittedText(game.assets.shopFont, if (bagFull) "BAG FULL: NO ORB" else "+ 1 UPGRADE POINT",
+        fittedText(game.assets.shopFont, "+ 1 UPGRADE POINT",
             rewardPanel.x + rewardPanel.width * .23f, rewardPanel.y + rewardPanel.height * .49f,
             rewardPanel.width * .73f, .65f)
-        fittedText(game.assets.shopFont, "COMPLETE THE AD TO EARN",
+        fittedText(game.assets.shopFont, if (bagFull) "ORB SAVED UNTIL YOUR BAG HAS SPACE" else "COMPLETE THE AD TO EARN",
             rewardPanel.x + rewardPanel.width * .23f, rewardPanel.y + rewardPanel.height * .22f,
             rewardPanel.width * .73f, .50f)
         val watch = game.assets.boards2.placement("rewarded_ad_board", "rewarded_ad_watch_button", board)
@@ -969,17 +996,37 @@ class ShopScreen(
             )
             game.assets.shopFont.color = oldColor
         }
+        val gateway = game.monetization.rewardedTalismanAdGateway
+        val retrySeconds = gateway.retryInSeconds
+        val status = when {
+            !shopDailyRewards.canWatch(System.currentTimeMillis()) -> "DAILY LIMIT REACHED"
+            gateway.state == AdState.LOADING -> "LOADING VIDEO…"
+            gateway.state == AdState.UNAVAILABLE && retrySeconds > 0 -> "RETRY IN ${retrySeconds}s"
+            gateway.state == AdState.UNAVAILABLE -> "RETRY VIDEO"
+            gateway.state == AdState.DISABLED -> "VIDEO UNAVAILABLE"
+            else -> null
+        }
+        if (status != null) {
+            game.assets.uiRenderer.drawGradientPanel(batch, watch, ForgeUiRenderer.GradientStyle.NEUTRAL)
+            fittedText(game.assets.shopFont, status, watch.x + 12f,
+                watch.y + watch.height * .59f, watch.width - 24f, .62f)
+        }
         // Exactly one point per AdMob-earned reward; no random legacy boosts.
         // The old board illustration is decorative; draw the precise reward on top.
         val legendTop = board.y - screen.height * .025f
         game.assets.shopFont.color = Color(1f, .91f, .74f, 1f)
-        fittedText(game.assets.shopFont, "FULL BAG: 1 UPGRADE POINT ONLY", board.x + 15f,
+        fittedText(game.assets.shopFont, if (bagFull) "FULL BAG: ORB SAVED FOR LATER" else "FINISH THE VIDEO TO EARN BOTH REWARDS", board.x + 15f,
             legendTop, board.width - 30f, .58f)
         val details = Rectangle(board.x + board.width * .12f,
             legendTop - screen.height * .075f, board.width * .76f, screen.height * .05f)
         game.assets.uiRenderer.drawGradientPanel(batch, details, ForgeUiRenderer.GradientStyle.NEUTRAL)
         fittedText(game.assets.shopFont, "POSSIBLE ORBS", details.x + 8f,
             details.y + details.height * .66f, details.width - 16f, .68f)
+        val adMessage = message.ifBlank {
+            if (gateway.state == AdState.UNAVAILABLE) gateway.availabilityMessage else ""
+        }
+        if (adMessage.isNotBlank()) fittedText(game.assets.shopFont, adMessage,
+            board.x + 10f, details.y - screen.height * .018f, board.width - 20f, .49f)
         game.assets.shopFont.color = Color.WHITE
         val close = Rectangle(
             board.x + board.width * .88f,
@@ -1021,7 +1068,7 @@ class ShopScreen(
         }
         fittedText(game.assets.shopFont, "ORB STATS MAY VARY. +1 UPGRADE POINT GUARANTEED.",
             panel.x + 12f, panel.y + panel.height * .20f, panel.width - 24f, .51f)
-        fittedText(game.assets.shopFont, "FULL BAG: 1 UPGRADE POINT ONLY",
+        fittedText(game.assets.shopFont, "FULL BAG: YOUR ORB IS SAVED UNTIL SPACE OPENS",
             panel.x + 12f, panel.y + panel.height * .15f, panel.width - 24f, .54f)
         val back = Rectangle(panel.x + panel.width * .18f, panel.y + panel.height * .035f,
             panel.width * .64f, panel.height * .08f)
@@ -1244,6 +1291,7 @@ class ShopScreen(
     }
 
     private fun handleMouseWheel(amountY: Float): Boolean {
+        if (adDialogOpen || adRequestPending || game.monetization.rewardedAdInProgress) return true
         if (purchaseConfirmation.pending != null) return true
         if (amountY == 0f || activeTab !in setOf(ShopTab.BALLS, ShopTab.ORBS)) return false
         touchWorld.set(Gdx.input.x.toFloat(), Gdx.input.y.toFloat())
@@ -1386,7 +1434,7 @@ class ShopScreen(
             .mapNotNull { ball -> game.cosmeticProgression.ballUnlockStage(ball)?.let { ball to it } }
             .minByOrNull { it.second }
         val nextText = nextUnlock?.let { "Next unlock: Stage ${it.second}" } ?: "All balls unlocked"
-        drawSectionTitle("BALL COLLECTION", "$ownedCount/${balls.size} balls unlocked. $nextText.")
+        drawSectionTitle("BALL COLLECTION", "$ownedCount/${balls.size} appearances unlocked. $nextText. Power comes from player level and ORBs.")
 
         val panelBounds = shopPanel(325f)
         val columns = if (isLandscape) 4 else 2
@@ -1464,7 +1512,7 @@ class ShopScreen(
                         val price = offer.coins
                         drawCurrencyPriceButton(firstRect, price, ShopCurrency.COINS, game.economy.coins >= price)
                         actions += firstRect to {
-                            askPurchaseConfirmation(definition.name, "$price COINS", "Permanently unlock this ball.") {
+                            askPurchaseConfirmation(definition.name, "$price COINS", "Permanently unlock this ball appearance. Player level and ORBs determine campaign power.") {
                                 unlockBallWithCoins(definition, price)
                             }
                         }
@@ -1474,7 +1522,7 @@ class ShopScreen(
                         val price = offer.gems
                         drawCurrencyPriceButton(firstRect, price, ShopCurrency.GEMS, game.economy.gems >= price)
                         actions += firstRect to {
-                            askPurchaseConfirmation(definition.name, "$price GEMS", "Permanently unlock this ball.") {
+                            askPurchaseConfirmation(definition.name, "$price GEMS", "Permanently unlock this ball appearance. Player level and ORBs determine campaign power.") {
                                 unlockBallWithGems(definition, price)
                             }
                         }
@@ -1497,7 +1545,7 @@ class ShopScreen(
                             askPurchaseConfirmation(
                                 definition.name,
                                 price,
-                                "Permanent Epic ball. Google Play confirms payment."
+                                "Permanent Epic appearance; no extra campaign damage or balls. Google Play confirms payment."
                             ) { purchase(epicProduct) }
                         }
                     }
@@ -1806,12 +1854,13 @@ class ShopScreen(
     private fun handleRewardTap() {
         val now = System.currentTimeMillis()
         if (adRequestPending || !shopDailyRewards.canWatch(now)) return
-        when (game.monetization.rewardedTalismanAdGateway.state) {
+        val gateway = game.monetization.rewardedTalismanAdGateway
+        when (gateway.state) {
             AdState.READY -> claimReward()
 
             AdState.UNAVAILABLE -> {
-                message = "Retrying the rewarded ad…"
-                game.monetization.rewardedTalismanAdGateway.preload()
+                message = gateway.availabilityMessage
+                gateway.preload()
             }
 
             AdState.LOADING -> message = "Rewarded video is loading…"
@@ -1876,7 +1925,7 @@ class ShopScreen(
         val updated = game.progress.buyOrbRank(family) {
             game.economy.spendForOrbRank(family, next.rank, price, useGems)
         }
-        message = if (updated) "$family UPGRADED TO RANK ${next.rank}"
+        message = if (updated) "$family ${next.rarity} ADDED - EQUIP IN BAG"
             else if (useGems) "NOT ENOUGH GEMS" else "NOT ENOUGH COINS"
         game.uiFeedback.emit(if (updated) UiFeedbackKind.PURCHASE else UiFeedbackKind.ERROR)
     }
@@ -2014,7 +2063,9 @@ class ShopScreen(
         game.uiFeedback.emit(UiFeedbackKind.PURCHASE)
     }
 
-    /** ملاحظة صيانة: الدالة `claimReward` هي المكان الوحيد الذي يُمنح فيه عنصر مجاني فعليًا، ويحدث ذلك فقط داخل رد نداء `RewardedAdResult.Earned` القادم من الـ SDK — لا تستدعِ منح المكافأة من أي مكان آخر. */
+    private var rewardRecoveryCountdown = 0f
+
+    /** SDK-earned reward and recovery share the same durable ProgressStore receipt. */
     private fun claimReward() {
         if (adRequestPending || !shopDailyRewards.canWatch(System.currentTimeMillis())) return
         adRequestPending = true
@@ -2022,20 +2073,12 @@ class ShopScreen(
         game.monetization.rewardedTalismanAdGateway.show { result ->
             if (!adRequestPending) return@show
             adRequestPending = false
+            if (!screenVisible) return@show // The journal recovers this on the next shop visit.
             when (result) {
                 is RewardedAdResult.Earned -> {
                     // Credits one rolled Orb plus one point after SDK earn, with a durable
                     // receipt in ProgressStore so process death does not duplicate the reward.
-                    val stashBefore = game.progress.orbStashCount
-                    if (game.progress.creditEarnedOrbPoint(result.rewardToken)) {
-                        shopDailyRewards.recordReward(System.currentTimeMillis())
-                        game.ledger.markProcessed(result.rewardToken)
-                        message = if (game.progress.orbStashCount > stashBefore)
-                            "REWARDED: ORB + 1 UPGRADE POINT" else "REWARDED: +1 UPGRADE POINT (BAG FULL)"
-                        game.uiFeedback.emit(UiFeedbackKind.PURCHASE)
-                    } else {
-                        message = "THIS REWARD HAS ALREADY BEEN CLAIMED"
-                    }
+                    applyEarnedOrbReward(result.rewardToken)
                     adDialogOpen = false
                 }
 
@@ -2044,6 +2087,21 @@ class ShopScreen(
                 is RewardedAdResult.Failed -> message = result.message
             }
         }
+    }
+
+    private fun applyEarnedOrbReward(token: String) {
+        val stashBefore = game.progress.orbStashCount
+        val credited = game.progress.creditEarnedOrbPoint(token)
+        if (credited) {
+            shopDailyRewards.recordReward(System.currentTimeMillis())
+            game.ledger.markProcessed(token)
+            message = if (game.progress.orbStashCount > stashBefore)
+                "REWARDED: ORB + 1 UPGRADE POINT" else "REWARDED: +1 POINT; ORB SAVED UNTIL BAG HAS SPACE"
+            game.uiFeedback.emit(UiFeedbackKind.PURCHASE)
+        }
+        // A recovered callback after a successful flush is acknowledged, never credited twice.
+        game.monetization.rewardedTalismanAdGateway.acknowledgeReward(token,
+            if (!credited) "already_applied" else if (game.progress.orbStashCount > stashBefore) "orb_and_point" else "point_orb_pending")
     }
 
     /** ملاحظة صيانة: الدالة `goBack` تقرر وجهة الرجوع الصحيحة حسب `returnDestination` (استئناف اللعبة الموقوفة مؤقتًا أو فتح القائمة الرئيسية). */

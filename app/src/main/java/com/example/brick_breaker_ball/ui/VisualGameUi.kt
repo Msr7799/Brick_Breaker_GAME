@@ -123,6 +123,24 @@ internal object VisualGameUi {
             Rectangle(rect.x + rect.width * .60f, rect.y, rect.width * .40f, rect.height * .45f), .70f, red)
     }
 
+    fun equippedBadge(batch: SpriteBatch, assets: GameAssets, rect: Rectangle) {
+        icon(batch, assets, Icon.CHECK, rect)
+    }
+
+    /** Highlight ring for an actually equipped item; selection glow in panel() stays separate. */
+    fun equippedRing(batch: SpriteBatch, assets: GameAssets, rect: Rectangle) {
+        prepare(assets)
+        batch.setColor(.35f, 1f, .45f, .30f)
+        batch.draw(assets.softGlowRegion, rect.x - 6f, rect.y - 6f, rect.width + 12f, rect.height + 12f)
+        batch.setColor(.45f, 1f, .52f, 1f)
+        val t = 3f
+        batch.draw(assets.solidUiRegion, rect.x, rect.y, rect.width, t)
+        batch.draw(assets.solidUiRegion, rect.x, rect.y + rect.height - t, rect.width, t)
+        batch.draw(assets.solidUiRegion, rect.x, rect.y, t, rect.height)
+        batch.draw(assets.solidUiRegion, rect.x + rect.width - t, rect.y, t, rect.height)
+        batch.color = Color.WHITE
+    }
+
     fun helpButton(batch: SpriteBatch, assets: GameAssets, rect: Rectangle) {
         sprite(batch, assets.visualUiArt.region("help"), rect, 1f)
     }

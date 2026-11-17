@@ -100,8 +100,24 @@ class VolleySession(
     private val difficulty: VolleyDifficulty = VolleyDifficulty.NORMAL,
     private val equippedOrb: VolleyOrbDefinition? = null,
     equippedOrbs: List<VolleyOrbDefinition> = listOfNotNull(equippedOrb),
-    shotgunEnabled: Boolean = false
+    shotgunEnabled: Boolean = false,
+    playerLevel: Int = 1,
+    referenceRules: Boolean = stage.sourceScene != null,
+    combatRunId: String = java.util.UUID.randomUUID().toString()
 ) {
+    private var referenceRulesEnabled = referenceRules && stage.sourceScene != null
+    private var sourceCombatPlayerLevel = playerLevel.coerceAtLeast(1)
+    private var sourceCombatRunId = combatRunId
+    private var combatKillSequence = 0
+    private val sourceRemainingHealth = mutableMapOf<Int, Double>()
+    val usesReferenceCombat: Boolean get() = referenceRulesEnabled
+    private val maxBallCount: Int get() = if (referenceRulesEnabled) Int.MAX_VALUE else 160
+    private val referenceBaseDamage: Int get() = VolleyReferenceCombat.baseDamage(sourceCombatPlayerLevel, activeOrbs)
+    val currentHitDamage: Int get() = if (referenceRulesEnabled) {
+        (referenceBaseDamage.toLong() + bonusDamageFlat + if (VolleyModifier.MEGA in activeModifiers) 1 else 0)
+            .coerceIn(1L, Int.MAX_VALUE.toLong()).toInt()
+    } else ballAbility.hitDamageForVolley(ballCount) + bonusDamageFlat +
+        if (VolleyModifier.MEGA in activeModifiers) 1 else 0
     companion object {
         const val BOARD_LEFT = 0f
         const val BOARD_RIGHT = 900f
@@ -232,8 +248,10 @@ class VolleySession(
     private val random = Random(seed)
     private val activeOrbs = equippedOrbs.distinctBy { it.uid ?: "legacy:${it.family}" }.take(8)
     private fun orbFor(family: String): VolleyOrbDefinition? = activeOrbs.firstOrNull { it.family == family }
-    private val orbEffects = VolleyOrbEffects(activeOrbs, random, stage.levelId,
-        difficulty == VolleyDifficulty.EXTREME, combatBoost = 1.5f)
+    private fun createOrbEffects() = VolleyOrbEffects(activeOrbs, random, stage.levelId,
+        difficulty == VolleyDifficulty.EXTREME, combatBoost = if (referenceRulesEnabled) 1f else 1.5f,
+        referenceRules = referenceRulesEnabled, playerLevel = sourceCombatPlayerLevel)
+    private var orbEffects = createOrbEffects()
     val orbCoinRewardMultiplier: Float get() = orbEffects.rewardMultiplier()
     private val ignitedBallIds = mutableSetOf<Int>()
     fun isBallIgnited(id: Int): Boolean = id in ignitedBallIds
@@ -246,6 +264,7 @@ class VolleySession(
     private val torchMotion = mutableMapOf<Int, VolleyTorchMotionSnapshot>()
     private var initialImportedFreezeApplied = false
     private val orbPoison = mutableMapOf<Int, VolleyPoisonSnapshot>()
+    private var orbFeedbackCooldown = 0f
     private val orbWrath = mutableListOf<VolleyWrathSnapshot>()
     private var orbSecondWindUsed = false
     private var orbMultishotUsed = false
@@ -258,7 +277,7 @@ class VolleySession(
     private val events = mutableListOf<VolleyEvent>()
     private val launchDirection = Vector2(0f, 1f)
     private val launchSpawn = Vector2()
-    private var shotgunEnabledForRun = shotgunEnabled && ballAbility.shotgunAvailable
+    private var shotgunEnabledForRun = !referenceRulesEnabled && shotgunEnabled && ballAbility.shotgunAvailable
     private var openingBreakerBallId: Int? = null
     private var pendingReturnX: Float? = null
     private var earnedBallsThisTurn = 0
@@ -315,8 +334,8 @@ class VolleySession(
         nextBallId = nextBallId,
         openingBreakerBallId = openingBreakerBallId,
         shotgunEnabled = shotgunEnabledForRun,
-        ballStartingBonus = ballAbility.startingBalls,
-        orbStartingBonus = orbEffects.startingBalls(),
+        ballStartingBonus = if (referenceRulesEnabled) 0 else ballAbility.startingBalls,
+        orbStartingBonus = if (referenceRulesEnabled) referenceOrbStartingBonus() else orbEffects.startingBalls(),
         bossGuardLayoutVersion = 1,
         loopAccumulator = loop.snapshotAccumulator(),
         balls = balls.map { VolleyBallSnapshot(it.id, it.position.x, it.position.y, it.velocity.x, it.velocity.y, it.radius, it.lastBrickId, it.lastRailId, it.portalCooldown, it.alive) },
@@ -339,11 +358,26 @@ class VolleySession(
         rotatingAngles = rotatingAngles.toMap(),
         rotatingStartAngles = rotatingStartAngles.toMap(),
         rotatingTargetAngles = rotatingTargetAngles.toMap(),
-        torchMotion = torchMotion.toMap()
+        torchMotion = torchMotion.toMap(),
+        sourceCombatRulesVersion = if (referenceRulesEnabled) 1 else null,
+        sourceCombatPlayerLevel = if (referenceRulesEnabled) sourceCombatPlayerLevel else null,
+        sourceRemainingHealth = if (referenceRulesEnabled) sourceRemainingHealth.toMap() else null,
+        combatKillSequence = if (referenceRulesEnabled) combatKillSequence else null,
+        orbRunId = sourceCombatRunId
     )
 
     fun restore(snapshot: VolleySessionSnapshot) {
         require(snapshot.version == 2) { "Unsupported Volley snapshot version ${snapshot.version}" }
+        require(snapshot.sourceCombatRulesVersion == null || snapshot.sourceCombatRulesVersion == 1) {
+            "Unsupported source combat rules"
+        }
+        // Never silently combine new damage with health saved by an older release.
+        referenceRulesEnabled = snapshot.sourceCombatRulesVersion == 1 && stage.sourceScene != null
+        sourceCombatPlayerLevel = snapshot.sourceCombatPlayerLevel?.coerceAtLeast(1) ?: sourceCombatPlayerLevel
+        sourceCombatRunId = snapshot.orbRunId?.takeIf { it.isNotBlank() } ?: sourceCombatRunId
+        combatKillSequence = snapshot.combatKillSequence?.coerceAtLeast(0) ?: 0
+        orbEffects = createOrbEffects()
+        sourceRemainingHealth.clear()
         val previousPitch = if (stage.sourceScene == null) null else snapshot.bricks.firstNotNullOfOrNull { saved ->
             val authored = stage.authoredBricks.getOrNull(saved.id - 1)
             if (authored == null || authored.width <= 0f) null else when {
@@ -360,8 +394,11 @@ class VolleySession(
         launcherX = snapshot.launcherX
         val oldBallBonus = snapshot.ballStartingBonus ?: ballAbility.startingBalls
         val oldOrbBonus = snapshot.orbStartingBonus ?: orbEffects.startingBalls()
-        ballCount = (snapshot.ballCount + ballAbility.startingBalls - oldBallBonus +
-            orbEffects.startingBalls() - oldOrbBonus).coerceIn(1, 160)
+        ballCount = if (referenceRulesEnabled)
+            (snapshot.ballCount.toLong() + referenceOrbStartingBonus() -
+                (snapshot.orbStartingBonus ?: referenceOrbStartingBonus())).coerceIn(1L, Int.MAX_VALUE.toLong()).toInt() else
+            (snapshot.ballCount + ballAbility.startingBalls - oldBallBonus +
+                orbEffects.startingBalls() - oldOrbBonus).coerceIn(1, 160)
         pendingLaunches = snapshot.pendingLaunches
         launchedThisVolley = snapshot.launchedThisVolley
         firstReturnX = snapshot.firstReturnX
@@ -381,7 +418,8 @@ class VolleySession(
         bonusStarProgress = snapshot.bonusStarProgress
         nextBallId = snapshot.nextBallId
         openingBreakerBallId = snapshot.openingBreakerBallId
-        shotgunEnabledForRun = (snapshot.shotgunEnabled ?: shotgunEnabledForRun) && ballAbility.shotgunAvailable
+        shotgunEnabledForRun = !referenceRulesEnabled &&
+            (snapshot.shotgunEnabled ?: shotgunEnabledForRun) && ballAbility.shotgunAvailable
         queuedModifiers.clear()
         queuedModifiers += snapshot.queuedModifiers
         queuedItemSources.clear()
@@ -542,6 +580,18 @@ class VolleySession(
             VolleyBonusNodeState(saved.id, Vector2(x, y), saved.amount, saved.active, saved.type, saved.scoreValue)
         }
         loop.restoreAccumulator(snapshot.loopAccumulator)
+        if (referenceRulesEnabled) {
+            for (brick in bricks) {
+                val seed = stage.authoredBricks.getOrNull(brick.id - 1) ?: continue
+                val initial = referenceInitialHealth(seed) ?: continue
+                val remaining = if (brick.health <= 0) 0.0 else
+                    snapshot.sourceRemainingHealth?.get(brick.id)?.takeIf { it.isFinite() && it > 0.0 }
+                        ?: (initial - (brick.initialHealth - brick.health)).coerceAtLeast(0.0)
+                sourceRemainingHealth[brick.id] = remaining.coerceAtMost(initial)
+                brick.health = if (remaining < 1.0 && remaining != initial) 0 else
+                    kotlin.math.ceil(remaining).toInt().coerceAtLeast(if (remaining > 0.0) 1 else 0)
+            }
+        }
         events.clear()
         resetFastForward()
     }
@@ -625,7 +675,7 @@ class VolleySession(
             launchDirection.nor()
         }
         pendingLaunches = ballCount
-        openingBreakerBallId = if (ballAbility.openingBreakerEveryVolleys > 0 &&
+        openingBreakerBallId = if (!referenceRulesEnabled && ballAbility.openingBreakerEveryVolleys > 0 &&
             turn % ballAbility.openingBreakerEveryVolleys == 0) nextBallId else null
         launchedThisVolley = 0
         firstReturnX = null
@@ -654,12 +704,14 @@ class VolleySession(
 
     /** Apply the selected pattern before the next launch, including after a paused Bag visit. */
     fun setShotgunEnabled(enabled: Boolean) {
-        if (!firing) shotgunEnabledForRun = enabled && ballAbility.shotgunAvailable
+        if (!firing) shotgunEnabledForRun = !referenceRulesEnabled && enabled && ballAbility.shotgunAvailable
     }
 
     fun advance(frameSeconds: Float) {
         if (phase == VolleyPhase.PAUSED || gameOver || levelComplete) return
-        val frame = frameSeconds.coerceAtMost(.05f)
+        val frame = frameSeconds.coerceIn(0f, .05f)
+        // Foreground seconds keep feedback readable even while 3X simulation is held.
+        orbFeedbackCooldown = (orbFeedbackCooldown - frame).coerceAtLeast(0f)
         advanceSimulationPass(frame)
         repeat(FAST_FORWARD_MULTIPLIER - 1) {
             if (fastForwardActive) advanceSimulationPass(frame)
@@ -736,15 +788,16 @@ class VolleySession(
             }
 
             PowerUpType.MULTIBALL_PLUS_4 -> {
-                if (ballCount >= 160) return false
-                ballCount = (ballCount + 4).coerceAtMost(160)
-                emit(VolleyEvent.Feedback("+4 BALLS", 1.05f))
+                if (ballCount >= maxBallCount) return false
+                val granted = min(4, maxBallCount - ballCount)
+                ballCount += granted
+                emit(VolleyEvent.Feedback("+$granted BALLS", 1.05f))
                 true
             }
 
             PowerUpType.MULTIBALL_15 -> {
-                if (ballCount >= 160) return false
-                val granted = min(BALL_STORM_BONUS, 160 - ballCount)
+                if (ballCount >= maxBallCount) return false
+                val granted = min(BALL_STORM_BONUS, maxBallCount - ballCount)
                 ballCount += granted
                 emit(VolleyEvent.Feedback("BALL STORM +$granted", 1.05f))
                 true
@@ -785,7 +838,7 @@ class VolleySession(
         if (modifier != null && (modifier in queuedModifiers || modifier in activeModifiers)) return "ALREADY ARMED"
         return when (type) {
             PowerUpType.EXTRA_LIFE -> if (rescueCharges >= 3) "WARD LIMIT REACHED" else null
-            PowerUpType.MULTIBALL_PLUS_4, PowerUpType.MULTIBALL_15 -> if (ballCount >= 160) "BALL LIMIT REACHED" else null
+            PowerUpType.MULTIBALL_PLUS_4, PowerUpType.MULTIBALL_15 -> if (ballCount >= maxBallCount) "BALL LIMIT REACHED" else null
             PowerUpType.RANDOM_GOOD -> null
             in SHOP_ELIGIBLE_TYPES -> null
             else -> "NOT AVAILABLE IN VOLLEY"
@@ -879,13 +932,14 @@ class VolleySession(
         ignitedBallIds.clear()
         orbPoison.clear()
         orbWrath.clear()
+        orbFeedbackCooldown = 0f
         orbSecondWindUsed = false
         orbMultishotUsed = false
         bonusDamageFlat = 0
         resetBoardContent()
         phase = VolleyPhase.READY_TO_AIM
         launcherX = 450f
-        ballCount = (stage.startingBalls + ballAbility.startingBalls + orbEffects.startingBalls()).coerceAtMost(160)
+        ballCount = initialBallCount()
         pendingLaunches = 0
         launchedThisVolley = 0
         firstReturnX = null
@@ -964,10 +1018,19 @@ class VolleySession(
         buildBricks()
         buildRails()
         buildPickups()
-        ballCount = (ballCount + ballAbility.startingBalls + orbEffects.startingBalls()).coerceAtMost(160)
+        ballCount = initialBallCount()
     }
 
+    private fun initialBallCount(): Int = if (referenceRulesEnabled)
+        VolleyReferenceCombat.startingBalls(sourceCombatPlayerLevel, activeOrbs)
+        else (stage.startingBalls + ballAbility.startingBalls + orbEffects.startingBalls()).coerceAtMost(160)
+
+    private fun referenceOrbStartingBonus(): Int =
+        VolleyReferenceCombat.startingBalls(sourceCombatPlayerLevel, activeOrbs) -
+            VolleyReferenceCombat.startingBalls(sourceCombatPlayerLevel, emptyList())
+
     private fun buildBricks() {
+        sourceRemainingHealth.clear()
         burnChargesLeft.clear()
         rotatingAngles.clear()
         rotatingStartAngles.clear()
@@ -997,6 +1060,9 @@ class VolleySession(
                     -> Int.MAX_VALUE
 
                     else -> seed.health.coerceIn(1, MAX_STANDARD_BRICK_HP)
+                }
+                if (!seed.suppressedByWorldBoss) referenceInitialHealth(seed)?.let {
+                    sourceRemainingHealth[index + 1] = it
                 }
                 bricks += Brick(
                     id = index + 1,
@@ -1118,12 +1184,16 @@ class VolleySession(
     private fun importedBrickHealth(seed: VolleyAuthoredBrickSeed): Int {
         if (!seed.type.breakable) return Int.MAX_VALUE
         if (seed.sourceKind in IMPORTED_HIT_COUNTER_KINDS) return seed.health.coerceAtLeast(1)
+        referenceInitialHealth(seed)?.let { return kotlin.math.ceil(it).toInt().coerceAtLeast(1) }
         val sourceBase = seed.sourceBaseHealth ?: return (seed.health * difficulty.healthMultiplier).coerceAtLeast(1)
         return VolleySourceHealth.initialHealth(sourceBase, stage.levelId, difficulty)
     }
 
     /** The health label takes an int, truncating fractional stage HP for display. */
     fun displayedBrickHealth(brick: Brick): Int {
+        if (referenceRulesEnabled) sourceRemainingHealth[brick.id]?.let {
+            return if (brick.health <= 0) 0 else it.toInt().coerceAtLeast(0)
+        }
         val seed = if (stage.sourceScene != null) stage.authoredBricks.getOrNull(brick.id - 1) else null
         val base = seed?.sourceBaseHealth ?: return brick.health
         val raw = VolleySourceHealth.rawHealth(base, stage.levelId, difficulty)
@@ -1140,6 +1210,21 @@ class VolleySession(
             seed.sourceKind in IMPORTED_HIT_COUNTER_KINDS) return 1
         return VolleySourceHealth.ballAttack(stage.levelId, brick.initialHealth)
     }
+
+    private fun referenceInitialHealth(seed: VolleyAuthoredBrickSeed): Double? {
+        if (!referenceRulesEnabled || !seed.type.breakable || seed.type == BrickType.BOSS_CORE ||
+            seed.sourceKind in IMPORTED_HIT_COUNTER_KINDS) return null
+        val base = seed.sourceBaseHealthExact ?: seed.sourceBaseHealth?.toDouble() ?: return null
+        return VolleySourceHealth.referenceRawHealth(base, stage.levelId, difficulty)
+    }
+
+    private fun numericRemainingHealth(brick: Brick): Double =
+        if (referenceRulesEnabled) sourceRemainingHealth[brick.id] ?: brick.health.toDouble()
+        else brick.health.toDouble()
+
+    private fun percentHealthDamage(brick: Brick, percent: Float): Int = if (referenceRulesEnabled)
+        ceil(numericRemainingHealth(brick) * percent.toString().toDouble() / 100.0).toInt()
+        else ceil(brick.health * percent / 100f).toInt()
 
     /** RPG boss replays make two independent rolls at +75 drop rate and 1.5 quality. */
     fun rollRepeatBossOrbRanks(): List<Int> {
@@ -1235,10 +1320,8 @@ class VolleySession(
                 else -> DEFAULT_BALL_RADIUS
             }
         )
-        // RPG plays pop_shoot.wav for each ball; the UI applies its small random pitch.
-        // Keep the existing rising pitch for custom/non-source boards.
-        emit(VolleyEvent.Sound("volley_ball", if (stage.sourceScene != null) 1f
-            else (1f + launchedThisVolley * .025f).coerceAtMost(1.35f)))
+        // One sound event per launched ball; presentation applies RPG's original sound settings.
+        emit(VolleyEvent.Sound("volley_ball"))
     }
 
     private sealed interface HitTarget {
@@ -1458,6 +1541,11 @@ class VolleySession(
     private fun directBrickHit(ball: VolleyBallState, brick: Brick, piercing: Boolean) {
         if (!brick.type.breakable || brick.health <= 0) return
         if (stage.sourceScene != null) emit(VolleyEvent.Sound("source_ball_hit"))
+        if (referenceRulesEnabled && brick.id in frozenBricks && !isBallIgnited(ball.id) &&
+            VolleyModifier.FIRE !in activeModifiers) {
+            emit(VolleyEvent.Impact(centerX(brick), centerY(brick), false))
+            return
+        }
         val openingBreakerHit = ball.id == openingBreakerBallId && brick.type != BrickType.BOSS_CORE
         if (brick.type == BrickType.LOCKED && brick.locked && !openingBreakerHit) {
             emit(VolleyEvent.Feedback("LOCKED — FIND THE KEY", .45f))
@@ -1473,10 +1561,12 @@ class VolleySession(
         abilityHitCounter++
         laserHitCounter++
         if (VolleyModifier.LASER in activeModifiers) laserGauge++
-        var damage = ballAbility.hitDamageForVolley(ballCount) + bonusDamageFlat +
-            if (VolleyModifier.MEGA in activeModifiers) 1 else 0
-        if (piercing) damage = brick.health
-        when (ballAbility.kind) {
+        var damage = if (referenceRulesEnabled) (referenceBaseDamage.toLong() +
+            (if (VolleyModifier.MEGA in activeModifiers) 1 else 0)).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+            else ballAbility.hitDamageForVolley(ballCount) + bonusDamageFlat +
+                (if (VolleyModifier.MEGA in activeModifiers) 1 else 0)
+        if (piercing && !referenceRulesEnabled) damage = brick.health
+        if (!referenceRulesEnabled) when (ballAbility.kind) {
             BallAbilityKind.ARMOR_BREAKER -> if (abilityTriggered(ballAbility.triggerEveryHits)) damage += ballAbility.bonusDamage
             BallAbilityKind.VOID_PHASE -> if (abilityTriggered(ballAbility.triggerEveryHits))
                 damage += ballAbility.bonusDamage
@@ -1491,10 +1581,12 @@ class VolleySession(
         )
         // Imported RPG HP already needs a scaled baseline attack. Multiplying the
         // entire Orb bonus by that scale made one Orb erase many displayed hits.
-        val ballDamage = (damage.toLong() * importedBallAttack(brick) +
-            (orbHit.damage - damage).coerceAtLeast(0))
+        val ballDamage = (if (referenceRulesEnabled && brick.type != BrickType.BOSS_CORE)
+            (if (piercing) brick.health else orbHit.damage).toLong()
+            else damage.toLong() * importedBallAttack(brick) + (orbHit.damage - damage).coerceAtLeast(0))
             .coerceIn(0L, brick.health.toLong()).toInt()
         if (openingBreakerHit) openingBreakerBallId = null
+        val healthBeforeHit = brick.health
         damageBrick(brick, if (openingBreakerHit) brick.health else ballDamage,
             if (openingBreakerHit) VolleyDamageSource.OPENING_BREAKER else VolleyDamageSource.BALL,
             visited, sourceBallId = ball.id)
@@ -1504,7 +1596,14 @@ class VolleySession(
             emit(VolleyEvent.Sound("explosion"))
         }
         // Empower adds to the attack bonus for later hits; it does not hit twice here.
-        bonusDamageFlat += orbHit.empowerBonus
+        bonusDamageFlat = (bonusDamageFlat.toLong() + orbHit.empowerBonus).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        if (orbHit.empowerBonus > 0) {
+            emit(VolleyEvent.Vfx(VolleyVfxKind.SPARK, centerX(brick), centerY(brick)))
+            notifyOrbActivation("EMPOWER +${orbHit.empowerBonus}")
+        } else if (orbHit.critical && brick.health < healthBeforeHit) {
+            emit(VolleyEvent.Vfx(VolleyVfxKind.SPARK, centerX(brick), centerY(brick)))
+            notifyOrbActivation("CRITICAL HIT")
+        }
         // Imported dynamite and four-way suicide bricks ignore secondary orb attacks.
         if (!levelComplete && sourceKind(brick) !in setOf("DYNAMITE", "SUICIDE")) applyOrbHit(ball, brick, orbHit)
         when {
@@ -1521,7 +1620,7 @@ class VolleySession(
             emit(VolleyEvent.Vfx(VolleyVfxKind.SMOKE, centerX(brick), centerY(brick)))
             emit(VolleyEvent.Sound("explosion"))
         }
-        val inferno = ballAbility.kind == BallAbilityKind.INFERNO_BURST && abilityTriggered(ballAbility.triggerEveryHits)
+        val inferno = !referenceRulesEnabled && ballAbility.kind == BallAbilityKind.INFERNO_BURST && abilityTriggered(ballAbility.triggerEveryHits)
         if (VolleyModifier.FIRE in activeModifiers || inferno) {
             // Fire thaws and strips protection before its splash is resolved.
             val thawedSource = clearFireStatus(brick)
@@ -1536,7 +1635,7 @@ class VolleySession(
             splashDamage(brick, 1, VolleyDamageSource.FIRE_SPLASH, mutableSetOf())
             emit(VolleyEvent.Vfx(VolleyVfxKind.FIRE, centerX(brick), centerY(brick)))
         }
-        if (ballAbility.kind == BallAbilityKind.ARC_CHAIN && abilityTriggered(ballAbility.triggerEveryHits)) {
+        if (!referenceRulesEnabled && ballAbility.kind == BallAbilityKind.ARC_CHAIN && abilityTriggered(ballAbility.triggerEveryHits)) {
             bricks.asSequence()
                 .filter { it !== brick && isVisibleOrbTarget(it) }
                 .minByOrNull { distanceSquared(centerX(brick), centerY(brick), centerX(it), centerY(it)) }
@@ -1552,10 +1651,11 @@ class VolleySession(
         if (hit.staticFieldPercent > 0f) {
             // One pulse replaces that lightning proc; secondary damage cannot roll more Orbs.
             bricks.filter(::isVisibleOrbTarget).forEach { target ->
-                val pulse = ceil(target.health * hit.staticFieldPercent / 100f).toInt().coerceAtLeast(1)
+                val pulse = percentHealthDamage(target, hit.staticFieldPercent).coerceAtLeast(1)
                 damageBrick(target, pulse, VolleyDamageSource.CHAIN, mutableSetOf(), sourceBallId = ball.id)
             }
             emit(VolleyEvent.Vfx(VolleyVfxKind.BEAM, centerX(brick), centerY(brick)))
+            notifyOrbActivation("STATIC FIELD")
         }
         if (hit.splashDamage > 0) {
             val radiusScale = 1f + hit.splashRadiusBonus * .5f
@@ -1574,6 +1674,7 @@ class VolleySession(
                 }
             }
             emit(VolleyEvent.Vfx(VolleyVfxKind.SMOKE, centerX(brick), centerY(brick)))
+            notifyOrbActivation("EXPLOSIVE ORB")
         }
         if (hit.lightningDamage > 0 || hit.hammerDamage > 0) {
             val target = bricks.asSequence().filter { it !== brick && isVisibleOrbTarget(it) }
@@ -1581,6 +1682,7 @@ class VolleySession(
             if (target != null) {
                 damageBrick(target, hit.lightningDamage + hit.hammerDamage, VolleyDamageSource.CHAIN, mutableSetOf(), sourceBallId = ball.id)
                 emit(VolleyEvent.Vfx(VolleyVfxKind.BEAM, centerX(target), centerY(target)))
+                notifyOrbActivation(if (hit.hammerDamage > 0) "HAMMER STRIKE" else "LIGHTNING STRIKE")
                 // Legendary hammers pierce at 50%, Ancient at 100%; each target
                 // gets one secondary strike, capped to the visible board.
                 val struck = mutableSetOf(brick.id, target.id)
@@ -1607,6 +1709,7 @@ class VolleySession(
                 val wasAlive = target.health > 0
                 damageBrick(target, hit.reaperDamage, VolleyDamageSource.CHAIN, mutableSetOf(), sourceBallId = ball.id)
                 emit(VolleyEvent.Vfx(VolleyVfxKind.SMOKE, centerX(target), centerY(target)))
+                notifyOrbActivation("REAPER STRIKE")
                 if (hit.reaperWrathDuration > 0f && (wasAlive && target.health <= 0 ||
                     orbEffects.rollsReaperWrath(hit.reaperWrathChance))) {
                     orbWrath += VolleyWrathSnapshot(centerX(target), centerY(target),
@@ -1616,11 +1719,17 @@ class VolleySession(
                 }
             }
         }
-        if (hit.poisonDamage > 0 && brick.health > 0) {
-            // Reapplication refreshes duration and keeps the stronger tick; one poison stack per brick.
+        // Recovered source marks an enemy poisoned once; later hits keep its active tick unchanged.
+        if (hit.poisonDamage > 0 && brick.health > 0 &&
+            (!referenceRulesEnabled || orbPoison[brick.id] == null)) {
+            // Repeated procs keep the stronger tick without postponing its next due time.
             val previous = orbPoison[brick.id]
-            orbPoison[brick.id] = VolleyPoisonSnapshot(max(previous?.damage ?: 0, hit.poisonDamage), hit.poisonInterval, hit.poisonInterval, Int.MAX_VALUE)
+            val interval = min(previous?.interval ?: hit.poisonInterval, hit.poisonInterval).coerceAtLeast(.1f)
+            orbPoison[brick.id] = VolleyPoisonSnapshot(
+                damage = max(previous?.damage ?: 0, hit.poisonDamage), interval = interval,
+                remaining = min(previous?.remaining ?: interval, interval), ticks = Int.MAX_VALUE)
             emit(VolleyEvent.Vfx(VolleyVfxKind.FIRE, centerX(brick), centerY(brick)))
+            if (previous == null) notifyOrbActivation("POISON APPLIED")
         }
         if (hit.splitDamage > 0) {
             val targets = bricks.asSequence().filter { it !== brick && isVisibleOrbTarget(it) }
@@ -1646,7 +1755,15 @@ class VolleySession(
                     emit(VolleyEvent.Vfx(VolleyVfxKind.SPARK, centerX(target), centerY(target)))
                 }
             }
+            if (targets.isNotEmpty()) notifyOrbActivation("SPLIT STRIKE")
         }
+    }
+
+    private fun notifyOrbActivation(text: String) {
+        if (orbFeedbackCooldown > 0f) return
+        orbFeedbackCooldown = .9f
+        emit(VolleyEvent.Feedback(text, .75f))
+        emit(VolleyEvent.Sound("glass_hit", .8f))
     }
 
     private fun isVisibleOrbTarget(brick: Brick): Boolean =
@@ -1654,14 +1771,18 @@ class VolleySession(
 
     private fun updateOrbPoison(dt: Float) {
         val updates = mutableMapOf<Int, VolleyPoisonSnapshot>()
+        // FETID's current-health percentage belongs to its on-death explosion below.
+        // Only the legacy PUTRID relic adds current-health damage to regular poison ticks.
         val currentHealthPercent = orbFor("PUTRID")?.stat("poison_damage_percent") ?: 0f
         orbPoison.forEach { (id, state) ->
             val brick = bricks.firstOrNull { it.id == id && it.health > 0 } ?: return@forEach
             val remaining = state.remaining - dt
             if (remaining > 0f) updates[id] = state.copy(remaining = remaining)
             else {
-                val percentDamage = ceil(brick.health * currentHealthPercent / 100f).toInt()
+                val percentDamage = percentHealthDamage(brick, currentHealthPercent)
+                val healthBeforeTick = brick.health
                 damageBrick(brick, state.damage + percentDamage, VolleyDamageSource.FIRE_SPLASH, mutableSetOf())
+                if (brick.health < healthBeforeTick) notifyOrbActivation("POISON DAMAGE")
                 if (state.ticks > 1 && brick.health > 0) updates[id] = state.copy(remaining = state.interval, ticks = state.ticks - 1)
             }
         }
@@ -1769,8 +1890,16 @@ class VolleySession(
             else -> amount
         }
         val before = brick.health
-        brick.health = (brick.health - applied).coerceAtLeast(0)
-        val actual = before - brick.health
+        val rawBefore = if (referenceRulesEnabled) sourceRemainingHealth[brick.id] else null
+        val actual = if (rawBefore != null) {
+            val rawAfter = (rawBefore - applied.toDouble()).coerceAtLeast(0.0)
+            sourceRemainingHealth[brick.id] = rawAfter
+            brick.health = if (rawAfter < 1.0) 0 else kotlin.math.ceil(rawAfter).toInt()
+            minOf(applied.toDouble(), rawBefore).toInt()
+        } else {
+            brick.health = (brick.health - applied).coerceAtLeast(0)
+            before - brick.health
+        }
         // A charged one-shot can remove millions of HP, but it must not mint millions of score.
         val scoringDamage = if (openingBreaker) min(actual, 30) else actual
         combo = (combo.toLong() + scoringDamage).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
@@ -1783,10 +1912,20 @@ class VolleySession(
 
     private fun onBrickDestroyed(brick: Brick, source: VolleyDamageSource, visited: MutableSet<Int>) {
         val sourceSeed = stage.authoredBricks.getOrNull(brick.id - 1)
+        if (referenceRulesEnabled && (sourceSeed?.sourceKind in setOf(
+                "GRASS", "STONE", "SAND", "ICE", "BLACK", "BURN", "ENEMY", "BOSS", "BOSS_GUARD",
+                "DYNAMITE", "SUICIDE", "OSB", "ICE_FREEZE", "PROTECTOR", "SLIDER") ||
+                (sourceSeed?.sourceKind == "BLOCKER" && sourceSeed.sourceBaseHealth != null))) {
+            combatKillSequence++
+            emit(VolleyEvent.CombatExperience(sourceCombatRunId, combatKillSequence,
+                stage.levelId, difficulty, sourceCombatPlayerLevel))
+        }
         when (sourceSeed?.sourceKind) {
             "BONUS_DAMAGE" -> {
                 val percent = sourceSeed.sourceBonusValue.coerceAtLeast(1)
-                bonusDamageFlat += max(1, ((1 + bonusDamageFlat) * percent / 100f).roundToInt())
+                bonusDamageFlat += if (referenceRulesEnabled)
+                    max(1, kotlin.math.ceil(referenceBaseDamage.toDouble() * percent / 100.0).toInt())
+                    else max(1, ((1 + bonusDamageFlat) * percent / 100f).roundToInt())
                 emit(VolleyEvent.Feedback("DAMAGE +$percent%", .9f))
             }
             else -> Unit
@@ -1795,13 +1934,13 @@ class VolleySession(
         emit(VolleyEvent.BrickBroken(brick.id))
         emit(VolleyEvent.Debris(centerX(brick), centerY(brick)))
         var breakScore = 90 + min(brick.initialHealth, 80) * 4
-        if (source == VolleyDamageSource.BALL || source == VolleyDamageSource.OPENING_BREAKER) {
+        if (!referenceRulesEnabled && (source == VolleyDamageSource.BALL || source == VolleyDamageSource.OPENING_BREAKER)) {
             breakScore += (breakScore * ballAbility.masteryScorePercent / 100f).roundToInt()
         }
-        if (ballAbility.kind == BallAbilityKind.IMPACT_CORE) {
+        if (!referenceRulesEnabled && ballAbility.kind == BallAbilityKind.IMPACT_CORE) {
             breakScore += (breakScore * ballAbility.scoreBonusPercent / 100f).roundToInt()
         }
-        if (ballAbility.kind == BallAbilityKind.FORTUNE_CORE && ballAbility.fortuneEveryBreaks > 0 && volleyBreakCounter % ballAbility.fortuneEveryBreaks == 0) {
+        if (!referenceRulesEnabled && ballAbility.kind == BallAbilityKind.FORTUNE_CORE && ballAbility.fortuneEveryBreaks > 0 && volleyBreakCounter % ballAbility.fortuneEveryBreaks == 0) {
             breakScore += ballAbility.fortuneBonusScore
             emit(VolleyEvent.Feedback("FORTUNE +${ballAbility.fortuneBonusScore}", .7f))
         }
@@ -1962,7 +2101,7 @@ class VolleySession(
                 abs(centerX(target) - centerX(source)) <= rangeX &&
                 abs(centerY(target) - centerY(source)) <= rangeY
         }.forEach { target ->
-            val damage = ceil(target.health * percent / 100f).toInt().coerceAtLeast(1)
+            val damage = percentHealthDamage(target, percent).coerceAtLeast(1)
             damageBrick(target, damage, damageSource, visited, sourceBrickId = source.id)
         }
     }
@@ -2100,7 +2239,7 @@ class VolleySession(
         regenerateBricks()
         moveBricks()
         if (earnedBallsThisTurn > 0) {
-            ballCount = (ballCount + earnedBallsThisTurn).coerceAtMost(160)
+            ballCount = (ballCount.toLong() + earnedBallsThisTurn).coerceIn(1L, maxBallCount.toLong()).toInt()
             earnedBallsThisTurn = 0
         }
         if (levelComplete) return

@@ -19,3 +19,5 @@ desktop.ini
 **/google-services.json
 /tools/
 /scripts/
+CLAUDE.md
+.claude/*

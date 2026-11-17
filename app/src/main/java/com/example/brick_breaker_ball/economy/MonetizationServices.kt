@@ -41,9 +41,21 @@ sealed interface RewardedAdResult {
 
 interface RewardedAdGateway {
     val state: AdState get() = AdState.DISABLED
+    val presentationInProgress: Boolean get() = false
+    val preparingPresentation: Boolean get() = false
+    val retryInSeconds: Int get() = 0
+    val availabilityMessage: String get() = "No video available. Please try again shortly."
+
+    fun onHostPaused() {}
+    fun onHostResumed() {}
 
     /** يعرض الإعلان الجاهز، ولا يمنح شيئاً عند الإغلاق أو الفشل. */
     fun show(callback: (RewardedAdResult) -> Unit)
+
+    /** Context binds a revive to its run/continue index; ordinary ads remain backwards compatible. */
+    fun showForContext(context: String, callback: (RewardedAdResult) -> Unit) = show(callback)
+    fun pendingRewards(context: String): List<String> = emptyList()
+    fun acknowledgeReward(token: String, outcome: String) {}
 
     /** يحمّل الإعلان التالي أو يعيد المحاولة بعد فشل الشبكة. */
     fun preload() {}
@@ -63,22 +75,28 @@ interface RewardedAdGateway {
     fun dispose() {}
 }
 
-/** يمنع تكرار إشعار المكافأة أو إصدار إغلاق سلبي بعد استحقاقها. */
+/** Saves each SDK earning once and emits one UI result after the presentation ends. */
 class RewardOpportunity(private val token: String) {
-    private var terminal = false
+    var hasEarned = false
+        private set
+    private var finished = false
 
-    /** يسمح بمنحة واحدة، وفقط عند استدعاء رد SDK الخاص بالاستحقاق. */
+    /** A very late SDK earning still needs journaling, even after the UI has timed out. */
     fun earn(): RewardedAdResult.Earned? {
-        if (terminal) return null
-        terminal = true
+        if (hasEarned) return null
+        hasEarned = true
         return RewardedAdResult.Earned(token)
     }
 
-    /** إغلاق بلا استحقاق لا يضيف عناصر ويُنهي فرصة المكافأة. */
-    fun close(): RewardedAdResult? {
-        if (terminal) return null
-        terminal = true
-        return RewardedAdResult.ClosedWithoutReward
+    /** The caller waits for dismissal/grace first; an earned reward wins over a failure. */
+    fun close(failure: String? = null): RewardedAdResult? {
+        if (finished) return null
+        finished = true
+        return when {
+            hasEarned -> RewardedAdResult.Earned(token)
+            failure != null -> RewardedAdResult.Failed(failure)
+            else -> RewardedAdResult.ClosedWithoutReward
+        }
     }
 }
 
@@ -89,6 +107,18 @@ data class MonetizationServices(
 ) {
     /** Privacy settings use the revive gateway as the primary AdMob/UMP owner. */
     val rewardedAdGateway: RewardedAdGateway get() = rewardedReviveAdGateway
+    val rewardedAdInProgress: Boolean get() = rewardedReviveAdGateway.presentationInProgress ||
+        rewardedTalismanAdGateway.presentationInProgress
+
+    fun onHostPaused() {
+        rewardedReviveAdGateway.onHostPaused()
+        rewardedTalismanAdGateway.onHostPaused()
+    }
+
+    fun onHostResumed() {
+        rewardedReviveAdGateway.onHostResumed()
+        rewardedTalismanAdGateway.onHostResumed()
+    }
 
     fun dispose() {
         purchaseGateway.dispose()

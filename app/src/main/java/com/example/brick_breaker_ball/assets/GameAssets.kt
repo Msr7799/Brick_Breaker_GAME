@@ -15,6 +15,7 @@ import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.TextureAtlas
 import com.badlogic.gdx.graphics.g2d.TextureRegion
+import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.utils.JsonReader
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator
 import com.example.brick_breaker_ball.BuildConfig
@@ -433,6 +434,17 @@ class GameAssets {
             pitch.coerceIn(.5f, 2f),
             pan.coerceIn(-1f, 1f)
         )
+    }
+
+    /** Mirrors RPG's shoot_Sound: -10 dB, random_pitch 1.1 and one active voice. */
+    fun playVolleyLaunch(volume: Float) {
+        val sound = sounds["volley_ball"] ?: return
+        // AudioStreamPlayer2D's default max_polyphony is 1: a new shot replaces the old one.
+        sound.stop()
+        val outputVolume = soundEffectVolume(volume) * .31622776f
+        if (outputVolume <= 0f) return
+        // Godot random_pitch uses the reciprocal as its lower bound, not 0.9.
+        sound.play(outputVolume, MathUtils.random(1f / 1.1f, 1.1f), 0f)
     }
 
     /** Level-up is a short UI sample: Sound avoids creating a streaming decoder for 1.4 seconds. */
