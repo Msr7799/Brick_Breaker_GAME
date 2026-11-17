@@ -1135,11 +1135,14 @@ class VolleyGameScreen(
         session.bricks.asSequence()
             .filter { it.health > 0 }
             .mapNotNull { brick ->
+                val sourceKind = stage.authoredBricks.getOrNull(brick.id - 1)?.sourceKind
                 val asset = when (brick.type) {
                     BrickType.EXPLOSIVE -> VolleyVfx.SPARK_ORANGE
-                    BrickType.BLACK_HOLE_TELEPORTER -> VolleyVfx.PORTAL_RING_PURPLE
+                    BrickType.BLACK_HOLE_TELEPORTER ->
+                        if (sourceKind == "VORTEX") null else VolleyVfx.PORTAL_RING_PURPLE
                     BrickType.SWITCH, BrickType.GHOST -> VolleyVfx.MAGIC_SHARDS
-                    BrickType.SPIKED_HAZARD -> null // all traps render their own timed effect
+                    BrickType.SPIKED_HAZARD ->
+                        if (sourceKind == "SPIKE_TRAP") null else VolleyVfx.GROUND_SPIKES_RED
                     BrickType.BOSS_CORE -> VolleyVfx.BEAM_RED
                     BrickType.POWERUP_CARRIER, BrickType.RANDOM_INVENTORY_POWERUP -> VolleyVfx.GROUND_RING_BLUE
                     else -> null
