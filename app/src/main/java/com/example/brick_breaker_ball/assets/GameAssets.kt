@@ -162,6 +162,10 @@ internal val SOUND_ASSET_PATHS = linkedMapOf(
 )
 
 class GameAssets {
+    // RPG's AudioManager is one shared hit player, not a voice per ball.
+    // thud3.mp3 has ~80 ms of decoded audio; simultaneous hits do not restart it.
+    private var lastRpgBallHitNanos = 0L
+
     private val visualUiArtDelegate = lazy { VisualUiArt() }
     val visualUiArt: VisualUiArt get() = visualUiArtDelegate.value
     private val boardsDelegate = lazy { BoardAtlasRepository("ui/boards.json", "ui/boards1.png") }
@@ -446,10 +450,23 @@ class GameAssets {
         val sound = sounds["volley_ball"] ?: return
         // AudioStreamPlayer2D's default max_polyphony is 1: a new shot replaces the old one.
         sound.stop()
-        val outputVolume = soundEffectVolume(volume) * .31622776f
+        // RPG already authored the -10 dB attenuation. The global .55 mix would
+        // incorrectly make this original sound another ~5.2 dB quieter.
+        val outputVolume = volume.coerceIn(0f, 1f) * .31622776f
         if (outputVolume <= 0f) return
         // Godot random_pitch uses the reciprocal as its lower bound, not 0.9.
         sound.play(outputVolume, MathUtils.random(1f / 1.1f, 1.1f), 0f)
+    }
+
+    /** RPG AudioManager.play(): unpitched thud3.mp3 at 0 dB, one 80 ms voice. */
+    fun playRpgVolleyBrickHit(volume: Float) {
+        val outputVolume = volume.coerceIn(0f, 1f)
+        if (outputVolume <= 0f) return
+        val sound = sounds["source_ball_hit"] ?: return
+        val now = System.nanoTime()
+        if (lastRpgBallHitNanos != 0L && now - lastRpgBallHitNanos < 80_000_000L) return
+        sound.play(outputVolume, 1f, 0f)
+        lastRpgBallHitNanos = now
     }
 
     /** RPG Pops_AudioStreamPlayer: five original pop samples, -3.496 dB. */
