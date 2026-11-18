@@ -823,14 +823,14 @@ class VolleyGameScreen(
                     // Do not throttle launches: RPG calls shoot_sound.play() for every ball.
                     game.assets.playVolleyLaunch(game.progress.settings.masterVolume * game.progress.settings.sfxVolume)
                     muzzleFlash = .09f
-                } else if (event.name == "source_volley_return_pop") {
-                    game.assets.playVolleyReturnPop(game.progress.settings.masterVolume * game.progress.settings.sfxVolume)
-                } else if ((gameplayEffectsEnabled || event.name == "source_ball_hit") &&
+                } else if (event.name == "source_ball_hit") {
+                    // Match the original RPG's single shared thud player and 0 dB gain.
+                    game.assets.playRpgVolleyBrickHit(game.progress.settings.masterVolume * game.progress.settings.sfxVolume)
+                } else if (gameplayEffectsEnabled &&
                     !(stage.sourceScene != null && event.name in setOf("wall_hit", "metal_hit")) &&
                     (soundCooldowns[event.name] ?: 0f) <= 0f) {
                     game.assets.play(event.name, game.progress.settings.masterVolume * game.progress.settings.sfxVolume, event.pitch)
                     soundCooldowns[event.name] = when (event.name) {
-                        "source_ball_hit" -> .08f // RPG does not restart its 80 ms hit player.
                         "brick_hit", "wall_hit", "metal_hit" -> .045f
                         else -> .10f
                     }

@@ -1388,10 +1388,8 @@ class VolleySession(
                 is HitTarget.Return -> {
                     ball.alive = false
                     if (firstReturnX == null) firstReturnX = ball.position.x.coerceIn(BOARD_LEFT + 16f, BOARD_RIGHT - 16f)
-                    // The RPG pop plays once, when the final launched ball comes home.
-                    if (stage.sourceScene != null && pendingLaunches == 0 && balls.none { it.alive }) {
-                        emit(VolleyEvent.Sound("source_volley_return_pop"))
-                    }
+                    // RPG's pop1..5 randomizer belongs to the victory/death UI,
+                    // not to a returning ball; the original return is silent.
                     return
                 }
 
