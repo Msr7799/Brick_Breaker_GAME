@@ -47,6 +47,43 @@ internal object VolleySourceStageData {
         )
         if (originalCore >= 0) bricks[originalCore] = core else bricks += core
 
+        // A world boss must have more than one attack lane. The RPG source can place
+        // indestructible BLOCKER tiles across the entire board directly below the core.
+        // Keep their stable IDs and silhouettes, but turn selected blockers into
+        // two-hit doors so the player can open *two* routes through the fortress.
+        // Existing save restoration recognizes these as authored breakable gates.
+        val laneCenters = listOf(3f, 8f).map { column ->
+            VolleySession.SOURCE_LANE_LEFT + column * TARGET_PITCH
+        }
+        val playableBlockers = bricks.indices.filter { index ->
+            val brick = bricks[index]
+            !brick.suppressedByWorldBoss &&
+                brick.sourceKind == "BLOCKER" &&
+                brick.type == BrickType.INDESTRUCTIBLE &&
+                brick.groupId == 0 &&
+                brick.y + brick.height <= core.y &&
+                brick.y + brick.height >= core.y - 9f * TARGET_PITCH
+        }
+        for (laneCenter in laneCenters) {
+            // Convert every wall tile intersecting this lane, not just one brick
+            // beside the boss: a second solid row must not seal the passage.
+            for (index in playableBlockers) {
+                val brick = bricks[index]
+                if (brick.x < laneCenter + TARGET_PITCH * .3f &&
+                    brick.x + brick.width > laneCenter - TARGET_PITCH * .3f) {
+                    bricks[index] = brick.copy(
+                        type = BrickType.ARMORED_DARK,
+                        health = 2,
+                        countsForClear = true,
+                        shieldLock = false,
+                        sourceKind = "BLOCKER",
+                        sourceBaseHealth = null,
+                        sourceBaseHealthExact = null
+                    )
+                }
+            }
+        }
+
         val count = when (world) { in 1..3 -> 2; in 4..6 -> 3; else -> 4 }
         // Replace ordinary square enemies only: preserve collision, IDs, passages,
         // keys, bombs, movers and every other authored puzzle relationship.
