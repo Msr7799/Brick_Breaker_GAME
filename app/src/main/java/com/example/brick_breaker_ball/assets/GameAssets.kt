@@ -153,7 +153,12 @@ internal val SOUND_ASSET_PATHS = linkedMapOf(
     // Identical original button.mp3 and pop-up.mp3 are now ONE decoded OGG sample.
     "button" to "audio/ui_pop.ogg",
     "volley_ball" to "audio/pop_shoot.wav",
-    "source_ball_hit" to "audio/thud3.mp3"
+    "source_ball_hit" to "audio/thud3.mp3",
+    "source_volley_return_pop_1" to "audio/pop1.wav",
+    "source_volley_return_pop_2" to "audio/pop2.wav",
+    "source_volley_return_pop_3" to "audio/pop3.wav",
+    "source_volley_return_pop_4" to "audio/pop4.wav",
+    "source_volley_return_pop_5" to "audio/pop5.wav"
 )
 
 class GameAssets {
@@ -447,6 +452,13 @@ class GameAssets {
         if (outputVolume <= 0f) return
         // Godot random_pitch uses the reciprocal as its lower bound, not 0.9.
         sound.play(outputVolume, MathUtils.random(1f / 1.1f, 1.1f), 0f)
+    }
+
+    /** RPG Pops_AudioStreamPlayer: five original pop samples, -3.496 dB. */
+    fun playVolleyReturnPop(volume: Float) {
+        val outputVolume = soundEffectVolume(volume) * .668f
+        if (outputVolume <= 0f) return
+        sounds["source_volley_return_pop_" + MathUtils.random(1, 5)]?.play(outputVolume)
     }
 
     /** Level-up is a short UI sample: Sound avoids creating a streaming decoder for 1.4 seconds. */
