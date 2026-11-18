@@ -278,7 +278,9 @@ internal object VolleySourceStageData {
             authoredBricks = bricks, rails = emptyList(), pickups = emptyList(),
             startingBalls = (12 + levelId / 6).coerceAtMost(44),
             baseHp = 1,
-            descentDistance = TARGET_PITCH,
+            // Boss fortresses descend more slowly so players have room to aim at
+            // the lower wings and break through the two gate lanes before danger.
+            descentDistance = if (bossStage) TARGET_PITCH * .7f else TARGET_PITCH,
             parTurns = 8, bonusStage = false, bossStage = bossStage,
             backgroundAsset = "volley-world/$folder/$image.webp",
             sourceScene = entry.getString("source")
