@@ -18,13 +18,14 @@ When **all other clear objectives**, including the three guards, have been destr
 3. Prefer the central horizontal lane; then look downward in 80-unit steps, staying safely above the danger line.
 4. Require at least one unobstructed ball-sized vertical approach, with no overlap with any surviving obstacle or ball already in flight.
 5. Display a short core-exposed message and continue the normal encounter; the core still has to be damaged before the stage can end.
+6. Re-check the same condition when restoring a paused run or resuming after a rewarded rescue, so an old save cannot strand the core offscreen.
 
 No other stage, level curve, ball power, purchases, guard count, inventory or save schema is changed. If no safe landing slot exists, the core is left at its current position rather than intersecting another collider.
 
 ## Verification
 
 - Read-only projection of the stage's existing pieces found collision-free center-lane placements at 0, 8, 12, 16, 20, 22 and 24 descents; at 20 descents the projected candidate was X 330, Y 960.
-- Regression tests added for guard prerequisites, unchanged core identity and HP, paused-session restoration, direct ball contact and an arena with 20 descents.
+- Regression tests added for guard prerequisites, unchanged core identity and HP, paused-session restoration (including older offscreen positions), direct ball contact and an arena with 20 descents.
 - The tests are **not yet executed** against the Android physics engine. This environment cannot download the existing Gradle 9.4.1 wrapper distribution.
 - A Release-device replay is required before merging or claiming the stage is fully beatable.
 
