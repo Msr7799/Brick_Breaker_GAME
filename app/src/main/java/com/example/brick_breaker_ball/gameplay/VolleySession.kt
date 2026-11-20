@@ -2787,7 +2787,13 @@ class VolleySession(
                         candidateY < brick.bounds.y + brick.bounds.height + clearance &&
                         candidateY + core.bounds.height + clearance > brick.bounds.y
                 }
-                if (!overlaps && clearFiringLane(candidateX, candidateY, core.bounds.width)) {
+                val overlapsBall = balls.any { ball ->
+                    ball.alive && ball.position.x + ball.radius > candidateX &&
+                        ball.position.x - ball.radius < candidateX + core.bounds.width &&
+                        ball.position.y + ball.radius > candidateY &&
+                        ball.position.y - ball.radius < candidateY + core.bounds.height
+                }
+                if (!overlaps && !overlapsBall && clearFiringLane(candidateX, candidateY, core.bounds.width)) {
                     core.bounds.setPosition(candidateX, candidateY)
                     emit(VolleyEvent.Feedback("WORLD CORE EXPOSED", 1.4f))
                     return true
