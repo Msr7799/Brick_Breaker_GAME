@@ -16,7 +16,7 @@ When **all other clear objectives**, including the three guards, have been destr
 1. Keep the existing core's ID, current/initial HP, geometry size, damage rules and save identity.
 2. If the core is still outside the viewport or lacks a clear firing lane, search the currently active board for a collision-free location.
 3. Prefer the central horizontal lane; then look downward in 80-unit steps, staying safely above the danger line.
-4. Require at least one unobstructed ball-sized vertical approach and no overlap with any surviving obstacle.
+4. Require at least one unobstructed ball-sized vertical approach, with no overlap with any surviving obstacle or ball already in flight.
 5. Display a short core-exposed message and continue the normal encounter; the core still has to be damaged before the stage can end.
 
 No other stage, level curve, ball power, purchases, guard count, inventory or save schema is changed. If no safe landing slot exists, the core is left at its current position rather than intersecting another collider.
