@@ -374,7 +374,14 @@ class MainActivity : AndroidApplication() {
     /** ملاحظة صيانة: الدالة `playWorldVideo` تنفّذ انتقالًا أو تعرض التدفق المطلوب للمستخدم؛ راجع استدعاءاتها واختباراتها قبل تعديلها. */
     private fun playWorldVideo(asset: String) {
         if (worldVideoView.player !== worldVideoPlayer) worldVideoView.player = worldVideoPlayer
-        worldVideoView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+        // The menu's interactive areas and wallet numbers use the same centered FIT frame
+        // as its 1440x2930 artwork. Cropping the video with ZOOM shifts that artwork away
+        // from the LibGDX overlays on devices with a different screen aspect ratio.
+        worldVideoView.resizeMode = if (asset == WorldVideoBackgrounds.MENU_ASSET) {
+            AspectRatioFrameLayout.RESIZE_MODE_FIT
+        } else {
+            AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+        }
         if (loadedAsset != asset) {
             loadedAsset = asset
             if (BuildConfig.QA_DIAGNOSTICS) {
