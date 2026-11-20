@@ -618,6 +618,9 @@ class VolleySession(
         }
         events.clear()
         resetFastForward()
+        if (phase != VolleyPhase.LEVEL_COMPLETE && phase != VolleyPhase.GAME_OVER) {
+            revealDelayedFinalCoreIfReady()
+        }
     }
 
     /** Restore ad-continue metadata stored beside the v2 simulation snapshot. */
@@ -653,6 +656,7 @@ class VolleySession(
         resetFastForward()
         turn++
         phase = VolleyPhase.READY_TO_AIM
+        revealDelayedFinalCoreIfReady()
         emit(VolleyEvent.Feedback("SECOND CHANCE • WALL PUSHED BACK $REWARDED_REVIVE_ROWS ROWS", 1.8f))
         return true
     }
