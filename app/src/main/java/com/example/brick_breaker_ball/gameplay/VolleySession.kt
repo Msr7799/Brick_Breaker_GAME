@@ -618,6 +618,9 @@ class VolleySession(
         }
         events.clear()
         resetFastForward()
+        if (phase != VolleyPhase.LEVEL_COMPLETE && phase != VolleyPhase.GAME_OVER) {
+            revealDelayedFinalCoreIfReady()
+        }
     }
 
     /** Restore ad-continue metadata stored beside the v2 simulation snapshot. */
@@ -653,6 +656,7 @@ class VolleySession(
         resetFastForward()
         turn++
         phase = VolleyPhase.READY_TO_AIM
+        revealDelayedFinalCoreIfReady()
         emit(VolleyEvent.Feedback("SECOND CHANCE • WALL PUSHED BACK $REWARDED_REVIVE_ROWS ROWS", 1.8f))
         return true
     }
@@ -2731,6 +2735,7 @@ class VolleySession(
 
     private fun checkLevelComplete() {
         if (phase == VolleyPhase.LEVEL_COMPLETE) return
+        revealDelayedFinalCoreIfReady()
         if (bricks.none { it.countsForClear && it.health > 0 }) {
             phase = VolleyPhase.LEVEL_COMPLETE
             pendingLaunches = 0
@@ -2742,6 +2747,65 @@ class VolleySession(
             balls.forEach { it.alive = false }
             if (!processingBallUpdates) balls.removeAll { !it.alive }
         }
+    }
+
+    /**
+     * The fifth world's core sits beyond the last authored row. If every other
+     * objective has been cleared before that row enters the screen, expose the
+     * existing core in a free firing lane. Keep the same ID, HP, guard rules and
+     * snapshot data; no authored brick or saved inventory is removed.
+     */
+    internal fun revealDelayedFinalCoreIfReady(): Boolean {
+        if (stage.levelId != 90 || !stage.bossStage || stage.sourceScene == null) return false
+        if (bricks.any { it.health > 0 && it.countsForClear && it.type != BrickType.BOSS_CORE }) return false
+        val core = bricks.firstOrNull { it.health > 0 && it.type == BrickType.BOSS_CORE } ?: return false
+        val obstacles = bricks.filter { it !== core && it.health > 0 }
+        val clearance = DEFAULT_BALL_RADIUS * .5f
+        fun clearFiringLane(x: Float, y: Float, width: Float): Boolean = (1..5).any { step ->
+            val laneX = x + width * step / 6f
+            obstacles.none { brick ->
+                brick.bounds.y < y &&
+                    brick.bounds.y + brick.bounds.height > LAUNCH_Y &&
+                    laneX + DEFAULT_BALL_RADIUS >= brick.bounds.x &&
+                    laneX - DEFAULT_BALL_RADIUS <= brick.bounds.x + brick.bounds.width
+            }
+        }
+        // An already-visible, unblocked core needs no repositioning.
+        if (core.bounds.y + core.bounds.height < boardTop - clearance &&
+            obstacles.none { it.bounds.overlaps(core.bounds) } &&
+            clearFiringLane(core.bounds.x, core.bounds.y, core.bounds.width)) return false
+
+        val centerX = (BOARD_LEFT + BOARD_RIGHT - core.bounds.width) * .5f
+        val candidateXs = (-4..4).map { centerX + it * TARGET_SOURCE_BRICK_PITCH }
+            .filter { it >= BOARD_LEFT + clearance && it + core.bounds.width <= BOARD_RIGHT - clearance }
+            .sortedBy { abs(it - centerX) }
+        val minimumY = max(DANGER_Y + stage.descentDistance * 3f, LAUNCH_Y + 80f)
+
+        // Prefer a central, readable boss arena, then search down for free space.
+        for (candidateX in candidateXs) {
+            var candidateY = boardTop - core.bounds.height - 40f
+            while (candidateY >= minimumY) {
+                val overlaps = obstacles.any { brick ->
+                    candidateX < brick.bounds.x + brick.bounds.width + clearance &&
+                        candidateX + core.bounds.width + clearance > brick.bounds.x &&
+                        candidateY < brick.bounds.y + brick.bounds.height + clearance &&
+                        candidateY + core.bounds.height + clearance > brick.bounds.y
+                }
+                val overlapsBall = balls.any { ball ->
+                    ball.alive && ball.position.x + ball.radius > candidateX &&
+                        ball.position.x - ball.radius < candidateX + core.bounds.width &&
+                        ball.position.y + ball.radius > candidateY &&
+                        ball.position.y - ball.radius < candidateY + core.bounds.height
+                }
+                if (!overlaps && !overlapsBall && clearFiringLane(candidateX, candidateY, core.bounds.width)) {
+                    core.bounds.setPosition(candidateX, candidateY)
+                    emit(VolleyEvent.Feedback("WORLD CORE EXPOSED", 1.4f))
+                    return true
+                }
+                candidateY -= TARGET_SOURCE_BRICK_PITCH
+            }
+        }
+        return false
     }
 
     private fun abilityTriggered(every: Int): Boolean = every > 0 && abilityHitCounter % every == 0
