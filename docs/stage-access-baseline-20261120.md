@@ -1,8 +1,10 @@
 # Brick Breaker Ball — Stage Access and Completion Baseline
 
-Date: 2026-11-20  
-Branch: `test/ball-boss-stage-access-20261120`  
-Base commit: `12aba0753c6aacf4bee4377486fec47b9e725d48`  
+Date: 2026-11-20
+
+Branch: `test/ball-boss-stage-access-20261120`
+
+Base commit: `12aba0753c6aacf4bee4377486fec47b9e725d48`
 Stage content SHA-256: `0a1f3968b97935fe8753ed3f4d1ee948e03e38eb1d0d4db81fd4cb42c726dce7`
 
 ## Implemented in this checkpoint
