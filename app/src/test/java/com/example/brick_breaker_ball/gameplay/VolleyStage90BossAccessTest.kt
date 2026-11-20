@@ -74,4 +74,21 @@ class VolleyStage90BossAccessTest {
         assertTrue(core.bounds.y + core.bounds.height < session.boardTop)
         assertTrue(session.bricks.none { it !== core && it.health > 0 && it.bounds.overlaps(core.bounds) })
     }
+
+    @Test fun `restoring an older paused run exposes a stranded core`() {
+        val stage = VolleyStageRepository.forLevel(90)
+        val previous = VolleySession(stage, stage.world, seed = 901L)
+        previous.bricks.filter { it.type != BrickType.BOSS_CORE && it.countsForClear }
+            .forEach { it.health = 0 }
+        val paused = previous.snapshot().copy(
+            phase = VolleyPhase.PAUSED,
+            phaseBeforePause = VolleyPhase.READY_TO_AIM
+        )
+
+        val restored = VolleySession(stage, stage.world, seed = 901L)
+        restored.restore(paused)
+        val core = restored.bricks.single { it.type == BrickType.BOSS_CORE && it.health > 0 }
+        assertTrue("Old paused run still hides the core", core.bounds.y + core.bounds.height < restored.boardTop)
+        assertEquals(VolleyPhase.PAUSED, restored.phase)
+    }
 }
