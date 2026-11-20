@@ -776,7 +776,7 @@ class VolleyOrbsScreen(
             val point = touchPoint()
             val screen = Rectangle(visibleLeft, visibleBottom, visibleWidth, visibleHeight)
             if (Gdx.input.isKeyJustPressed(Input.Keys.BACK) || Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) ||
-                (Gdx.input.justTouched() && VisualHelpOverlay.closeBounds(screen).contains(point.x, point.y))) {
+                (Gdx.input.justTouched() && HeroGuideRenderer.skipBounds(screen).contains(point.x, point.y))) {
                 skipGuideAfterExit = true
                 guideAnimation.beginExit()
             } else if (Gdx.input.justTouched()) handleGuideTap(point.x, point.y)

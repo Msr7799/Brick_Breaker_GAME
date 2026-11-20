@@ -580,8 +580,19 @@ class VolleyGameScreen(
             return
         }
         if (controlTutorial.active) {
-            if ((Gdx.input.justTouched() || Gdx.input.isKeyJustPressed(Input.Keys.BACK)) &&
-                controlGuideAnimation.revealOrContinue(controlGuideLines())) controlGuideAnimation.beginExit()
+            val point = touchPoint()
+            val screen = Rectangle(visibleLeft, visibleBottom, visibleWidth, visibleHeight)
+            if (Gdx.input.isKeyJustPressed(Input.Keys.BACK) ||
+                Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) ||
+                (Gdx.input.justTouched() && HeroGuideRenderer.skipBounds(screen).contains(point.x, point.y))) {
+                controlTutorial.skipAll()
+                Gdx.app.getPreferences("brickbreakerball-volley-controls-v1")
+                    .putBoolean("learned", true).flush()
+                controlGuideAnimation.reset()
+            } else if (Gdx.input.justTouched() &&
+                controlGuideAnimation.revealOrContinue(controlGuideLines())) {
+                controlGuideAnimation.beginExit()
+            }
             return
         }
         if (game.uiMotion.active) return
@@ -1916,6 +1927,8 @@ class VolleyGameScreen(
             Rectangle(visibleLeft, visibleBottom, visibleWidth, visibleHeight), controlGuideLines(),
             target.y + target.height + 70f, animation = controlGuideAnimation,
             focus = target, reduceMotion = game.progress.settings.reduceMotion)
+        HeroGuideRenderer.drawSkip(batch, game.assets,
+            Rectangle(visibleLeft, visibleBottom, visibleWidth, visibleHeight))
     }
 
     private fun drawIconButton(rect: Rectangle, iconName: String, style: ForgeUiRenderer.GradientStyle) {

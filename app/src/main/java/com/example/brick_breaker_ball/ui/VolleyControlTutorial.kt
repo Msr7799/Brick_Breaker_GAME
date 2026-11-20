@@ -56,6 +56,13 @@ class VolleyControlTutorial(alreadyCompleted: Boolean, private val thresholdSeco
         return completed
     }
 
+    fun skipAll() {
+        step = Step.NONE
+        completed = true
+        elapsed = 0.0
+        typingSeconds = 0f
+    }
+
     fun reveal(text: String, charsPerSecond: Float = 28f): String {
         if (!active) return text
         val count = (typingSeconds * charsPerSecond).toInt().coerceIn(0, text.length)
